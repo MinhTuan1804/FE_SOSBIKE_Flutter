@@ -9,23 +9,23 @@ feature/duy   # Nhánh của Duy
 
 ⚙️ Setup lần đầu khi clone project
 Sau khi clone repo về, chạy lần lượt các lệnh sau:
-bashflutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
+[flutter pub get]
+[flutter pub run build_runner build --delete-conflicting-outputs]
 
 ⚠️ Bắt buộc chạy để generate các file .g.dart, nếu không sẽ bị lỗi khi build.
 
 
 🔄 Quy trình làm việc hàng ngày
 1. Trước khi bắt đầu code - pull code mới nhất về:
-bashgit checkout develop
+git checkout develop
 git pull origin develop
 git checkout feature/tên-bạn
 git merge develop
 2. Sau khi pull - chạy lại lệnh generate:
-bashflutter pub get
+flutter pub get
 flutter pub run build_runner build --delete-conflicting-outputs
 3. Code xong - push lên nhánh cá nhân:
-bashgit add .
+git add .
 git commit -m "mô tả ngắn những gì bạn đã làm"
 git push origin feature/tên-bạn
 4. Tạo Pull Request vào develop:
@@ -46,7 +46,7 @@ fix: sửa lỗi
 update: cập nhật code
 refactor: tối ưu code
 Ví dụ:
-bashgit commit -m "feat: thêm màn hình đăng nhập"
+git commit -m "feat: thêm màn hình đăng nhập"
 git commit -m "fix: sửa lỗi call API post"
 
 ⚠️ Lưu ý quan trọng
