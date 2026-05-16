@@ -16,7 +16,9 @@ class MainAppHeader extends StatelessWidget {
   final ValueChanged<bool> onOnlineChanged;
   final VoidCallback? onAvatarTap;
 
-  static const _statusStripWidth = 108.0;
+  static const _statusStripWidth = 112.0;
+  /// Cao hơn avatar (50) để strip Trực tuyến không ép Column trong 42px.
+  static const _rowMinHeight = 56.0;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +42,11 @@ class MainAppHeader extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.only(right: _statusStripWidth - 8),
-            child: Row(
-              children: [
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _rowMinHeight),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
                 const SizedBox(width: 16),
                 GestureDetector(
                   onTap: onAvatarTap,
@@ -68,33 +73,40 @@ class MainAppHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Xin chào!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Xin chào!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        userName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
+                        const SizedBox(height: 2),
+                        Text(
+                          userName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            height: 1.15,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
               ],
+              ),
             ),
           ),
           Positioned(
@@ -110,10 +122,13 @@ class MainAppHeader extends StatelessWidget {
                   bottomLeft: Radius.circular(28),
                 ),
               ),
-              child: Center(
-                child: _OnlineStatusBlock(
-                  isOnline: isOnline,
-                  onChanged: onOnlineChanged,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                child: Center(
+                  child: _OnlineStatusBlock(
+                    isOnline: isOnline,
+                    onChanged: onOnlineChanged,
+                  ),
                 ),
               ),
             ),
@@ -138,6 +153,7 @@ class _OnlineStatusBlock extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Text(
           'Trực tuyến',
@@ -145,10 +161,10 @@ class _OnlineStatusBlock extends StatelessWidget {
             color: Colors.white,
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            height: 1.1,
+            height: 1.0,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 3),
         _OnlineToggle(value: isOnline, onChanged: onChanged),
       ],
     );
@@ -161,9 +177,10 @@ class _OnlineToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  static const _trackW = 58.0;
+  static const _trackW = 72.0;
   static const _trackH = 26.0;
-  static const _thumb = 22.0;
+  static const _thumbSize = 20.0;
+  static const _edgePad = 3.0;
 
   @override
   Widget build(BuildContext context) {
@@ -172,59 +189,70 @@ class _OnlineToggle extends StatelessWidget {
       child: SizedBox(
         width: _trackW,
         height: _trackH,
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(_trackH / 2),
-              child: Image.asset(
-                'assets/images/main/header_toggle_track.png',
-                width: _trackW,
-                height: _trackH,
-                fit: BoxFit.fill,
-                errorBuilder: (_, __, ___) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_trackH / 2),
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryDark],
-                    ),
-                  ),
-                ),
-              ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_trackH / 2),
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [AppColors.primary, AppColors.primaryDark],
             ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              left: value ? _trackW - _thumb - 2 : 2,
-              top: (_trackH - _thumb) / 2,
-              child: Container(
-                width: _thumb,
-                height: _thumb,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Align(
-                  alignment: value ? Alignment.centerLeft : Alignment.centerRight,
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_trackH / 2),
+            child: Stack(
+              children: [
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  alignment:
+                      value ? Alignment.centerRight : Alignment.centerLeft,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 7),
-                    child: Text(
-                      value ? 'on' : 'off',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
+                    padding: const EdgeInsets.symmetric(horizontal: _edgePad),
+                    child: Container(
+                      width: _thumbSize,
+                      height: _thumbSize,
+                      decoration: const BoxDecoration(
                         color: Colors.white,
-                        height: 1,
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
                 ),
-              ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: value ? 10 : _thumbSize + _edgePad + 6,
+                        right: value ? _thumbSize + _edgePad + 6 : 10,
+                      ),
+                      child: Align(
+                        alignment: value
+                            ? Alignment.centerLeft
+                            : Alignment.centerRight,
+                        child: Text(
+                          value ? 'on' : 'off',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -23,42 +23,60 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final navH = MainBottomNavBar.totalHeight(bottomPad);
 
     return Scaffold(
-      extendBody: false,
+      extendBody: true,
       backgroundColor: Colors.black,
-      body: Column(
+      body: Stack(
+        clipBehavior: Clip.none,
         children: [
-          MainAppHeader(
-            userName: auth.displayName,
-            isOnline: _isOnline,
-            onOnlineChanged: (v) => setState(() => _isOnline = v),
-            onAvatarTap: () => _confirmLogout(context),
-          ),
-          Expanded(
-            child: ColoredBox(
-              color: Colors.black,
-              child: Stack(
-                children: [
-                  Positioned.fill(child: _buildBody()),
-                  Positioned(
-                    right: 12,
-                    bottom: 16,
-                    child: _SosFab(onPressed: () {}),
+          Column(
+            children: [
+              MainAppHeader(
+                userName: auth.displayName,
+                isOnline: _isOnline,
+                onOnlineChanged: (v) => setState(() => _isOnline = v),
+                onAvatarTap: () => _confirmLogout(context),
+              ),
+              Expanded(
+                child: ColoredBox(
+                  color: Colors.black,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: navH * 0.35),
+                          child: _buildBody(),
+                        ),
+                      ),
+                      Positioned(
+                        right: 12,
+                        bottom: navH + 8,
+                        child: _SosFab(onPressed: () {}),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Material(
+              color: Colors.transparent,
+              clipBehavior: Clip.none,
+              child: MainBottomNavBar(
+                current: _tab,
+                onChanged: (t) => setState(() => _tab = t),
               ),
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: Material(
-        color: AppColors.primary,
-        elevation: 0,
-        child: MainBottomNavBar(
-          current: _tab,
-          onChanged: (t) => setState(() => _tab = t),
-        ),
       ),
     );
   }
@@ -112,20 +130,20 @@ class _SosFab extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onPressed,
-      child: Image.asset(
-        'assets/images/main/fab_sos.png',
-        width: 72,
-        height: 72,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary,
-            border: Border.all(color: Colors.white, width: 2),
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: ClipOval(
+          child: Image.asset(
+            'assets/images/main/fab_sos.png',
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: AppColors.primary,
+              child: const Icon(Icons.notifications_active, color: Colors.white, size: 30),
+            ),
           ),
-          child: const Icon(Icons.notifications_active, color: Colors.white, size: 32),
         ),
       ),
     );

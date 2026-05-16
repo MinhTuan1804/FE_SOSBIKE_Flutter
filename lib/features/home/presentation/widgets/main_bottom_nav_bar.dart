@@ -3,7 +3,7 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
 enum MainNavTab { orders, history, wallet, maintenance }
 
-/// Bottom nav [#D02121]: thanh đỏ + vòng tròn cùng màu (Stack, không ClipPath).
+/// Bottom nav [#D02121]: thanh phẳng + gờ tròn nhô (tab chọn) trên nền trong suốt.
 class MainBottomNavBar extends StatelessWidget {
   const MainBottomNavBar({
     super.key,
@@ -15,9 +15,17 @@ class MainBottomNavBar extends StatelessWidget {
   final ValueChanged<MainNavTab> onChanged;
 
   static const _bumpRadius = 40.0;
+  /// Phần đường kính vòng tròn gắn trong thanh (0.8 → ~20% nhô lên mép thanh).
+  static const _bumpInBarFraction = 0.8;
   static const _barHeight = 52.0;
   static const _tabCount = 4;
   static const _corner = 22.0;
+
+  static double get _bumpProtrusion =>
+      (1 - _bumpInBarFraction) * 2 * _bumpRadius;
+
+  static double _circleBottom(double barTopFromStackBottom) =>
+      barTopFromStackBottom - (1 + _bumpInBarFraction) * _bumpRadius;
 
   static const _items = [
     (MainNavTab.orders, 'assets/images/main/nav_orders.png'),
@@ -26,7 +34,7 @@ class MainBottomNavBar extends StatelessWidget {
     (MainNavTab.maintenance, 'assets/images/main/nav_maintenance.png'),
   ];
 
-  static double get _contentHeight => _bumpRadius + _barHeight;
+  static double get _contentHeight => _barHeight + _bumpProtrusion;
 
   static double totalHeight(double bottomInset) => _contentHeight + bottomInset;
 
@@ -37,6 +45,7 @@ class MainBottomNavBar extends StatelessWidget {
     final totalH = totalHeight(bottom);
     final slotW = width / _tabCount;
     final cx = slotW * current.index + slotW / 2;
+    final barTop = _barHeight + bottom;
 
     return SizedBox(
       width: width,
@@ -61,7 +70,7 @@ class MainBottomNavBar extends StatelessWidget {
           ),
           Positioned(
             left: cx - _bumpRadius,
-            bottom: _barHeight + bottom - _bumpRadius,
+            bottom: _circleBottom(barTop),
             width: _bumpRadius * 2,
             height: _bumpRadius * 2,
             child: const DecoratedBox(
@@ -115,11 +124,11 @@ class _NavSlot extends StatelessWidget {
         width: double.infinity,
         child: selected
             ? Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 2),
                 child: Center(
                   child: Image.asset(
                     iconAsset,
-                    height: 46,
+                    height: 48,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.high,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink(),
