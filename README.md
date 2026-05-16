@@ -14,6 +14,12 @@ Sau khi clone repo về, chạy lần lượt các lệnh sau:
 
 ⚠️ Bắt buộc chạy để generate các file .g.dart, nếu không sẽ bị lỗi khi build.
 
+🪟 Windows: Flutter SDK trên C: nhưng repo trên E: (ổ khác)
+Nếu `flutter pub get` báo lỗi symlink plugin (`ERROR_INVALID_FUNCTION`), làm một trong hai:
+- Bật **Settings → Privacy & security → For developers → Developer Mode**, hoặc
+- Mở project qua junction cùng ổ C: (ví dụ đã tạo): `C:\dev\FE_SOSBIKE_Flutter` → trùng nội dung với thư mục repo thật. Chạy `flutter pub get` / `dart run build_runner build` trong đường dẫn đó.
+Tạo lại junction (thay đúng đường dẫn repo của bạn): `cmd /c mklink /J C:\dev\FE_SOSBIKE_Flutter E:\đường\dẫn\FE_SOSBIKE_Flutter`
+
 
 🔄 Quy trình làm việc hàng ngày
 1. Trước khi bắt đầu code - pull code mới nhất về:

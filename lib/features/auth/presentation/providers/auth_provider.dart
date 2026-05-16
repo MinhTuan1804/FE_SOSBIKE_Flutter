@@ -21,14 +21,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String phoneNumber, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _repository.login(username, password);
-      await _authService.saveToken(response.token);
+      final response = await _repository.login(phoneNumber, password);
+      await _authService.saveToken(response.accessToken);
       _isAuthenticated = true;
       return true;
     } catch (e) {

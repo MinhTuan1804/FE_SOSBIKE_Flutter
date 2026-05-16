@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Danh sách từ C# Backend'),
+        title: const Text('SOSbike'),
       ),
       body: Consumer<HomeProvider>(
         builder: (context, provider, child) {

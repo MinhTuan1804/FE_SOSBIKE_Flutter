@@ -1,9 +1,8 @@
 class ApiEndpoints {
-  // Thay thế bằng IP máy tính của bạn hoặc domain của BE C#
-  // Đối với Android Emulator, 10.0.2.2 trỏ đến localhost của máy host
-  static const String baseUrl = 'http://10.0.2.2:5000/api'; 
-  
-  static const String login = '/auth/login';
-  static const String register = '/auth/register';
+  /// BE deploy (nginx) — HTTP. Emulator local: `http://10.0.2.2:<port>/api`; máy thật: IP LAN hoặc URL này.
+  static const String baseUrl = 'http://168.144.38.133:8090/api';
+
+  static const String login = '/Auth/login';
+  static const String register = '/Auth/register';
   static const String users = '/users';
 }

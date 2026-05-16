@@ -18,7 +18,7 @@ void main() {
   
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
-  final homeRepository = HomeRepository(dioClient);
+  final homeRepository = HomeRepository();
 
   runApp(
     MultiProvider(

@@ -9,11 +9,11 @@ class AuthRepository {
 
   AuthRepository(this._dioClient);
 
-  Future<AuthResponse> login(String username, String password) async {
+  Future<AuthResponse> login(String phoneNumber, String password) async {
     try {
       final response = await _dioClient.dio.post(
         ApiEndpoints.login,
-        data: LoginRequest(username: username, password: password).toJson(),
+        data: LoginRequest(phoneNumber: phoneNumber, password: password).toJson(),
       );
       
       return AuthResponse.fromJson(response.data);
