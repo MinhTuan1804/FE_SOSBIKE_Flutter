@@ -48,6 +48,20 @@ class AuthResponse {
     required this.user,
   });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) =>
-      _$AuthResponseFromJson(json);
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    final expiryRaw = json['accessTokenExpiry'];
+    DateTime expiry;
+    if (expiryRaw is String) {
+      expiry = DateTime.tryParse(expiryRaw) ??
+          DateTime.now().toUtc().add(const Duration(hours: 1));
+    } else {
+      expiry = DateTime.now().toUtc().add(const Duration(hours: 1));
+    }
+    return AuthResponse(
+      accessToken: json['accessToken'] as String,
+      refreshToken: json['refreshToken'] as String,
+      accessTokenExpiry: expiry,
+      user: UserResponseDto.fromJson(json['user'] as Map<String, dynamic>),
+    );
+  }
 }

@@ -14,11 +14,13 @@ Sau khi clone repo về, chạy lần lượt các lệnh sau:
 
 ⚠️ Bắt buộc chạy để generate các file .g.dart, nếu không sẽ bị lỗi khi build.
 
-🪟 Windows: Flutter SDK trên C: nhưng repo trên E: (ổ khác)
-Nếu `flutter pub get` báo lỗi symlink plugin (`ERROR_INVALID_FUNCTION`), làm một trong hai:
-- Bật **Settings → Privacy & security → For developers → Developer Mode**, hoặc
-- Mở project qua junction cùng ổ C: (ví dụ đã tạo): `C:\dev\FE_SOSBIKE_Flutter` → trùng nội dung với thư mục repo thật. Chạy `flutter pub get` / `dart run build_runner build` trong đường dẫn đó.
-Tạo lại junction (thay đúng đường dẫn repo của bạn): `cmd /c mklink /J C:\dev\FE_SOSBIKE_Flutter E:\đường\dẫn\FE_SOSBIKE_Flutter`
+🪟 Windows: repo trên ổ ngoài / ổ khác
+- Nếu ổ đựng project là **NTFS**: `ERROR_INVALID_FUNCTION` thường hết khi bật **Developer Mode** hoặc làm việc qua junction trên **NTFS** (vd. `C:\dev\FE_SOSBIKE_Flutter` trỏ tới repo).
+- Nếu ổ là **exFAT** (nhiều ổ SSD di động): Windows **không tạo được symlink** cho thư mục `windows/.../plugin_symlinks` → `flutter pub get` vẫn lỗi. Làm một trong hai:
+  - Clone / copy project sang phân vùng **NTFS** (ổ C hoặc ổ nội bộ NTFS) để build; hoặc
+  - Giữ app **Android/iOS/Web** và bỏ platform **Windows** trong repo (thư mục `windows/` không có) — chỉ dùng khi team không cần build desktop Windows.
+- Có thể đặt `PUB_CACHE` trên cùng ổ SDK/project (vd. User env `PUB_CACHE=E:\pub-cache`) để giảm chỗ C:; **exFAT vẫn không symlink** nên không thay thế NTFS.
+Tạo junction (NTFS → repo): `cmd /c mklink /J C:\dev\FE_SOSBIKE_Flutter E:\đường\dẫn\FE_SOSBIKE_Flutter`
 
 
 🔄 Quy trình làm việc hàng ngày

@@ -1,23 +1,48 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
-  final _storage = const FlutterSecureStorage();
   static const _keyToken = 'jwt_token';
 
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  String? _memoryToken;
+
   Future<void> saveToken(String token) async {
-    await _storage.write(key: _keyToken, value: token);
+    _memoryToken = token;
+    try {
+      await _storage.write(key: _keyToken, value: token);
+    } catch (e) {
+      debugPrint('AuthService.saveToken fallback memory: $e');
+    }
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: _keyToken);
+    try {
+      final stored = await _storage.read(key: _keyToken);
+      if (stored != null) {
+        _memoryToken = stored;
+        return stored;
+      }
+    } catch (e) {
+      debugPrint('AuthService.getToken fallback memory: $e');
+    }
+    return _memoryToken;
   }
 
   Future<void> deleteToken() async {
-    await _storage.delete(key: _keyToken);
+    _memoryToken = null;
+    try {
+      await _storage.delete(key: _keyToken);
+    } catch (e) {
+      debugPrint('AuthService.deleteToken: $e');
+    }
   }
 
   Future<bool> hasToken() async {
-    String? token = await getToken();
-    return token != null;
+    final token = await getToken();
+    return token != null && token.isNotEmpty;
   }
 }

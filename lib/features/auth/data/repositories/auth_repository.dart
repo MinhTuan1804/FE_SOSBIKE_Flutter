@@ -21,4 +21,28 @@ class AuthRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<AuthResponse> register({
+    required String phoneNumber,
+    required String password,
+    required String fullName,
+    required String userType,
+    String? email,
+  }) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.register,
+        data: {
+          'phoneNumber': phoneNumber,
+          'password': password,
+          'fullName': fullName,
+          'userType': userType,
+          if (email != null) 'email': email,
+        },
+      );
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
