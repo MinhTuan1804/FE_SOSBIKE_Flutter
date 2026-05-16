@@ -1,5 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
 import 'core/navigation/app_navigator.dart';
 import 'core/navigation/auth_gate.dart';
 import 'core/network/dio_client.dart';
@@ -10,9 +12,10 @@ import 'core/theme/app_colors.dart';
 import 'features/home/data/repositories/home_repository.dart';
 import 'features/home/presentation/providers/home_provider.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // 1. Khởi tạo Services dùng chung
   final authService = AuthService();
   final dioClient = DioClient(authService);

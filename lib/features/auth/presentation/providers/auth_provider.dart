@@ -49,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
     required String fullName,
     required String userType,
     String? email,
+    String? firebaseIdToken,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -61,6 +62,7 @@ class AuthProvider extends ChangeNotifier {
         fullName: fullName,
         userType: userType,
         email: email,
+        firebaseIdToken: firebaseIdToken,
       );
       await _authService.saveToken(response.accessToken);
       _isAuthenticated = true;
