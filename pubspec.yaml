@@ -56,7 +56,11 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/login/
+    - assets/images/login/btn_next.png
+    - assets/images/login/ic_google.png
+    - assets/images/login/pattern_bg.png
+    - assets/images/login/screen_otp.png
+    - assets/images/login/screen_password.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
