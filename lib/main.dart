@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/navigation/app_navigator.dart';
 import 'core/navigation/auth_gate.dart';
+import 'core/navigation/auth_navigation.dart';
 import 'core/network/dio_client.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/backend_otp_service.dart';
@@ -15,24 +19,40 @@ import 'features/home/presentation/providers/home_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e, st) {
+    debugPrint('Firebase.initializeApp failed: $e\n$st');
+  }
 
   // 1. Khởi tạo Services dùng chung
   final authService = AuthService();
   final dioClient = DioClient(authService);
-  
+
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
   final homeRepository = HomeRepository();
   final backendOtpService = BackendOtpService(dioClient);
 
+  final authProvider = AuthProvider(authRepository, authService);
+  unawaited(authProvider.checkAuthStatus());
+  dioClient.onUnauthorized = () async {
+    await authProvider.logout();
+    navigateToLogin();
+  };
+
+  if (kDebugMode) {
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      debugPrint('FlutterError: ${details.exceptionAsString()}');
+    };
+  }
+
   runApp(
     MultiProvider(
       providers: [
         Provider<BackendOtpService>.value(value: backendOtpService),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(authRepository, authService),
-        ),
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider(
           create: (_) => HomeProvider(homeRepository),
         ),
