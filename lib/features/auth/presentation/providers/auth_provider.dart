@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
 import 'package:fe_moblie_flutter/features/auth/data/repositories/auth_repository.dart';
@@ -21,17 +22,52 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String phoneNumber, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _repository.login(username, password);
-      await _authService.saveToken(response.token);
+      final response = await _repository.login(phoneNumber, password);
+      await _authService.saveToken(response.accessToken);
       _isAuthenticated = true;
+      notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('AuthProvider.login error: $e\n$st');
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> register({
+    required String phoneNumber,
+    required String password,
+    required String fullName,
+    required String userType,
+    String? email,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _repository.register(
+        phoneNumber: phoneNumber,
+        password: password,
+        fullName: fullName,
+        userType: userType,
+        email: email,
+      );
+      await _authService.saveToken(response.accessToken);
+      _isAuthenticated = true;
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      debugPrint('AuthProvider.register error: $e\n$st');
       _errorMessage = e.toString();
       return false;
     } finally {

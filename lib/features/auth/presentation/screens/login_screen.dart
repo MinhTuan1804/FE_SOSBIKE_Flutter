@@ -22,8 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _onLogin() async {
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.login(
-      _usernameController.text,
+      final success = await authProvider.login(
+      _usernameController.text.trim(),
       _passwordController.text,
     );
 
@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             TextField(
               controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Tài khoản'),
+              decoration: const InputDecoration(labelText: 'Số điện thoại'),
             ),
             TextField(
               controller: _passwordController,
