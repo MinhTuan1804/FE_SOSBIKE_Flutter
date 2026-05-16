@@ -56,6 +56,22 @@ class FirebasePhoneAuthService {
   }
 
   String _mapError(FirebaseAuthException e) {
+    final msg = e.message ?? '';
+    if (msg.contains('BILLING_NOT_ENABLED') || e.code == 'billing-not-enabled') {
+      return 'Firebase chưa bật thanh toán (Blaze) nên không gửi SMS thật.\n'
+          'Cách 1 (dev): Authentication → Phone → thêm số test (+84..., mã 123456).\n'
+          'Cách 2: Nâng project lên gói Blaze (thêm thẻ, vẫn có hạn mức miễn phí).';
+    }
+    if (e.code == 'missing-client-identifier' ||
+        msg.contains('CONFIGURATION_NOT_FOUND')) {
+      return 'Firebase chưa cấu hình OTP trên Android.\n'
+          'Vào Firebase Console → project sosbike-7b6bb:\n'
+          '1. Authentication → đăng nhập Phone → Bật\n'
+          '2. Cài đặt dự án → app Android → thêm SHA-1 debug:\n'
+          '   CC:08:A4:B6:28:2D:E8:0C:91:12:D0:C4:57:D7:38:D6:28:88:15:6B\n'
+          '3. Tải lại google-services.json → thay file android/app/\n'
+          '4. flutter clean && flutter run';
+    }
     switch (e.code) {
       case 'invalid-phone-number':
         return 'Số điện thoại không hợp lệ.';

@@ -59,7 +59,7 @@ flutter:
 
   assets:
     - assets/images/login/btn_next.png
-    - assets/images/login/ic_google.png
+    - assets/images/login/btn_google.png
     - assets/images/login/pattern_bg.png
     - assets/images/login/screen_otp.png
     - assets/images/login/screen_password.png

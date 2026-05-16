@@ -6,6 +6,7 @@ import 'core/navigation/app_navigator.dart';
 import 'core/navigation/auth_gate.dart';
 import 'core/network/dio_client.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/backend_otp_service.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
@@ -23,10 +24,12 @@ Future<void> main() async {
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
   final homeRepository = HomeRepository();
+  final backendOtpService = BackendOtpService(dioClient);
 
   runApp(
     MultiProvider(
       providers: [
+        Provider<BackendOtpService>.value(value: backendOtpService),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authRepository, authService),
         ),

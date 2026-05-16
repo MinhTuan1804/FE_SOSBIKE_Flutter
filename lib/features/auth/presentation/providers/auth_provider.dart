@@ -50,6 +50,7 @@ class AuthProvider extends ChangeNotifier {
     required String userType,
     String? email,
     String? firebaseIdToken,
+    String? otpToken,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -63,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
         userType: userType,
         email: email,
         firebaseIdToken: firebaseIdToken,
+        otpToken: otpToken,
       );
       await _authService.saveToken(response.accessToken);
       _isAuthenticated = true;

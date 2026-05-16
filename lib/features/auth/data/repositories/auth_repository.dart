@@ -29,6 +29,7 @@ class AuthRepository {
     required String userType,
     String? email,
     String? firebaseIdToken,
+    String? otpToken,
   }) async {
     try {
       final response = await _dioClient.dio.post(
@@ -40,6 +41,7 @@ class AuthRepository {
           'userType': userType,
           if (email != null) 'email': email,
           if (firebaseIdToken != null) 'firebaseIdToken': firebaseIdToken,
+          if (otpToken != null) 'otpToken': otpToken,
         },
       );
       return AuthResponse.fromJson(response.data);

@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/core/services/firebase_phone_auth_service.dart';
+import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
-import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
@@ -33,7 +33,8 @@ class OtpLoginScreen extends StatefulWidget {
 }
 
 class _OtpLoginScreenState extends State<OtpLoginScreen> {
-  final _phoneAuth = FirebasePhoneAuthService();
+  BackendOtpService? _otpService;
+
   final _controllers = List.generate(6, (_) => TextEditingController());
   final _focusNodes = List.generate(6, (_) => FocusNode());
 
@@ -46,8 +47,11 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   @override
   void initState() {
     super.initState();
-    _sendOtp();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sendOtp());
   }
+
+  BackendOtpService get _otpSvc =>
+      _otpService ??= context.read<BackendOtpService>();
 
   Future<void> _sendOtp({bool resend = false}) async {
     setState(() {
@@ -56,36 +60,35 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       if (resend) _secondsLeft = 59;
     });
 
-    final e164 = PhoneUtils.toE164(widget.phoneNumber);
+    try {
+      final result = await _otpSvc.sendOtp(widget.phoneNumber);
+      if (!mounted) return;
+      setState(() => _sending = false);
+      if (!resend) _startTimer();
 
-    await _phoneAuth.sendOtp(
-      e164,
-      resend: resend,
-      onCodeSent: () {
-        if (!mounted) return;
-        setState(() => _sending = false);
-        if (!resend) _startTimer();
-      },
-      onError: (message) {
-        if (!mounted) return;
-        setState(() {
-          _sending = false;
-          _error = message;
-        });
-      },
-      onAutoVerified: (credential) async {
-        try {
-          await FirebaseAuth.instance.signInWithCredential(credential);
-          final idToken = await _captureFirebaseIdToken();
-          await _phoneAuth.signOutFirebase();
-          if (mounted) await _goToPassword(firebaseIdToken: idToken);
-        } catch (e) {
-          if (mounted) {
-            setState(() => _error = e.toString());
-          }
-        }
-      },
-    );
+      if (result.debugCode != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'DEV: Mã OTP ${result.debugCode} (chưa cấu hình ESMS trên server)',
+            ),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _error = e.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _error = e.toString();
+      });
+    }
   }
 
   void _startTimer() {
@@ -116,7 +119,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   void _goBack() => Navigator.of(context).pop();
 
-  Future<void> _goToPassword({String? firebaseIdToken}) async {
+  Future<void> _goToPassword({required String otpToken}) async {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PasswordLoginScreen(
@@ -124,16 +127,10 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           mode: widget.mode,
           phoneNumber: widget.phoneNumber,
           fullName: widget.fullName,
-          firebaseIdToken: firebaseIdToken,
+          otpToken: otpToken,
         ),
       ),
     );
-  }
-
-  Future<String?> _captureFirebaseIdToken() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
-    return user.getIdToken();
   }
 
   Future<void> _onContinue() async {
@@ -150,19 +147,13 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     });
 
     try {
-      await _phoneAuth.verifySmsCode(_otp);
-      final idToken = await _captureFirebaseIdToken();
-      await _phoneAuth.signOutFirebase();
+      final result = await _otpSvc.verifyOtp(widget.phoneNumber, _otp);
       if (!mounted) return;
-      await _goToPassword(firebaseIdToken: idToken);
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        setState(() => _error = e.message ?? 'Mã OTP không đúng');
-      }
+      await _goToPassword(otpToken: result.otpToken);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      if (mounted) {
-        setState(() => _error = e.toString());
-      }
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _verifying = false);
     }

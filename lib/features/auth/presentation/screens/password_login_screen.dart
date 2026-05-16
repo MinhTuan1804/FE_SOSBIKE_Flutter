@@ -20,6 +20,7 @@ class PasswordLoginScreen extends StatefulWidget {
     required this.phoneNumber,
     this.fullName,
     this.firebaseIdToken,
+    this.otpToken,
   });
 
   final UserRole role;
@@ -27,6 +28,7 @@ class PasswordLoginScreen extends StatefulWidget {
   final String phoneNumber;
   final String? fullName;
   final String? firebaseIdToken;
+  final String? otpToken;
 
   @override
   State<PasswordLoginScreen> createState() => _PasswordLoginScreenState();
@@ -84,6 +86,7 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
         fullName: widget.fullName ?? 'Khách hàng',
         userType: widget.role.apiValue,
         firebaseIdToken: widget.firebaseIdToken,
+        otpToken: widget.otpToken,
       );
     } else {
       success = await auth.login(widget.phoneNumber, password);

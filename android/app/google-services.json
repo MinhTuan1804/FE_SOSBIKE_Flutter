@@ -12,7 +12,20 @@
           "package_name": "com.example.fe_moblie_flutter"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "835951049167-r09sqd8rl2uuqdm2nmrf4agvcga3f2n0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fe_moblie_flutter",
+            "certificate_hash": "cc08a4b6282de80c9112d0c457d738d62888156b"
+          }
+        },
+        {
+          "client_id": "835951049167-bjq4imvv1bpaq62nhjblcrae7jdfbj0i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDb4RZNDNs0lOIk0_3hJw5L5M8J8sULy14"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "835951049167-bjq4imvv1bpaq62nhjblcrae7jdfbj0i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
