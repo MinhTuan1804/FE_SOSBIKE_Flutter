@@ -207,7 +207,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         const SizedBox(height: 16),
         SocialAuthButton(
           label: 'Đăng nhập bằng Google',
-          iconAsset: 'assets/images/login/google_logo.png',
+          iconAsset: 'assets/images/login/btn_google.png',
           border: true,
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
