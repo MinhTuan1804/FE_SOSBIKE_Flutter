@@ -22,6 +22,22 @@ class AuthRepository {
     }
   }
 
+  Future<AuthResponse> firebaseLogin(String idToken, {String? fullName, String? userType}) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.firebaseLogin,
+        data: {
+          'idToken': idToken,
+          if (fullName != null) 'fullName': fullName,
+          if (userType != null) 'userType': userType,
+        },
+      );
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<AuthResponse> register({
     required String phoneNumber,
     required String password,

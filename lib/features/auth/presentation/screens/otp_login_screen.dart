@@ -11,6 +11,10 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_d
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fields.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
+import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+
 class OtpLoginScreen extends StatefulWidget {
   const OtpLoginScreen({
     super.key,
@@ -69,7 +73,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   void _goBack() => Navigator.of(context).pop();
 
-  void _onContinue() {
+  Future<void> _onContinue() async {
     if (_otp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
@@ -77,20 +81,31 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PasswordLoginScreen(
-          role: widget.role,
-          mode: widget.mode,
-          phoneNumber: widget.phoneNumber,
-          fullName: widget.fullName,
-        ),
-      ),
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.verifyOtp(
+      _otp,
+      fullName: widget.fullName,
+      userType: widget.role.name.toUpperCase(),
     );
+
+    if (success) {
+      // Đăng nhập thành công, chuyển hướng vào Home
+      if (mounted) {
+        navigateToHome();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
     return AuthFormLayout(
       children: [
         AuthBackHeader(onBack: _goBack),
@@ -137,7 +152,9 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           ),
         ),
         const SizedBox(height: 32),
-        SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
+        authProvider.isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 20),
         const AuthPageDots(count: 4, activeIndex: 2),
         const SizedBox(height: 24),

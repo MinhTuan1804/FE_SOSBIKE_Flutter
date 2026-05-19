@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838712766204",
+    "project_id": "credible-bank-485503-s2",
+    "storage_bucket": "credible-bank-485503-s2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838712766204:android:23b1f44e7a7e96eb9db179",
+        "android_client_info": {
+          "package_name": "com.example.fe_moblie_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIW7jfe9_LDw1BuXencozHg2J6tkL_HHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
