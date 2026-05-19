@@ -36,6 +36,8 @@ dependencies:
   provider: ^6.1.1
   json_annotation: ^4.9.0
   flutter_secure_storage: ^9.0.0
+  firebase_core: ^3.15.0
+  firebase_auth: ^5.7.0
 
 dev_dependencies:
   flutter_test:
@@ -56,7 +58,27 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/login/
+    - assets/images/login/btn_next.png
+    - assets/images/login/btn_google.png
+    - assets/images/login/pattern_bg.png
+    - assets/images/login/screen_otp.png
+    - assets/images/login/screen_password.png
+    - assets/images/main/avatar_placeholder.png
+    - assets/images/main/header_toggle_track.png
+    - assets/images/main/map_card.png
+    - assets/images/main/btn_view_trips.png
+    - assets/images/main/fab_sos.png
+    - assets/images/main/stat_revenue_icon.png
+    - assets/images/main/stat_revenue_chart.png
+    - assets/images/main/stat_rating_icon.png
+    - assets/images/main/stat_rating_value.png
+    - assets/images/main/stat_orders_icon.png
+    - assets/images/main/nav_orders.png
+    - assets/images/main/nav_history.png
+    - assets/images/main/nav_wallet.png
+    - assets/images/main/nav_maintenance.png
+    - assets/images/main/nav_active_glow.png
+    - assets/images/main/nav_history_clock.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

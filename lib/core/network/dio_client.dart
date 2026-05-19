@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 class DioClient {
   late final Dio _dio;
   final AuthService _authService;
+  Future<void> Function()? onUnauthorized;
 
   DioClient(this._authService) {
     _dio = Dio(
@@ -36,10 +37,10 @@ class DioClient {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        // Xử lý khi Token hết hạn (401)
         if (e.response?.statusCode == 401) {
           await _authService.deleteToken();
-          // Ở đây có thể điều hướng người dùng về trang Login nếu cần
+          await _authService.clearUserProfile();
+          await onUnauthorized?.call();
         }
         return handler.next(e);
       },
