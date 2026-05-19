@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/role_selection_screen.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/screens/main_shell_screen.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_shell_screen.dart';
 
 /// Màn khởi động: chờ kiểm tra token, rồi hiển thị đăng nhập hoặc shell chính.
 class AuthGate extends StatefulWidget {

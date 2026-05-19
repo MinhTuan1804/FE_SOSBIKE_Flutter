@@ -27,12 +27,10 @@ class PhoneLoginScreen extends StatefulWidget {
 class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   AuthMode _mode = AuthMode.login;
   final _phoneController = TextEditingController();
-  final _nameController = TextEditingController();
 
   @override
   void dispose() {
     _phoneController.dispose();
-    _nameController.dispose();
     super.dispose();
   }
 
@@ -48,7 +46,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     return digits.length >= 9 && digits.length <= 11;
   }
 
-  void _onContinue() {
+  void _onContinue() async {
     if (!_isPhoneValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập số điện thoại hợp lệ')),
@@ -65,15 +63,41 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       return;
     }
 
-    if (_mode == AuthMode.register && _nameController.text.trim().length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập họ và tên')),
-      );
+    final authProvider = context.read<AuthProvider>();
+
+    // 1. Check if phone exists in the backend
+    final phoneExists = await authProvider.checkPhoneExists(_normalizedPhone);
+    
+    // Stop if there was an error during check (authProvider handles its own error message, but we need to check if it's set)
+    if (authProvider.errorMessage != null && authProvider.errorMessage!.startsWith('Lỗi khi kiểm tra')) {
+       if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authProvider.errorMessage!)),
+         );
+       }
+       return;
+    }
+
+    // 2. Validate based on Mode
+    if (_mode == AuthMode.login && !phoneExists) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Số điện thoại chưa được đăng ký với hệ thống')),
+        );
+      }
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
+    if (_mode == AuthMode.register && phoneExists) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Số điện thoại này đã được đăng ký trong db')),
+        );
+      }
+      return;
+    }
 
+    // 3. If validation passes, proceed to send OTP via Firebase
     authProvider.verifyPhoneNumber(
       phoneNumber: _normalizedPhone,
       onCodeSent: (verificationId) {
@@ -83,7 +107,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               role: widget.role,
               mode: _mode,
               phoneNumber: _normalizedPhone,
-              fullName: _mode == AuthMode.register ? _nameController.text.trim() : null,
             ),
           ),
         );
@@ -127,19 +150,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               : 'Tạo tài khoản mới bằng số điện thoại',
           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
-        if (_mode == AuthMode.register) ...[
-          const SizedBox(height: 20),
-          const Text(
-            'Họ và tên',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: _inputDecoration('Nguyễn Văn A'),
-          ),
-        ],
         const SizedBox(height: 20),
         const Text(
           'Số điện thoại',
@@ -243,26 +253,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         AuthPageDots(count: _mode == AuthMode.login ? 3 : 4, activeIndex: 1),
         const SizedBox(height: 24),
       ],
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
     );
   }
 }

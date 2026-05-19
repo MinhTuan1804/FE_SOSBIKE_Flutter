@@ -7,5 +7,7 @@ class ApiEndpoints {
   static const String register = '/Auth/register';
   static const String sendOtp = '/Auth/send-otp';
   static const String verifyOtp = '/Auth/verify-otp';
+  static const String checkPhone = '/Auth/check-phone';
   static const String users = '/users';
+  static const String updateProfile = '/users/profile';
 }

@@ -1,13 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
-import 'package:provider/provider.dart';
-import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
-import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_layout.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
@@ -16,6 +12,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary
 
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/screens/profile_setup_screen.dart';
 import 'package:provider/provider.dart';
 
 class OtpLoginScreen extends StatefulWidget {
@@ -24,75 +21,28 @@ class OtpLoginScreen extends StatefulWidget {
     required this.role,
     required this.mode,
     required this.phoneNumber,
-    this.fullName,
   });
 
   final UserRole role;
   final AuthMode mode;
   final String phoneNumber;
-  final String? fullName;
 
   @override
   State<OtpLoginScreen> createState() => _OtpLoginScreenState();
 }
 
 class _OtpLoginScreenState extends State<OtpLoginScreen> {
-  BackendOtpService? _otpService;
-
   final _controllers = List.generate(6, (_) => TextEditingController());
   final _focusNodes = List.generate(6, (_) => FocusNode());
 
   Timer? _timer;
   int _secondsLeft = 59;
-  bool _sending = true;
   bool _verifying = false;
-  String? _error;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sendOtp());
-  }
-
-  BackendOtpService get _otpSvc =>
-      _otpService ??= context.read<BackendOtpService>();
-
-  Future<void> _sendOtp({bool resend = false}) async {
-    setState(() {
-      _sending = true;
-      _error = null;
-      if (resend) _secondsLeft = 59;
-    });
-
-    try {
-      final result = await _otpSvc.sendOtp(widget.phoneNumber);
-      if (!mounted) return;
-      setState(() => _sending = false);
-      if (!resend) _startTimer();
-
-      if (result.debugCode != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'DEV: Mã OTP ${result.debugCode} (chưa cấu hình ESMS trên server)',
-            ),
-            duration: const Duration(seconds: 8),
-          ),
-        );
-      }
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _sending = false;
-        _error = e.message;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _sending = false;
-        _error = e.toString();
-      });
-    }
+    _startTimer();
   }
 
   void _startTimer() {
@@ -123,33 +73,38 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   void _goBack() => Navigator.of(context).pop();
 
-  Future<void> _onContinue() async {
-    if (_otp.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
-      );
-      return;
-    }
+  String get masked {
+    if (widget.phoneNumber.length < 4) return widget.phoneNumber;
+    return '******${widget.phoneNumber.substring(widget.phoneNumber.length - 4)}';
+  }
 
+  bool get canResend => _secondsLeft == 0;
+
+  Future<void> _resendOtp() async {
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.verifyOtp(
-      _otp,
-      fullName: widget.fullName,
-      userType: widget.role.name.toUpperCase(),
-    );
+    
+    setState(() {
+      _secondsLeft = 59;
+    });
+    _startTimer();
 
-    if (success) {
-      // Đăng nhập thành công, chuyển hướng vào Home
-      if (mounted) {
-        navigateToHome();
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
-        );
-      }
-    }
+    await authProvider.verifyPhoneNumber(
+      phoneNumber: widget.phoneNumber,
+      onCodeSent: (verificationId) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã gửi lại mã OTP thành công')),
+          );
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error)),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _onContinue() async {
@@ -160,21 +115,37 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       return;
     }
 
-    setState(() {
-      _verifying = true;
-      _error = null;
-    });
+    setState(() => _verifying = true);
 
-    try {
-      final result = await _otpSvc.verifyOtp(widget.phoneNumber, _otp);
-      if (!mounted) return;
-      await _goToPassword(otpToken: result.otpToken);
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _verifying = false);
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.verifyOtp(
+      _otp,
+      userType: widget.role.name.toUpperCase(),
+      isRegister: widget.mode == AuthMode.register,
+    );
+
+    if (mounted) setState(() => _verifying = false);
+
+    if (success) {
+      if (mounted) {
+        if (widget.mode == AuthMode.register) {
+          // Đăng ký: chuyển sang nhập thông tin cơ bản
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProfileSetupScreen(),
+            ),
+          );
+        } else {
+          // Đăng nhập: vào thẳng trang chính
+          navigateToHome();
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
+        );
+      }
     }
   }
 
@@ -209,71 +180,47 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           'Đã gửi SMS tới $masked',
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
-        if (_sending) ...[
-          const SizedBox(height: 24),
-          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          const SizedBox(height: 8),
-          const Text(
-            'Đang gửi mã OTP...',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ] else ...[
-          const SizedBox(height: 28),
-          PinCodeFields(
-            controllers: _controllers,
-            focusNodes: _focusNodes,
-          ),
-          const SizedBox(height: 16),
-          if (_error != null)
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.red, fontSize: 13),
-            ),
-          if (_error != null) const SizedBox(height: 8),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              children: [
-                if (_secondsLeft > 0) ...[
-                  const TextSpan(text: 'Nhập trong '),
-                  TextSpan(
-                    text: '$_secondsLeft',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
+        const SizedBox(height: 28),
+        PinCodeFields(
+          controllers: _controllers,
+          focusNodes: _focusNodes,
+        ),
+        const SizedBox(height: 16),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            children: [
+              if (_secondsLeft > 0) ...[
+                const TextSpan(text: 'Nhập trong '),
+                TextSpan(
+                  text: '$_secondsLeft',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const TextSpan(text: ' giây'),
-                ] else
-                  const TextSpan(text: 'Bạn có thể gửi lại mã'),
-              ],
-            ),
-          ),
-          if (canResend) ...[
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => _sendOtp(resend: true),
-              child: const Text(
-                'Gửi lại OTP',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
                 ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          SosPrimaryButton(
-            label: 'Tiếp Tục',
-            isLoading: _verifying,
-            onPressed: (_sending || _verifying) ? null : _onContinue,
+                const TextSpan(text: ' giây'),
+              ] else
+                const TextSpan(text: 'Bạn có thể gửi lại mã'),
+            ],
           ),
         ),
-        const SizedBox(height: 32),
-        authProvider.isLoading
+        if (canResend) ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _resendOtp,
+            child: const Text(
+              'Gửi lại OTP',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        authProvider.isLoading || _verifying
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 20),
