@@ -14,6 +14,10 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_d
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fields.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
+import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+
 class OtpLoginScreen extends StatefulWidget {
   const OtpLoginScreen({
     super.key,
@@ -119,18 +123,33 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   void _goBack() => Navigator.of(context).pop();
 
-  Future<void> _goToPassword({required String otpToken}) async {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PasswordLoginScreen(
-          role: widget.role,
-          mode: widget.mode,
-          phoneNumber: widget.phoneNumber,
-          fullName: widget.fullName,
-          otpToken: otpToken,
-        ),
-      ),
+  Future<void> _onContinue() async {
+    if (_otp.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
+      );
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.verifyOtp(
+      _otp,
+      fullName: widget.fullName,
+      userType: widget.role.name.toUpperCase(),
     );
+
+    if (success) {
+      // Đăng nhập thành công, chuyển hướng vào Home
+      if (mounted) {
+        navigateToHome();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
+        );
+      }
+    }
   }
 
   Future<void> _onContinue() async {
@@ -161,8 +180,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final masked = widget.phoneNumber;
-    final canResend = !_sending && _secondsLeft <= 0;
+    final authProvider = context.watch<AuthProvider>();
 
     return AuthFormLayout(
       children: [
@@ -253,7 +271,11 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
             isLoading: _verifying,
             onPressed: (_sending || _verifying) ? null : _onContinue,
           ),
-        ],
+        ),
+        const SizedBox(height: 32),
+        authProvider.isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 20),
         const AuthPageDots(count: 4, activeIndex: 2),
         const SizedBox(height: 24),

@@ -11,7 +11,9 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_mode_s
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/social_auth_button.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
+import 'package:provider/provider.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
   const PhoneLoginScreen({super.key, required this.role});
@@ -38,7 +40,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     var digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
     if (digits.startsWith('84')) digits = digits.substring(2);
     if (digits.startsWith('0')) digits = digits.substring(1);
-    return '0$digits';
+    return '+84$digits';
   }
 
   bool get _isPhoneValid {
@@ -70,34 +72,36 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       return;
     }
 
-    if (_mode == AuthMode.login) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PasswordLoginScreen(
-            role: widget.role,
-            mode: AuthMode.login,
-            phoneNumber: _normalizedPhone,
+    final authProvider = context.read<AuthProvider>();
+
+    authProvider.verifyPhoneNumber(
+      phoneNumber: _normalizedPhone,
+      onCodeSent: (verificationId) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OtpLoginScreen(
+              role: widget.role,
+              mode: _mode,
+              phoneNumber: _normalizedPhone,
+              fullName: _mode == AuthMode.register ? _nameController.text.trim() : null,
+            ),
           ),
-        ),
-      );
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => OtpLoginScreen(
-            role: widget.role,
-            mode: _mode,
-            phoneNumber: _normalizedPhone,
-            fullName: _nameController.text.trim(),
-          ),
-        ),
-      );
-    }
+        );
+      },
+      onError: (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error)),
+        );
+      },
+    );
   }
 
   void _goBack() => authPop(context);
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
     return AuthFormLayout(
       children: [
         AuthBackHeader(onBack: _goBack),
@@ -186,7 +190,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           ),
         ),
         const SizedBox(height: 28),
-        SosPrimaryButton(label: 'Tiếp tục', onPressed: _onContinue),
+        authProvider.isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : SosPrimaryButton(label: 'Tiếp tục', onPressed: _onContinue),
         const SizedBox(height: 20),
         Row(
           children: [
