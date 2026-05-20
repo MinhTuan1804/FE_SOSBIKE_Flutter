@@ -93,7 +93,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       onCodeSent: (verificationId) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ÄÃ£ gá»­i láº¡i mÃ£ OTP thÃ nh cÃ´ng')),
+            const SnackBar(content: Text('Đã gửi lại mã OTP thành công')),
           );
         }
       },
@@ -110,7 +110,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   Future<void> _onContinue() async {
     if (_otp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lÃ²ng nháº­p Ä‘á»§ 6 sá»‘ OTP')),
+        const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
       );
       return;
     }
@@ -129,21 +129,21 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     if (success) {
       if (mounted) {
         if (widget.mode == AuthMode.register) {
-          // ÄÄƒng kÃ½: chuyá»ƒn sang nháº­p thÃ´ng tin cÆ¡ báº£n
+          // Đăng ký: chuyển sang nhập thông tin cơ bản
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const ProfileSetupScreen(),
             ),
           );
         } else {
-          // ÄÄƒng nháº­p: vÃ o tháº³ng trang chÃ­nh
+          // Đăng nhập: vào thẳng trang chính
           navigateToHome();
         }
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'XÃ¡c thá»±c OTP tháº¥t báº¡i')),
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
         );
       }
     }
@@ -163,12 +163,12 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Vui lÃ²ng nháº­p',
+          'Vui lòng nhập',
           style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 6),
         const Text(
-          'MÃ£ OTP',
+          'Mã OTP',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w800,
@@ -177,7 +177,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'ÄÃ£ gá»­i SMS tá»›i $masked',
+          'Đã gửi SMS tới $masked',
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 28),
@@ -192,7 +192,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
             style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
             children: [
               if (_secondsLeft > 0) ...[
-                const TextSpan(text: 'Nháº­p trong '),
+                const TextSpan(text: 'Nhập trong '),
                 TextSpan(
                   text: '$_secondsLeft',
                   style: const TextStyle(
@@ -200,9 +200,9 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const TextSpan(text: ' giÃ¢y'),
+                const TextSpan(text: ' giây'),
               ] else
-                const TextSpan(text: 'Báº¡n cÃ³ thá»ƒ gá»­i láº¡i mÃ£'),
+                const TextSpan(text: 'Bạn có thể gửi lại mã'),
             ],
           ),
         ),
@@ -211,7 +211,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           TextButton(
             onPressed: _resendOtp,
             child: const Text(
-              'Gá»­i láº¡i OTP',
+              'Gửi lại OTP',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,
@@ -222,7 +222,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         const SizedBox(height: 24),
         authProvider.isLoading || _verifying
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : SosPrimaryButton(label: 'Tiáº¿p Tá»¥c', onPressed: _onContinue),
+            : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 20),
         const AuthPageDots(count: 4, activeIndex: 2),
         const SizedBox(height: 24),

@@ -23,7 +23,7 @@ class CustomerDashboardTab extends StatelessWidget {
                     Expanded(
                       child: _ActionCard(
                         icon: Icons.shield_outlined,
-                        title: 'Cáº£nh bÃ¡o nguy hiá»ƒm',
+                        title: 'Cảnh báo nguy hiểm',
                         onTap: () {},
                       ),
                     ),
@@ -31,7 +31,7 @@ class CustomerDashboardTab extends StatelessWidget {
                     Expanded(
                       child: _ActionCard(
                         icon: Icons.location_on_outlined,
-                        title: 'Chia sáº» lá»™ trÃ¬nh',
+                        title: 'Chia sẻ lộ trình',
                         onTap: () {},
                       ),
                     ),
@@ -85,7 +85,7 @@ class CustomerDashboardTab extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             const Text(
-                              'Sá»• báº£o dÆ°á»¡ng',
+                              'Sổ bảo dưỡng',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -101,8 +101,8 @@ class CustomerDashboardTab extends StatelessWidget {
                         _MaintenanceItem(
                           icon: Icons.water_drop,
                           iconColor: Colors.red,
-                          title: 'Dáº§u Ä‘á»™ng cÆ¡',
-                          subtitle: 'Ká»³ thay: 200km',
+                          title: 'Dầu động cơ',
+                          subtitle: 'Kỳ thay: 200km',
                           percentage: 0,
                           progressColor: Colors.red,
                         ),
@@ -111,8 +111,8 @@ class CustomerDashboardTab extends StatelessWidget {
                         _MaintenanceItem(
                           icon: Icons.adjust,
                           iconColor: Colors.green,
-                          title: 'MÃ¡ phanh',
-                          subtitle: 'Cáº§n thay tháº¿ sau má»—i 1000km',
+                          title: 'Má phanh',
+                          subtitle: 'Cần thay thế sau mỗi 1000km',
                           percentage: 89,
                           progressColor: Colors.green,
                         ),
@@ -121,14 +121,14 @@ class CustomerDashboardTab extends StatelessWidget {
                         _MaintenanceItem(
                           icon: Icons.tire_repair,
                           iconColor: Colors.green,
-                          title: 'Lá»‘p xe',
-                          subtitle: 'TÃ¬nh tráº¡ng tá»‘t',
+                          title: 'Lốp xe',
+                          subtitle: 'Tình trạng tốt',
                           percentage: 74,
                           progressColor: Colors.green,
                         ),
                         const SizedBox(height: 16),
 
-                        // Äáº·t lá»‹ch button
+                        // Đặt lịch button
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
@@ -142,7 +142,7 @@ class CustomerDashboardTab extends StatelessWidget {
                             minimumSize: const Size(100, 36),
                           ),
                           child: const Text(
-                            'Äáº·t lá»‹ch',
+                            'Đặt lịch',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -223,7 +223,7 @@ class _SosBanner extends StatelessWidget {
               onPressed: () {},
               icon: const Icon(Icons.emergency, color: Colors.white, size: 20),
               label: const Text(
-                'Báº¯t Ä‘áº§u',
+                'Bắt đầu',
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(

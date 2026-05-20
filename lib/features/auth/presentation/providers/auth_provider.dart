@@ -27,12 +27,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   bool get authReady => _authReady;
   UserResponseDto? get user => _user;
-  String get displayName => _displayName ?? _user?.fullName ?? 'KhÃ¡ch hÃ ng';
+  String get displayName => _displayName ?? _user?.fullName ?? 'Khách hàng';
 
   String? _userType;
   String? get userType => _userType ?? _user?.userType;
 
-  /// TrÃ¡nh káº¹t mÃ n tráº¯ng náº¿u secure storage / token check khÃ´ng tráº£ vá».
+  /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {
     if (_authReady) return;
     _authReady = true;
@@ -68,7 +68,7 @@ class AuthProvider extends ChangeNotifier {
       final exists = await _repository.checkPhoneExists(phoneNumber);
       return exists;
     } catch (e) {
-      _errorMessage = 'Lá»—i khi kiá»ƒm tra sá»‘ Ä‘iá»‡n thoáº¡i: ${e.toString()}';
+      _errorMessage = 'Lỗi khi kiểm tra số điện thoại: ${e.toString()}';
       return false; // Safely return false or handle otherwise
     } finally {
       _isLoading = false;
@@ -89,11 +89,11 @@ class AuthProvider extends ChangeNotifier {
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          // Tá»± Ä‘á»™ng xÃ¡c thá»±c trÃªn Android náº¿u cÃ³ thá»ƒ
+          // Tự động xác thực trên Android nếu có thể
           await _signInWithCredential(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
-          _errorMessage = e.message ?? 'XÃ¡c thá»±c sá»‘ Ä‘iá»‡n thoáº¡i tháº¥t báº¡i';
+          _errorMessage = e.message ?? 'Xác thực số điện thoại thất bại';
           _isLoading = false;
           notifyListeners();
           onError(_errorMessage!);
@@ -118,7 +118,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> verifyOtp(String smsCode, {String? fullName, String? userType, required bool isRegister}) async {
     if (_verificationId == null) {
-      _errorMessage = 'Thiáº¿u mÃ£ xÃ¡c thá»±c (Verification ID)';
+      _errorMessage = 'Thiếu mã xác thực (Verification ID)';
       notifyListeners();
       return false;
     }
@@ -134,7 +134,7 @@ class AuthProvider extends ChangeNotifier {
       );
       return await _signInWithCredential(credential, fullName: fullName, userType: userType, isRegister: isRegister);
     } catch (e) {
-      _errorMessage = 'MÃ£ OTP khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ háº¿t háº¡n';
+      _errorMessage = 'Mã OTP không hợp lệ hoặc đã hết hạn';
       debugPrint('AuthProvider.verifyOtp error: $e');
       return false;
     } finally {
@@ -149,20 +149,20 @@ class AuthProvider extends ChangeNotifier {
       final user = userCredential.user;
 
       if (user != null) {
-        // Láº¥y Firebase ID Token
+        // Lấy Firebase ID Token
         final idToken = await user.getIdToken();
         if (idToken != null) {
 
           if (isRegister) {
-            // KHÃ”NG Gá»ŒI API ÄÄ‚NG KÃ (REGISTER) NGAY LÃšC NÃ€Y Ná»®A
-            // Chá»‰ tráº£ vá» true Ä‘á»ƒ cho phÃ©p qua mÃ n hÃ¬nh OTP -> Profile Setup.
-            // Profile Setup sáº½ gá»i API Register sau.
+            // KHÔNG GỌI API ĐĂNG KÝ (REGISTER) NGAY LÚC NÀY NỮA
+            // Chỉ trả về true để cho phép qua màn hình OTP -> Profile Setup.
+            // Profile Setup sẽ gọi API Register sau.
             return true;
           } else {
-             // Gá»i Backend API ÄÄƒng nháº­p Firebase (Login)
+             // Gọi Backend API Đăng nhập Firebase (Login)
              final response = await _repository.firebaseLogin(
                idToken,
-               fullName: null, // Báº¯t buá»™c null Ä‘á»ƒ Backend hiá»ƒu lÃ  Login
+               fullName: null, // Bắt buộc null để Backend hiểu là Login
                userType: userType,
             );
             await _persistSession(response);
@@ -175,10 +175,10 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (e) {
        if (e.toString().contains('DioException')) {
-         // TrÃ­ch xuáº¥t message tá»« BE tráº£ vá» (vÃ­ dá»¥: Sá»‘ Ä‘iá»‡n thoáº¡i chÆ°a Ä‘Æ°á»£c Ä‘Äƒng kÃ½...)
+         // Trích xuất message từ BE trả về (ví dụ: Số điện thoại chưa được đăng ký...)
          _errorMessage = e.toString();
        } else {
-         _errorMessage = 'Lá»—i há»‡ thá»‘ng khi xÃ¡c thá»±c vá»›i backend';
+         _errorMessage = 'Lỗi hệ thống khi xác thực với backend';
        }
       debugPrint('AuthProvider._signInWithCredential error: $e');
       return false;
@@ -241,8 +241,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Cáº­p nháº­t thÃ´ng tin cÆ¡ báº£n (Há» tÃªn, NgÃ y sinh, Giá»›i tÃ­nh, Email, MÃ£ giá»›i thiá»‡u, Avatar)
-  /// sau khi Ä‘Äƒng kÃ½ thÃ nh cÃ´ng.
+  /// Cập nhật thông tin cơ bản (Họ tên, Ngày sinh, Giới tính, Email, Mã giới thiệu, Avatar)
+  /// sau khi đăng ký thành công.
   Future<bool> updateProfile({
     required String fullName,
     required DateTime dateOfBirth,

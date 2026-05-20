@@ -16,7 +16,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main
 
 
 
-/// MÃ n khá»Ÿi Ä‘á»™ng: chá» kiá»ƒm tra token, rá»“i hiá»ƒn thá»‹ Ä‘Äƒng nháº­p hoáº·c shell chÃ­nh.
+/// Màn khởi động: chờ kiểm tra token, rồi hiển thị đăng nhập hoặc shell chính.
 
 class AuthGate extends StatefulWidget {
 

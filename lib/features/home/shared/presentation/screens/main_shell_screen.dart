@@ -10,7 +10,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
 
-/// Shell sau Ä‘Äƒng nháº­p: header + ná»™i dung tab + bottom nav + FAB SOS (Figma).
+/// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
@@ -90,13 +90,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ÄÄƒng xuáº¥t'),
-        content: const Text('Báº¡n cÃ³ muá»‘n Ä‘Äƒng xuáº¥t?'),
+        title: const Text('Đăng xuất'),
+        content: const Text('Bạn có muốn đăng xuất?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Há»§y')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('ÄÄƒng xuáº¥t', style: TextStyle(color: AppColors.primary)),
+            child: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -113,12 +113,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ? const CustomerDashboardTab()
           : const MechanicDashboardTab(),
       MainNavTab.history => const MainPlaceholderTab(
-          title: 'Lá»‹ch sá»­',
+          title: 'Lịch sử',
           iconAsset: 'assets/images/main/nav_history.png',
         ),
       MainNavTab.wallet => const MembershipScreen(),
       MainNavTab.maintenance => const MainPlaceholderTab(
-          title: 'Báº£o trÃ¬',
+          title: 'Bảo trì',
           iconAsset: 'assets/images/main/nav_maintenance.png',
         ),
     };

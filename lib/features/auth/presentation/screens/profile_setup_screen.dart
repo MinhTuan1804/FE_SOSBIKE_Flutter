@@ -16,7 +16,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_d
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
-/// MÃ n hÃ¬nh nháº­p thÃ´ng tin cÆ¡ báº£n sau khi xÃ¡c thá»±c OTP thÃ nh cÃ´ng (Ä‘Äƒng kÃ½).
+/// Màn hình nhập thông tin cơ bản sau khi xác thực OTP thành công (đăng ký).
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -57,7 +57,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         setState(() => _avatarFile = File(picked.path));
       }
     } catch (e) {
-      debugPrint('Lá»—i chá»n áº£nh: $e');
+      debugPrint('Lỗi chọn ảnh: $e');
     }
   }
 
@@ -68,11 +68,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       case Gender.male:
         return 'Nam';
       case Gender.female:
-        return 'Ná»¯';
+        return 'Nữ';
       case Gender.other:
-        return 'KhÃ¡c';
+        return 'Khác';
       default:
-        return 'Chá»n giá»›i tÃ­nh';
+        return 'Chọn giới tính';
     }
   }
 
@@ -117,7 +117,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   bool _isEmailValid(String email) {
-    if (email.isEmpty) return true; // Email khÃ´ng báº¯t buá»™c
+    if (email.isEmpty) return true; // Email không bắt buộc
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
@@ -127,28 +127,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     if (name.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lÃ²ng nháº­p há» vÃ  tÃªn (Ã­t nháº¥t 2 kÃ½ tá»±)')),
+        const SnackBar(content: Text('Vui lòng nhập họ và tên (ít nhất 2 ký tự)')),
       );
       return;
     }
 
     if (_selectedDob == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lÃ²ng chá»n ngÃ y sinh')),
+        const SnackBar(content: Text('Vui lòng chọn ngày sinh')),
       );
       return;
     }
 
     if (_selectedGender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lÃ²ng chá»n giá»›i tÃ­nh')),
+        const SnackBar(content: Text('Vui lòng chọn giới tính')),
       );
       return;
     }
 
     if (!_isEmailValid(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email khÃ´ng há»£p lá»‡')),
+        const SnackBar(content: Text('Email không hợp lệ')),
       );
       return;
     }
@@ -157,12 +157,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     final authProvider = context.read<AuthProvider>();
 
-    // á»ž bÆ°á»›c nÃ y, user Ä‘Ã£ qua OTP nhÆ°ng chÆ°a Ä‘Æ°á»£c lÆ°u vÃ o database.
-    // Firebase auth token váº«n cÃ²n, ta láº¥y sÄ‘t tá»« Firebase
+    // Ở bước này, user đã qua OTP nhưng chưa được lưu vào database.
+    // Firebase auth token vẫn còn, ta lấy sđt từ Firebase
     final firebaseUser = authProvider.user == null ? FirebaseAuth.instance.currentUser : null;
     final phone = firebaseUser?.phoneNumber ?? '';
 
-    // Gá»i hÃ m Register Ä‘á»ƒ chÃ­nh thá»©c táº¡o user trong há»‡ thá»‘ng BE
+    // Gọi hàm Register để chính thức tạo user trong hệ thống BE
     final success = await authProvider.register(
       phoneNumber: phone,
       password: 'firebase_auth_no_password',
@@ -173,7 +173,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
 
     if (success) {
-      // Náº¿u Ä‘Äƒng kÃ½ thÃ nh cÃ´ng, tuá»³ chá»n cáº­p nháº­t thÃªm ngÃ y sinh, giá»›i tÃ­nh, avatar
+      // Nếu đăng ký thành công, tuỳ chọn cập nhật thêm ngày sinh, giới tính, avatar
       await authProvider.updateProfile(
         fullName: name,
         dateOfBirth: _selectedDob!,
@@ -194,14 +194,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'ÄÄƒng kÃ½ há»“ sÆ¡ tháº¥t báº¡i'),
+            content: Text(authProvider.errorMessage ?? 'Đăng ký hồ sơ thất bại'),
           ),
         );
       }
     }
   }
 
-  // â”€â”€ Reusable input decoration â”€â”€
+  // ── Reusable input decoration ──
   InputDecoration _fieldDecoration(String hint, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
@@ -225,7 +225,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  // â”€â”€ Field label â”€â”€
+  // ── Field label ──
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -247,7 +247,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         AuthBackHeader(onBack: _goBack),
         const SizedBox(height: 24),
 
-        // â”€â”€ Avatar â”€â”€
+        // ── Avatar ──
         Center(
           child: GestureDetector(
             onTap: _pickAvatar,
@@ -284,18 +284,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 28),
 
-        // â”€â”€ Há» vÃ  TÃªn â”€â”€
-        _label('Há» vÃ  TÃªn'),
+        // ── Họ và Tên ──
+        _label('Họ và Tên'),
         TextField(
           controller: _nameController,
           textCapitalization: TextCapitalization.words,
-          decoration: _fieldDecoration('Tráº§n KhÃ¡nh Linh'),
+          decoration: _fieldDecoration('Trần Khánh Linh'),
         ),
 
         const SizedBox(height: 20),
 
-        // â”€â”€ NgÃ y sinh â”€â”€
-        _label('NgÃ y sinh'),
+        // ── Ngày sinh ──
+        _label('Ngày sinh'),
         GestureDetector(
           onTap: _pickDob,
           child: Container(
@@ -310,7 +310,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 Text(
                   _selectedDob != null
                       ? DateFormat('dd/MM/yyyy').format(_selectedDob!)
-                      : 'Chá»n ngÃ y sinh',
+                      : 'Chọn ngày sinh',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -331,8 +331,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 20),
 
-        // â”€â”€ Giá»›i tÃ­nh â”€â”€
-        _label('Giá»›i tÃ­nh'),
+        // ── Giới tính ──
+        _label('Giới tính'),
         Row(
           children: Gender.values.map((g) {
             final isSelected = _selectedGender == g;
@@ -341,9 +341,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               case Gender.male:
                 label = 'Nam';
               case Gender.female:
-                label = 'Ná»¯';
+                label = 'Nữ';
               case Gender.other:
-                label = 'KhÃ¡c';
+                label = 'Khác';
             }
             return Expanded(
               child: Padding(
@@ -389,7 +389,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 20),
 
-        // â”€â”€ Email â”€â”€
+        // ── Email ──
         _label('Email'),
         TextField(
           controller: _emailController,
@@ -406,8 +406,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 20),
 
-        // â”€â”€ MÃ£ giá»›i thiá»‡u â”€â”€
-        _label('MÃ£ giá»›i thiá»‡u (náº¿u cÃ³)'),
+        // ── Mã giới thiệu ──
+        _label('Mã giới thiệu (nếu có)'),
         TextField(
           controller: _referralController,
           textCapitalization: TextCapitalization.characters,
@@ -415,7 +415,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
           ],
           decoration: _fieldDecoration(
-            'Nháº­p mÃ£ giá»›i thiá»‡u',
+            'Nhập mã giới thiệu',
             suffixIcon: const Icon(
               Icons.card_giftcard_outlined,
               color: AppColors.textSecondary,
@@ -426,12 +426,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 36),
 
-        // â”€â”€ NÃºt Tiáº¿p Tá»¥c â”€â”€
+        // ── Nút Tiếp Tục ──
         _saving
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               )
-            : SosPrimaryButton(label: 'Tiáº¿p Tá»¥c', onPressed: _onContinue),
+            : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
 
         const SizedBox(height: 20),
         const AuthPageDots(count: 4, activeIndex: 3),
