@@ -30,36 +30,46 @@ class UserResponseDto {
     this.avatarUrl,
   });
 
-  factory UserResponseDto.fromJson(Map<String, dynamic> json) =>
-      _$UserResponseDtoFromJson(json);
+  factory UserResponseDto.fromJson(Map<String, dynamic> json) {
+    return UserResponseDto(
+      userID: json['userID'] ?? json['userid'] ?? '',
+      fullName: json['fullName'] ?? json['fullname'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? json['phonenumber'] ?? '',
+      email: json['email'],
+      userType: json['userType'] ?? json['usertype'] ?? 'CUSTOMER',
+      avatarUrl: json['avatarUrl'] ?? json['avatarurl'],
+    );
+  }
 }
 
 @JsonSerializable()
 class AuthResponse {
   final String accessToken;
-  final String refreshToken;
+  final String? refreshToken;
   final DateTime accessTokenExpiry;
   final UserResponseDto user;
 
   AuthResponse({
     required this.accessToken,
-    required this.refreshToken,
+    this.refreshToken,
     required this.accessTokenExpiry,
     required this.user,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    final expiryRaw = json['accessTokenExpiry'];
+    final expiryRaw = json['accessTokenExpiry'] ?? json['exp'];
     DateTime expiry;
     if (expiryRaw is String) {
       expiry = DateTime.tryParse(expiryRaw) ??
           DateTime.now().toUtc().add(const Duration(hours: 1));
+    } else if (expiryRaw is int) {
+      expiry = DateTime.fromMillisecondsSinceEpoch(expiryRaw * 1000);
     } else {
       expiry = DateTime.now().toUtc().add(const Duration(hours: 1));
     }
     return AuthResponse(
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
+      accessToken: (json['accessToken'] ?? json['token']) as String,
+      refreshToken: json['refreshToken'] as String?,
       accessTokenExpiry: expiry,
       user: UserResponseDto.fromJson(json['user'] as Map<String, dynamic>),
     );

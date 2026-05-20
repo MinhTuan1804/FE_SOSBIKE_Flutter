@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
 /// Tab Đơn hàng — dashboard theo Figma.
-class HomeDashboardTab extends StatelessWidget {
-  const HomeDashboardTab({super.key});
+class MechanicDashboardTab extends StatelessWidget {
+  const MechanicDashboardTab({super.key});
 
   @override
   Widget build(BuildContext context) {
