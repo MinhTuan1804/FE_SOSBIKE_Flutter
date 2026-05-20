@@ -2,7 +2,7 @@ class ApiEndpoints {
   /// BE deploy (nginx) — HTTP. Emulator local: `http://10.0.2.2:<port>/api`; máy thật: IP LAN hoặc URL này.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.2.105:5200/api',
+    defaultValue: 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api',
   );
 
   static const String login = '/Auth/login';
@@ -13,6 +13,7 @@ class ApiEndpoints {
   static const String checkPhone = '/Auth/check-phone';
   static const String users = '/users';
   static const String updateProfile = '/users/profile';
+
   static const String membershipPlans = '/customer-memberships/plans';
   static const String currentMembership = '/customer-memberships/me';
   static const String subscribeMembership = '/customer-memberships/subscribe';
@@ -20,4 +21,5 @@ class ApiEndpoints {
   static const String resetMembershipTest = '/customer-memberships/me/dev-reset';
   static const String paymentIntents = '/payments/intents';
   static const String payments = '/payments';
+
 }

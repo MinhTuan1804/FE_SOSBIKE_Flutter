@@ -173,7 +173,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
 
     if (success) {
-      // Nếu đăng ký thành công, tuỳ chọn cập nhật thêm ngày sinh, giới tính, avatar
+      // Nếu đăng ký thành công, tùy chọn cập nhật thêm ngày sinh, giới tính, avatar
       await authProvider.updateProfile(
         fullName: name,
         dateOfBirth: _selectedDob!,

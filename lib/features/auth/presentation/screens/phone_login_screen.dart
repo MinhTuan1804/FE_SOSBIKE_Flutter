@@ -91,7 +91,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (_mode == AuthMode.register && phoneExists) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Số điện thoại này đã được đăng ký trong db')),
+          const SnackBar(content: Text('Số điện thoại này đã được đăng ký trong DB')),
         );
       }
       return;
