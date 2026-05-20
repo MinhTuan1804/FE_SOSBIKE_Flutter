@@ -49,7 +49,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   void _onContinue() async {
     if (!_isPhoneValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lÃ²ng nháº­p sá»‘ Ä‘iá»‡n thoáº¡i há»£p lá»‡')),
+        const SnackBar(content: Text('Vui lòng nhập số điện thoại hợp lệ')),
       );
       return;
     }
@@ -57,7 +57,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (widget.role == UserRole.mechanic) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Thá»£ mÃ¡y chÆ°a Ä‘Æ°á»£c há»— trá»£. Vui lÃ²ng chá»n NgÆ°á»i Ä‘i xe.'),
+          content: Text('Thợ máy chưa được hỗ trợ. Vui lòng chọn Người đi xe.'),
         ),
       );
       return;
@@ -69,7 +69,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     final phoneExists = await authProvider.checkPhoneExists(_normalizedPhone);
 
     // Stop if there was an error during check (authProvider handles its own error message, but we need to check if it's set)
-    if (authProvider.errorMessage != null && authProvider.errorMessage!.startsWith('Lá»—i khi kiá»ƒm tra')) {
+    if (authProvider.errorMessage != null && authProvider.errorMessage!.startsWith('Lỗi khi kiểm tra')) {
        if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(authProvider.errorMessage!)),
@@ -82,7 +82,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (_mode == AuthMode.login && !phoneExists) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sá»‘ Ä‘iá»‡n thoáº¡i chÆ°a Ä‘Æ°á»£c Ä‘Äƒng kÃ½ vá»›i há»‡ thá»‘ng')),
+          const SnackBar(content: Text('Số điện thoại chưa được đăng ký với hệ thống')),
         );
       }
       return;
@@ -91,7 +91,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (_mode == AuthMode.register && phoneExists) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sá»‘ Ä‘iá»‡n thoáº¡i nÃ y Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½ trong db')),
+          const SnackBar(content: Text('Số điện thoại này đã được đăng ký trong DB')),
         );
       }
       return;
@@ -135,7 +135,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ),
         const SizedBox(height: 28),
         Text(
-          _mode == AuthMode.login ? 'ÄÄƒng nháº­p' : 'ÄÄƒng kÃ½',
+          _mode == AuthMode.login ? 'Đăng nhập' : 'Đăng ký',
           style: const TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w800,
@@ -146,13 +146,13 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         const SizedBox(height: 8),
         Text(
           _mode == AuthMode.login
-              ? 'Nháº­p sá»‘ Ä‘iá»‡n thoáº¡i Ä‘Ã£ Ä‘Äƒng kÃ½'
-              : 'Táº¡o tÃ i khoáº£n má»›i báº±ng sá»‘ Ä‘iá»‡n thoáº¡i',
+              ? 'Nhập số điện thoại đã đăng ký'
+              : 'Tạo tài khoản mới bằng số điện thoại',
           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 20),
         const Text(
-          'Sá»‘ Ä‘iá»‡n thoáº¡i',
+          'Số điện thoại',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
@@ -202,50 +202,50 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         const SizedBox(height: 28),
         authProvider.isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : SosPrimaryButton(label: 'Tiáº¿p tá»¥c', onPressed: _onContinue),
+            : SosPrimaryButton(label: 'Tiếp tục', onPressed: _onContinue),
         const SizedBox(height: 20),
         Row(
           children: [
             Expanded(child: Divider(color: Colors.grey.shade300)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text('Hoáº·c', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text('Hoặc', style: TextStyle(color: Colors.grey.shade600)),
             ),
             Expanded(child: Divider(color: Colors.grey.shade300)),
           ],
         ),
         const SizedBox(height: 16),
         SocialAuthButton(
-          label: 'ÄÄƒng nháº­p báº±ng Google',
+          label: 'Đăng nhập bằng Google',
           iconAsset: 'assets/images/login/btn_google.png',
           border: true,
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('ÄÄƒng nháº­p Google â€” sáº¯p cÃ³')),
+              const SnackBar(content: Text('Đăng nhập Google — sắp có')),
             );
           },
         ),
         const SizedBox(height: 10),
         SocialAuthButton(
-          label: 'ÄÄƒng nháº­p báº±ng Facebook',
+          label: 'Đăng nhập bằng Facebook',
           icon: Icons.facebook,
           background: const Color(0xFFE8F1FF),
           foreground: const Color(0xFF1877F2),
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('ÄÄƒng nháº­p Facebook â€” sáº¯p cÃ³')),
+              const SnackBar(content: Text('Đăng nhập Facebook — sắp có')),
             );
           },
         ),
         const SizedBox(height: 10),
         SocialAuthButton(
-          label: 'ÄÄƒng nháº­p báº±ng Apple',
+          label: 'Đăng nhập bằng Apple',
           icon: Icons.apple,
           background: Colors.black,
           foreground: Colors.white,
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('ÄÄƒng nháº­p Apple â€” sáº¯p cÃ³')),
+              const SnackBar(content: Text('Đăng nhập Apple — sắp có')),
             );
           },
         ),
