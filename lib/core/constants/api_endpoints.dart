@@ -10,7 +10,9 @@ class ApiEndpoints {
   static const String register = '/Auth/register';
   static const String sendOtp = '/Auth/send-otp';
   static const String verifyOtp = '/Auth/verify-otp';
+  static const String checkPhone = '/Auth/check-phone';
   static const String users = '/users';
+  static const String updateProfile = '/users/profile';
   static const String membershipPlans = '/customer-memberships/plans';
   static const String currentMembership = '/customer-memberships/me';
   static const String subscribeMembership = '/customer-memberships/subscribe';

@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/screens/home_dashboard_tab.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/screens/main_placeholder_tab.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/widgets/main_app_header.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/widgets/main_bottom_nav_bar.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_placeholder_tab.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
 
-/// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
+/// Shell sau Ä‘Äƒng nháº­p: header + ná»™i dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
@@ -39,25 +40,27 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 userName: auth.displayName,
                 isOnline: _isOnline,
                 onOnlineChanged: (v) => setState(() => _isOnline = v),
+                userType: auth.userType,
                 onAvatarTap: () => _confirmLogout(context),
               ),
               Expanded(
                 child: ColoredBox(
-                  color: Colors.black,
+                  color: auth.userType == 'CUSTOMER' ? Colors.white : Colors.black,
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
                       Positioned.fill(
                         child: Padding(
                           padding: EdgeInsets.only(bottom: navH * 0.35),
-                          child: _buildBody(),
+                          child: _buildBody(auth.userType),
                         ),
                       ),
-                      Positioned(
-                        right: 12,
-                        bottom: navH + 8,
-                        child: _SosFab(onPressed: () {}),
-                      ),
+                      if (auth.userType != 'CUSTOMER')
+                        Positioned(
+                          right: 12,
+                          bottom: navH + 8,
+                          child: _SosFab(onPressed: () {}),
+                        ),
                     ],
                   ),
                 ),
@@ -69,11 +72,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
             right: 0,
             bottom: 0,
             child: Material(
-              color: Colors.transparent,
+              color: AppColors.primary,
               clipBehavior: Clip.none,
               child: MainBottomNavBar(
                 current: _tab,
                 onChanged: (t) => setState(() => _tab = t),
+                userType: auth.userType,
               ),
             ),
           ),
@@ -86,13 +90,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có muốn đăng xuất?'),
+        title: const Text('ÄÄƒng xuáº¥t'),
+        content: const Text('Báº¡n cÃ³ muá»‘n Ä‘Äƒng xuáº¥t?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Há»§y')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary)),
+            child: const Text('ÄÄƒng xuáº¥t', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -103,16 +107,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(String? userType) {
     return switch (_tab) {
-      MainNavTab.orders => const HomeDashboardTab(),
+      MainNavTab.orders => userType == 'CUSTOMER'
+          ? const CustomerDashboardTab()
+          : const MechanicDashboardTab(),
       MainNavTab.history => const MainPlaceholderTab(
-          title: 'Lịch sử',
+          title: 'Lá»‹ch sá»­',
           iconAsset: 'assets/images/main/nav_history.png',
         ),
       MainNavTab.wallet => const MembershipScreen(),
       MainNavTab.maintenance => const MainPlaceholderTab(
-          title: 'Bảo trì',
+          title: 'Báº£o trÃ¬',
           iconAsset: 'assets/images/main/nav_maintenance.png',
         ),
     };
