@@ -40,7 +40,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     var digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
     if (digits.startsWith('84')) digits = digits.substring(2);
     if (digits.startsWith('0')) digits = digits.substring(1);
-    return '+84$digits';
+    return '0$digits';
   }
 
   bool get _isPhoneValid {
@@ -66,33 +66,34 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     }
 
     if (_mode == AuthMode.register && _nameController.text.trim().length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập họ và tên')),
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng nhập họ và tên')));
+      return;
+    }
+
+    if (_mode == AuthMode.login) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PasswordLoginScreen(
+            role: widget.role,
+            mode: AuthMode.login,
+            phoneNumber: _normalizedPhone,
+          ),
+        ),
       );
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
-
-    authProvider.verifyPhoneNumber(
-      phoneNumber: _normalizedPhone,
-      onCodeSent: (verificationId) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => OtpLoginScreen(
-              role: widget.role,
-              mode: _mode,
-              phoneNumber: _normalizedPhone,
-              fullName: _mode == AuthMode.register ? _nameController.text.trim() : null,
-            ),
-          ),
-        );
-      },
-      onError: (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OtpLoginScreen(
+          role: widget.role,
+          mode: _mode,
+          phoneNumber: _normalizedPhone,
+          fullName: _nameController.text.trim(),
+        ),
+      ),
     );
   }
 
@@ -100,8 +101,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-
     return AuthFormLayout(
       children: [
         AuthBackHeader(onBack: _goBack),
@@ -168,7 +167,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text('+84', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text(
+                      '+84',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
               ),
@@ -181,7 +183,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   decoration: const InputDecoration(
                     hintText: '0977999888',
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
                   ),
                   onSubmitted: (_) => _onContinue(),
                 ),
@@ -190,16 +195,17 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           ),
         ),
         const SizedBox(height: 28),
-        authProvider.isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : SosPrimaryButton(label: 'Tiếp tục', onPressed: _onContinue),
+        SosPrimaryButton(label: 'Tiếp tục', onPressed: _onContinue),
         const SizedBox(height: 20),
         Row(
           children: [
             Expanded(child: Divider(color: Colors.grey.shade300)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text('Hoặc', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text(
+                'Hoặc',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
             ),
             Expanded(child: Divider(color: Colors.grey.shade300)),
           ],

@@ -7,6 +7,7 @@ import 'package:fe_moblie_flutter/features/home/presentation/screens/home_dashbo
 import 'package:fe_moblie_flutter/features/home/presentation/screens/main_placeholder_tab.dart';
 import 'package:fe_moblie_flutter/features/home/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/presentation/widgets/main_bottom_nav_bar.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
 
 /// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
@@ -109,10 +110,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           title: 'Lịch sử',
           iconAsset: 'assets/images/main/nav_history.png',
         ),
-      MainNavTab.wallet => const MainPlaceholderTab(
-          title: 'Ví quản lí',
-          iconAsset: 'assets/images/main/nav_wallet.png',
-        ),
+      MainNavTab.wallet => const MembershipScreen(),
       MainNavTab.maintenance => const MainPlaceholderTab(
           title: 'Bảo trì',
           iconAsset: 'assets/images/main/nav_maintenance.png',

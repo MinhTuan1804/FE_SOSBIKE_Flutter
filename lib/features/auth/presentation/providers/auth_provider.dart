@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +10,7 @@ import 'package:fe_moblie_flutter/features/auth/data/repositories/auth_repositor
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _repository;
   final AuthService _authService;
-  
+
   FirebaseAuth get _firebaseAuth => FirebaseAuth.instance;
 
   AuthProvider(this._repository, this._authService);
@@ -16,6 +18,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isAuthenticated = false;
+  bool _authReady = false;
+  UserResponseDto? _user;
+  String? _displayName;
   String? _verificationId;
 
   bool get isLoading => _isLoading;
@@ -23,13 +28,38 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   bool get authReady => _authReady;
   UserResponseDto? get user => _user;
-  String get displayName => _displayName ?? _user?.fullName ?? 'Khách hàng';
+  String get displayName => _displayName ?? _user?.fullName ?? 'Khach hang';
 
-  /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {
     if (_authReady) return;
     _authReady = true;
     notifyListeners();
+  }
+
+  Future<void> checkAuthStatus() async {
+    try {
+      _isAuthenticated = await _authService.hasValidToken().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => false,
+      );
+      if (_isAuthenticated) {
+        _displayName = await _authService.getUserName().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => null,
+        );
+      } else {
+        _displayName = null;
+        _user = null;
+      }
+    } catch (e, st) {
+      debugPrint('AuthProvider.checkAuthStatus error: $e\n$st');
+      _isAuthenticated = false;
+      _displayName = null;
+      _user = null;
+    } finally {
+      _authReady = true;
+      notifyListeners();
+    }
   }
 
   Future<void> verifyPhoneNumber({
@@ -45,11 +75,10 @@ class AuthProvider extends ChangeNotifier {
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          // Tự động xác thực trên Android nếu có thể
           await _signInWithCredential(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
-          _errorMessage = e.message ?? 'Xác thực số điện thoại thất bại';
+          _errorMessage = e.message ?? 'Xac thuc so dien thoai that bai';
           _isLoading = false;
           notifyListeners();
           onError(_errorMessage!);
@@ -72,9 +101,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> verifyOtp(String smsCode, {String? fullName, String? userType}) async {
+  Future<bool> verifyOtp(
+    String smsCode, {
+    String? fullName,
+    String? userType,
+  }) async {
     if (_verificationId == null) {
-      _errorMessage = 'Thiếu mã xác thực (Verification ID)';
+      _errorMessage = 'Thieu ma xac thuc';
       notifyListeners();
       return false;
     }
@@ -84,13 +117,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+      final credential = PhoneAuthProvider.credential(
         verificationId: _verificationId!,
         smsCode: smsCode,
       );
-      return await _signInWithCredential(credential, fullName: fullName, userType: userType);
+      return await _signInWithCredential(
+        credential,
+        fullName: fullName,
+        userType: userType,
+      );
     } catch (e) {
-      _errorMessage = 'Mã OTP không hợp lệ hoặc đã hết hạn';
+      _errorMessage = 'Ma OTP khong hop le hoac da het han';
       debugPrint('AuthProvider.verifyOtp error: $e');
       return false;
     } finally {
@@ -99,34 +136,42 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> _signInWithCredential(PhoneAuthCredential credential, {String? fullName, String? userType}) async {
+  Future<bool> _signInWithCredential(
+    PhoneAuthCredential credential, {
+    String? fullName,
+    String? userType,
+  }) async {
     try {
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
       final user = userCredential.user;
+      final idToken = await user?.getIdToken();
 
-      if (user != null) {
-        // Lấy Firebase ID Token
-        final idToken = await user.getIdToken();
-        if (idToken != null) {
-          // Gọi Backend của chúng ta
-          final response = await _repository.firebaseLogin(
-            idToken,
-            fullName: fullName,
-            userType: userType,
-          );
-          // Lưu JWT Token nội bộ
-          await _authService.saveToken(response.accessToken);
-          _isAuthenticated = true;
-          notifyListeners();
-          return true;
-        }
-      }
-      return false;
+      if (idToken == null) return false;
+
+      final response = await _repository.firebaseLogin(
+        idToken,
+        fullName: fullName,
+        userType: userType,
+      );
+      await _persistSession(response);
+      notifyListeners();
+      return true;
     } catch (e) {
-      _errorMessage = 'Lỗi hệ thống khi xác thực với backend';
+      _errorMessage = 'Loi he thong khi xac thuc voi backend';
       debugPrint('AuthProvider._signInWithCredential error: $e');
       return false;
     }
+  }
+
+  Future<void> _persistSession(AuthResponse response) async {
+    await _authService.saveToken(response.accessToken);
+    await _authService.saveUserName(response.user.fullName);
+    _user = response.user;
+    _displayName = response.user.fullName;
+    _isAuthenticated = true;
+    _authReady = true;
   }
 
   Future<bool> login(String phoneNumber, String password) async {

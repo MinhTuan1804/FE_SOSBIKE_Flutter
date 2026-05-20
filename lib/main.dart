@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart';
 import 'core/navigation/app_navigator.dart';
 import 'core/navigation/auth_gate.dart';
 import 'core/navigation/auth_navigation.dart';
@@ -13,18 +15,20 @@ import 'features/auth/presentation/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
 import 'features/home/data/repositories/home_repository.dart';
 import 'features/home/presentation/providers/home_provider.dart';
+import 'features/membership/data/repositories/membership_repository.dart';
+import 'features/membership/presentation/providers/membership_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
-    // App vẫn tiếp tục chạy UI để không bị màn hình trắng, 
+    // App vẫn tiếp tục chạy UI để không bị màn hình trắng,
     // nhưng các chức năng Firebase sẽ lỗi cho đến khi cấu hình đúng google-services.json
   }
-  
+
   // 1. Khởi tạo Services dùng chung
   final authService = AuthService();
   final dioClient = DioClient(authService);
@@ -32,6 +36,7 @@ void main() async {
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
   final homeRepository = HomeRepository();
+  final membershipRepository = MembershipRepository(dioClient);
   final backendOtpService = BackendOtpService(dioClient);
 
   final authProvider = AuthProvider(authRepository, authService);
@@ -53,9 +58,8 @@ void main() async {
       providers: [
         Provider<BackendOtpService>.value(value: backendOtpService),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider(
-          create: (_) => HomeProvider(homeRepository),
-        ),
+        ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
+        ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
       ],
       child: const MyApp(),
     ),

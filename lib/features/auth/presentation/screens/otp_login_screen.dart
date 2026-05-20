@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
 import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
 import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
@@ -13,10 +13,6 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_l
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fields.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
-
-import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
-import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 class OtpLoginScreen extends StatefulWidget {
   const OtpLoginScreen({
@@ -68,15 +64,13 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       final result = await _otpSvc.sendOtp(widget.phoneNumber);
       if (!mounted) return;
       setState(() => _sending = false);
-      if (!resend) _startTimer();
+      _startTimer();
 
       if (result.debugCode != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'DEV: Mã OTP ${result.debugCode} (chưa cấu hình ESMS trên server)',
-            ),
-            duration: const Duration(seconds: 8),
+            content: Text('DEV OTP: ${result.debugCode}'),
+            duration: const Duration(seconds: 10),
           ),
         );
       }
@@ -110,52 +104,37 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) {
-      c.dispose();
+    for (final controller in _controllers) {
+      controller.dispose();
     }
-    for (final f in _focusNodes) {
-      f.dispose();
+    for (final focusNode in _focusNodes) {
+      focusNode.dispose();
     }
     super.dispose();
   }
 
-  String get _otp => _controllers.map((c) => c.text).join();
+  String get _otp => _controllers.map((controller) => controller.text).join();
 
   void _goBack() => Navigator.of(context).pop();
 
-  Future<void> _onContinue() async {
-    if (_otp.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
-      );
-      return;
-    }
-
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.verifyOtp(
-      _otp,
-      fullName: widget.fullName,
-      userType: widget.role.name.toUpperCase(),
+  Future<void> _goToPassword({required String otpToken}) async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PasswordLoginScreen(
+          role: widget.role,
+          mode: widget.mode,
+          phoneNumber: widget.phoneNumber,
+          fullName: widget.fullName,
+          otpToken: otpToken,
+        ),
+      ),
     );
-
-    if (success) {
-      // Đăng nhập thành công, chuyển hướng vào Home
-      if (mounted) {
-        navigateToHome();
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
-        );
-      }
-    }
   }
 
   Future<void> _onContinue() async {
     if (_otp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
+        const SnackBar(content: Text('Vui long nhap du 6 so OTP')),
       );
       return;
     }
@@ -180,7 +159,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final canResend = !_sending && _secondsLeft <= 0;
 
     return AuthFormLayout(
       children: [
@@ -192,12 +171,12 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Vui lòng nhập',
+          'Vui long nhap',
           style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Mã OTP',
+          'Ma OTP',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w800,
@@ -206,39 +185,42 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Đã gửi SMS tới $masked',
+          'Da gui SMS toi ${widget.phoneNumber}',
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         if (_sending) ...[
           const SizedBox(height: 24),
-          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
           const SizedBox(height: 8),
           const Text(
-            'Đang gửi mã OTP...',
+            'Dang gui ma OTP...',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.textSecondary),
           ),
         ] else ...[
           const SizedBox(height: 28),
-          PinCodeFields(
-            controllers: _controllers,
-            focusNodes: _focusNodes,
-          ),
+          PinCodeFields(controllers: _controllers, focusNodes: _focusNodes),
           const SizedBox(height: 16),
-          if (_error != null)
+          if (_error != null) ...[
             Text(
               _error!,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red, fontSize: 13),
             ),
-          if (_error != null) const SizedBox(height: 8),
+            const SizedBox(height: 8),
+          ],
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
               children: [
                 if (_secondsLeft > 0) ...[
-                  const TextSpan(text: 'Nhập trong '),
+                  const TextSpan(text: 'Nhap trong '),
                   TextSpan(
                     text: '$_secondsLeft',
                     style: const TextStyle(
@@ -246,9 +228,9 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const TextSpan(text: ' giây'),
+                  const TextSpan(text: ' giay'),
                 ] else
-                  const TextSpan(text: 'Bạn có thể gửi lại mã'),
+                  const TextSpan(text: 'Ban co the gui lai ma'),
               ],
             ),
           ),
@@ -257,7 +239,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
             TextButton(
               onPressed: () => _sendOtp(resend: true),
               child: const Text(
-                'Gửi lại OTP',
+                'Gui lai OTP',
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
@@ -267,15 +249,11 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           ],
           const SizedBox(height: 24),
           SosPrimaryButton(
-            label: 'Tiếp Tục',
+            label: 'Tiep tuc',
             isLoading: _verifying,
             onPressed: (_sending || _verifying) ? null : _onContinue,
           ),
-        ),
-        const SizedBox(height: 32),
-        authProvider.isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-            : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
+        ],
         const SizedBox(height: 20),
         const AuthPageDots(count: 4, activeIndex: 2),
         const SizedBox(height: 24),
