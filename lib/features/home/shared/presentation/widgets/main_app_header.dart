@@ -8,13 +8,17 @@ class MainAppHeader extends StatelessWidget {
     required this.userName,
     required this.isOnline,
     required this.onOnlineChanged,
+    required this.userType,
     this.onAvatarTap,
+    this.onLocationTap,
   });
 
   final String userName;
   final bool isOnline;
   final ValueChanged<bool> onOnlineChanged;
+  final String? userType;
   final VoidCallback? onAvatarTap;
+  final VoidCallback? onLocationTap;
 
   static const _statusStripWidth = 112.0;
   /// Cao hơn avatar (50) để strip Trực tuyến không ép Column trong 42px.
@@ -23,6 +27,7 @@ class MainAppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
+    final isCustomer = userType?.toUpperCase() == 'CUSTOMER';
 
     return Container(
       width: double.infinity,
@@ -53,11 +58,6 @@ class MainAppHeader extends StatelessWidget {
                   child: Container(
                     width: 50,
                     height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      color: Colors.white,
-                    ),
                     child: ClipOval(
                       child: Image.asset(
                         'assets/images/main/avatar_placeholder.png',
@@ -65,7 +65,7 @@ class MainAppHeader extends StatelessWidget {
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.person,
                           color: AppColors.primary,
-                          size: 28,
+                          size: 30,
                         ),
                       ),
                     ),
@@ -111,30 +111,55 @@ class MainAppHeader extends StatelessWidget {
           ),
           Positioned(
             top: 0,
-            right: 0,
+            right: isCustomer ? -20 : 0,
             bottom: 0,
             width: _statusStripWidth,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                color: AppColors.primaryDark,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  bottomLeft: Radius.circular(28),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Center(
+              child: Container(
+                width: isCustomer ? 40 : 80,
+                height: isCustomer ? 40 : 120,
+                decoration: isCustomer
+                    ? const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      )
+                    : const BoxDecoration(
+                        color: AppColors.primaryDark,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(28),
+                          bottomLeft: Radius.circular(28),
+                        ),
+                      ),
                 child: Center(
-                  child: _OnlineStatusBlock(
-                    isOnline: isOnline,
-                    onChanged: onOnlineChanged,
-                  ),
+                  child: isCustomer
+                      ? _LocationButton(onTap: onLocationTap)
+                      : _OnlineStatusBlock(
+                          isOnline: isOnline,
+                          onChanged: onOnlineChanged,
+                        ),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LocationButton extends StatelessWidget {
+  const _LocationButton({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap ?? () {},
+      icon: const Icon(Icons.location_on_rounded),
+      color: AppColors.primary,
+      iconSize: 20,
+      tooltip: 'Vị trí',
     );
   }
 }
@@ -179,8 +204,8 @@ class _OnlineToggle extends StatelessWidget {
 
   static const _trackW = 72.0;
   static const _trackH = 26.0;
-  static const _thumbSize = 20.0;
-  static const _edgePad = 3.0;
+  static const _thumbSize = 14.0;
+  static const _edgePad = 4.0;
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:fe_moblie_flutter/core/network/dio_client.dart';
 import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
@@ -15,7 +16,7 @@ class AuthRepository {
         ApiEndpoints.login,
         data: LoginRequest(phoneNumber: phoneNumber, password: password).toJson(),
       );
-      
+
       return AuthResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
@@ -61,6 +62,51 @@ class AuthRepository {
         },
       );
       return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<bool> checkPhoneExists(String phoneNumber) async {
+    try {
+      final response = await _dioClient.dio.get(
+        ApiEndpoints.checkPhone,
+        queryParameters: {'phoneNumber': phoneNumber},
+      );
+      return response.data['exists'] ?? false;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Cập nhật thông tin cơ bản sau đăng ký.
+  Future<bool> updateProfile({
+    required String fullName,
+    required DateTime dateOfBirth,
+    required String gender,
+    String? email,
+    String? referralCode,
+    File? avatarFile,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'fullName': fullName,
+        'dateOfBirth': dateOfBirth.toIso8601String(),
+        'gender': gender,
+        if (email != null) 'email': email,
+        if (referralCode != null) 'referralCode': referralCode,
+        if (avatarFile != null)
+          'avatar': await MultipartFile.fromFile(
+            avatarFile.path,
+            filename: 'avatar.jpg',
+          ),
+      });
+
+      await _dioClient.dio.put(
+        ApiEndpoints.updateProfile,
+        data: formData,
+      );
+      return true;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

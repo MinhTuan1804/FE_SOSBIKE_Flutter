@@ -80,9 +80,27 @@ class AuthService {
     }
   }
 
+  Future<void> saveUserType(String userType) async {
+    try {
+      await _storage.write(key: 'user_type', value: userType);
+    } catch (e) {
+      debugPrint('AuthService.saveUserType: $e');
+    }
+  }
+
+  Future<String?> getUserType() async {
+    try {
+      return await _storage.read(key: 'user_type');
+    } catch (e) {
+      debugPrint('AuthService.getUserType: $e');
+      return null;
+    }
+  }
+
   Future<void> clearUserProfile() async {
     try {
       await _storage.delete(key: _keyUserName);
+      await _storage.delete(key: 'user_type');
     } catch (e) {
       debugPrint('AuthService.clearUserProfile: $e');
     }
