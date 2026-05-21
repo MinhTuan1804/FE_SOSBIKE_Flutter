@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError('SOSbike chưa cấu hình Firebase cho Web.');
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -17,6 +17,16 @@ class DefaultFirebaseOptions {
         );
     }
   }
+
+  /// Cần thêm app Web trên Firebase Console để bật Firebase Auth trên web.
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDb4RZNDNs0lOIk0_3hJw5L5M8J8sULy14',
+    appId: '1:835951049167:web:0000000000000000000000',
+    messagingSenderId: '835951049167',
+    projectId: 'sosbike-7b6bb',
+    authDomain: 'sosbike-7b6bb.firebaseapp.com',
+    storageBucket: 'sosbike-7b6bb.firebasestorage.app',
+  );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDb4RZNDNs0lOIk0_3hJw5L5M8J8sULy14',

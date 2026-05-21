@@ -25,7 +25,10 @@ class MembershipRepository {
 
   Future<CustomerSubscription?> getCurrentSubscription() async {
     try {
-      final response = await _dioClient.dio.get(ApiEndpoints.currentMembership);
+      final response = await _dioClient.dio.get(
+        ApiEndpoints.currentMembership,
+        options: Options(extra: {'skipAuthLogout': true}),
+      );
       if (response.data == null) return null;
       if (response.data is! Map) return null;
       return CustomerSubscription.fromJson(Map<String, dynamic>.from(response.data));

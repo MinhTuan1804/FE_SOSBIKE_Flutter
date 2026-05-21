@@ -10,30 +10,45 @@ class AuthBackHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onBack,
-          borderRadius: BorderRadius.circular(8),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-                SizedBox(width: 6),
-                Text(
-                  'Quay lại',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showLabel = constraints.maxWidth > 100;
+
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onBack,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                    if (showLabel) ...[
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Quay lại',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

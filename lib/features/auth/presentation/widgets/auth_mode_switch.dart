@@ -34,12 +34,15 @@ class AuthModeSwitch extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  m.label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: selected ? Colors.white : AppColors.textSecondary,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    m.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: selected ? Colors.white : AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ),
