@@ -7,6 +7,7 @@ import 'package:fe_moblie_flutter/core/utils/jwt_utils.dart';
 class AuthService {
   static const _keyToken = 'jwt_token';
   static const _keyUserName = 'user_full_name';
+  static const _keyAvatarUrl = 'user_avatar_url';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -24,11 +25,14 @@ class AuthService {
   }
 
   Future<String?> getToken() async {
+    if (_memoryToken != null && _memoryToken!.isNotEmpty) {
+      return _memoryToken;
+    }
     try {
       final stored = await _storage
           .read(key: _keyToken)
           .timeout(const Duration(seconds: 3), onTimeout: () => null);
-      if (stored != null) {
+      if (stored != null && stored.isNotEmpty) {
         _memoryToken = stored;
         return stored;
       }
@@ -97,10 +101,32 @@ class AuthService {
     }
   }
 
+  Future<void> saveAvatarUrl(String? url) async {
+    try {
+      if (url == null || url.isEmpty) {
+        await _storage.delete(key: _keyAvatarUrl);
+      } else {
+        await _storage.write(key: _keyAvatarUrl, value: url);
+      }
+    } catch (e) {
+      debugPrint('AuthService.saveAvatarUrl: $e');
+    }
+  }
+
+  Future<String?> getAvatarUrl() async {
+    try {
+      return await _storage.read(key: _keyAvatarUrl);
+    } catch (e) {
+      debugPrint('AuthService.getAvatarUrl: $e');
+      return null;
+    }
+  }
+
   Future<void> clearUserProfile() async {
     try {
       await _storage.delete(key: _keyUserName);
       await _storage.delete(key: 'user_type');
+      await _storage.delete(key: _keyAvatarUrl);
     } catch (e) {
       debugPrint('AuthService.clearUserProfile: $e');
     }

@@ -37,10 +37,14 @@ class DioClient {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
-          await _authService.deleteToken();
-          await _authService.clearUserProfile();
-          await onUnauthorized?.call();
+        if (e.response?.statusCode == 401 &&
+            e.requestOptions.extra['skipAuthLogout'] != true) {
+          final hadAuth = e.requestOptions.headers['Authorization'] != null;
+          if (hadAuth) {
+            await _authService.deleteToken();
+            await _authService.clearUserProfile();
+            await onUnauthorized?.call();
+          }
         }
         return handler.next(e);
       },

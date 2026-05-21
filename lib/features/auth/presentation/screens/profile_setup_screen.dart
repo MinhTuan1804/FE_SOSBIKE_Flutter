@@ -9,6 +9,8 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
+import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_layout.dart';
@@ -18,7 +20,14 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary
 
 /// Màn hình nhập thông tin cơ bản sau khi xác thực OTP thành công (đăng ký).
 class ProfileSetupScreen extends StatefulWidget {
-  const ProfileSetupScreen({super.key});
+  const ProfileSetupScreen({
+    super.key,
+    required this.role,
+    required this.phoneNumber,
+  });
+
+  final UserRole role;
+  final String phoneNumber;
 
   @override
   State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -30,6 +39,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _referralController = TextEditingController();
+  final _identityController = TextEditingController();
+  final _plateController = TextEditingController();
 
   DateTime? _selectedDob;
   Gender? _selectedGender;
@@ -41,8 +52,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _referralController.dispose();
+    _identityController.dispose();
+    _plateController.dispose();
     super.dispose();
   }
+
+  bool get _isMechanic => widget.role == UserRole.mechanic;
 
   Future<void> _pickAvatar() async {
     try {
@@ -153,23 +168,41 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       return;
     }
 
+    final identity = _identityController.text.trim();
+    final plate = _plateController.text.trim().toUpperCase();
+    if (_isMechanic) {
+      if (identity.length < 6) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Số CCCD/CMND không hợp lệ')),
+        );
+        return;
+      }
+      if (plate.length < 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biển số xe không hợp lệ')),
+        );
+        return;
+      }
+    }
+
     setState(() => _saving = true);
 
     final authProvider = context.read<AuthProvider>();
 
-    // Ở bước này, user đã qua OTP nhưng chưa được lưu vào database.
-    // Firebase auth token vẫn còn, ta lấy sđt từ Firebase
-    final firebaseUser = authProvider.user == null ? FirebaseAuth.instance.currentUser : null;
-    final phone = firebaseUser?.phoneNumber ?? '';
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    final phone = firebaseUser?.phoneNumber != null
+        ? toLocalVietnamPhone(firebaseUser!.phoneNumber!)
+        : toLocalVietnamPhone(widget.phoneNumber);
 
-    // Gọi hàm Register để chính thức tạo user trong hệ thống BE
     final success = await authProvider.register(
       phoneNumber: phone,
       password: 'firebase_auth_no_password',
       fullName: name,
-      userType: 'CUSTOMER',
+      userType: widget.role.apiValue,
       email: email.isNotEmpty ? email : null,
       firebaseIdToken: await firebaseUser?.getIdToken(),
+      identityCard: _isMechanic ? identity : null,
+      licensePlate: _isMechanic ? plate : null,
     );
 
     if (success) {
@@ -403,6 +436,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
           ),
         ),
+
+        const SizedBox(height: 20),
+
+        if (_isMechanic) ...[
+          const SizedBox(height: 20),
+          _label('Số CCCD / CMND'),
+          TextField(
+            controller: _identityController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            decoration: _fieldDecoration('001234567890'),
+          ),
+          const SizedBox(height: 20),
+          _label('Biển số xe'),
+          TextField(
+            controller: _plateController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: _fieldDecoration('59A1-12345'),
+          ),
+        ],
 
         const SizedBox(height: 20),
 

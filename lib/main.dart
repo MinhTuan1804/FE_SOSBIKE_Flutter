@@ -18,16 +18,21 @@ import 'features/home/data/repositories/home_repository.dart';
 import 'features/home/presentation/providers/home_provider.dart';
 import 'features/membership/data/repositories/membership_repository.dart';
 import 'features/membership/presentation/providers/membership_provider.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
-    // App vẫn tiếp tục chạy UI để không bị màn hình trắng,
-    // nhưng các chức năng Firebase sẽ lỗi cho đến khi cấu hình đúng google-services.json
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      debugPrint('Firebase initialization failed: $e');
+    }
+  } else {
+    debugPrint('Web: đăng nhập bằng mật khẩu / OTP qua BE local.');
   }
 
   // 1. Khởi tạo Services dùng chung
@@ -43,6 +48,7 @@ void main() async {
   final authProvider = AuthProvider(authRepository, authService);
   unawaited(authProvider.checkAuthStatus());
   dioClient.onUnauthorized = () async {
+    if (!authProvider.isAuthenticated) return;
     await authProvider.logout();
     navigateToLogin();
   };

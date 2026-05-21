@@ -1,10 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
+import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
@@ -21,6 +21,9 @@ class PasswordLoginScreen extends StatefulWidget {
     this.fullName,
     this.firebaseIdToken,
     this.otpToken,
+    this.identityCard,
+    this.licensePlate,
+    this.mechanicDraft,
   });
 
   final UserRole role;
@@ -29,6 +32,9 @@ class PasswordLoginScreen extends StatefulWidget {
   final String? fullName;
   final String? firebaseIdToken;
   final String? otpToken;
+  final String? identityCard;
+  final String? licensePlate;
+  final MechanicRegisterDraft? mechanicDraft;
 
   @override
   State<PasswordLoginScreen> createState() => _PasswordLoginScreenState();
@@ -36,31 +42,20 @@ class PasswordLoginScreen extends StatefulWidget {
 
 class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
   final _passwordController = TextEditingController();
-  Timer? _timer;
-  int _secondsLeft = 29;
+  final _passwordFocus = FocusNode();
   bool _obscure = true;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _secondsLeft = 29;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsLeft <= 0) {
-        timer.cancel();
-        return;
-      }
-      if (mounted) setState(() => _secondsLeft--);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _passwordFocus.requestFocus();
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _passwordFocus.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -80,13 +75,27 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
     final bool success;
 
     if (widget.mode == AuthMode.register) {
+      final draft = widget.mechanicDraft;
       success = await auth.register(
         phoneNumber: widget.phoneNumber,
         password: password,
-        fullName: widget.fullName ?? 'Khách hàng',
+        fullName: draft?.fullName ??
+            widget.fullName ??
+            (widget.role == UserRole.mechanic ? 'Thợ SOSbike' : 'Khách hàng'),
         userType: widget.role.apiValue,
         firebaseIdToken: widget.firebaseIdToken,
         otpToken: widget.otpToken,
+        identityCard: draft?.identityCard ?? widget.identityCard,
+        licensePlate: draft?.licensePlate ?? widget.licensePlate,
+        vehicleModel: draft?.vehicleModel,
+        vehicleGeneration: draft?.vehicleGeneration,
+        driverLicenseNumber: draft?.driverLicenseNumber,
+        currentAddress: draft?.currentAddress,
+        dateOfBirth: draft?.dateOfBirth,
+        email: draft?.email,
+        bankName: draft?.bankName,
+        bankAccountNumber: draft?.bankAccountNumber,
+        bankAccountHolder: draft?.bankAccountHolder,
       );
     } else {
       success = await auth.login(widget.phoneNumber, password);
@@ -96,17 +105,44 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.errorMessage ?? 'Thao tác thất bại')),
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Thao tác thất bại'),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
       return;
     }
 
-    navigateToHome();
+    final draft = widget.mechanicDraft;
+    if (draft != null &&
+        draft.portraitFile != null &&
+        draft.vehicleRegistrationFile != null &&
+        draft.vehicleInsuranceFile != null) {
+      final uploaded = await auth.uploadMechanicDocuments(draft);
+      if (!mounted) return;
+      if (!uploaded) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              auth.errorMessage ?? 'Đăng ký OK nhưng upload giấy tờ thất bại',
+            ),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.orange.shade800,
+          ),
+        );
+      }
+    }
+
+    if (!mounted) return;
+    // AuthGate đổi sang MainShell; chỉ reset root nếu stack cũ còn route auth lỗi.
+    completeAuthenticationNavigation();
   }
 
   @override
   Widget build(BuildContext context) {
     return AuthFormLayout(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
       children: [
         AuthBackHeader(onBack: _goBack),
         const SizedBox(height: 32),
@@ -136,10 +172,15 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
         const SizedBox(height: 24),
         TextField(
           controller: _passwordController,
+          focusNode: _passwordFocus,
+          autofocus: true,
           obscureText: _obscure,
+          enableSuggestions: false,
+          autocorrect: false,
+          enableIMEPersonalizedLearning: false,
           textInputAction: TextInputAction.done,
           keyboardType: TextInputType.visiblePassword,
-          autocorrect: false,
+          inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
           decoration: InputDecoration(
             hintText: 'Nhập mật khẩu',
             filled: true,
@@ -159,24 +200,6 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
           onSubmitted: (_) => _submit(),
-        ),
-        const SizedBox(height: 16),
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            children: [
-              const TextSpan(text: 'Nhập trong '),
-              TextSpan(
-                text: '$_secondsLeft',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const TextSpan(text: ' giây'),
-            ],
-          ),
         ),
         const SizedBox(height: 32),
         Consumer<AuthProvider>(

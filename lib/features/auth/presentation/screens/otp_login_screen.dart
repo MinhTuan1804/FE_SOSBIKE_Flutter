@@ -1,7 +1,10 @@
 ﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:fe_moblie_flutter/core/network/error_message.dart';
+import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
@@ -12,6 +15,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary
 
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/screens/mechanic_register_info_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/profile_setup_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -21,11 +25,18 @@ class OtpLoginScreen extends StatefulWidget {
     required this.role,
     required this.mode,
     required this.phoneNumber,
+    this.useBackendOtp = false,
+    this.initialDebugCode,
+    this.resendCooldownSeconds = 60,
   });
 
   final UserRole role;
   final AuthMode mode;
   final String phoneNumber;
+  final bool useBackendOtp;
+  /// Mã OTP dev (local) — hiển thị cố định trên màn, không chỉ SnackBar.
+  final String? initialDebugCode;
+  final int resendCooldownSeconds;
 
   @override
   State<OtpLoginScreen> createState() => _OtpLoginScreenState();
@@ -36,18 +47,21 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   final _focusNodes = List.generate(6, (_) => FocusNode());
 
   Timer? _timer;
-  int _secondsLeft = 59;
+  late int _secondsLeft;
   bool _verifying = false;
+  String? _devOtpCode;
 
   @override
   void initState() {
     super.initState();
+    _devOtpCode = widget.initialDebugCode;
+    _secondsLeft = widget.useBackendOtp ? widget.resendCooldownSeconds : 59;
     _startTimer();
   }
 
   void _startTimer() {
     _timer?.cancel();
-    _secondsLeft = 59;
+    _secondsLeft = widget.useBackendOtp ? widget.resendCooldownSeconds : 59;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsLeft <= 0) {
         timer.cancel();
@@ -81,16 +95,48 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   bool get canResend => _secondsLeft == 0;
 
   Future<void> _resendOtp() async {
-    final authProvider = context.read<AuthProvider>();
+    if (widget.useBackendOtp) {
+      try {
+        final sent = await context.read<BackendOtpService>().sendOtp(
+          widget.phoneNumber,
+          purpose: 'register',
+        );
+        if (!mounted) return;
+        setState(() {
+          if (sent.debugCode != null) _devOtpCode = sent.debugCode;
+        });
+        _startTimer();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              sent.debugCode != null
+                  ? 'Đã làm mới mã OTP (dev)'
+                  : 'Đã gửi lại mã OTP',
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessageFrom(e)),
+              duration: const Duration(seconds: 5),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      }
+      return;
+    }
 
-    setState(() {
-      _secondsLeft = 59;
-    });
+    setState(() => _secondsLeft = 59);
     _startTimer();
 
+    final authProvider = context.read<AuthProvider>();
     await authProvider.verifyPhoneNumber(
       phoneNumber: widget.phoneNumber,
-      onCodeSent: (verificationId) {
+      onCodeSent: (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Đã gửi lại mã OTP thành công')),
@@ -117,6 +163,50 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
     setState(() => _verifying = true);
 
+    if (widget.useBackendOtp) {
+      try {
+        final verified = await context.read<BackendOtpService>().verifyOtp(
+          widget.phoneNumber,
+          _otp,
+        );
+        if (!mounted) return;
+        setState(() => _verifying = false);
+        if (widget.role == UserRole.mechanic) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => MechanicRegisterInfoScreen(
+                phoneNumber: widget.phoneNumber,
+                otpToken: verified.otpToken,
+              ),
+            ),
+          );
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PasswordLoginScreen(
+                role: widget.role,
+                mode: AuthMode.register,
+                phoneNumber: widget.phoneNumber,
+                otpToken: verified.otpToken,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _verifying = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessageFrom(e)),
+              duration: const Duration(seconds: 5),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.verifyOtp(
       _otp,
@@ -129,14 +219,15 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     if (success) {
       if (mounted) {
         if (widget.mode == AuthMode.register) {
-          // Đăng ký: chuyển sang nhập thông tin cơ bản
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => const ProfileSetupScreen(),
+              builder: (_) => ProfileSetupScreen(
+                role: widget.role,
+                phoneNumber: widget.phoneNumber,
+              ),
             ),
           );
         } else {
-          // Đăng nhập: vào thẳng trang chính
           navigateToHome();
         }
       }
@@ -177,9 +268,53 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Đã gửi SMS tới $masked',
+          widget.useBackendOtp
+              ? 'Mã OTP đã gửi tới $masked'
+              : 'Đã gửi SMS tới $masked',
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
+        if (_devOtpCode != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFB74D)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Mã OTP (môi trường dev)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFE65100),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  _devOtpCode!,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 6,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  canResend
+                      ? 'Có thể gửi lại mã sau khi hết đếm ngược'
+                      : 'Gửi lại mã sau $_secondsLeft giây',
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 28),
         PinCodeFields(
           controllers: _controllers,
@@ -224,7 +359,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 20),
-        const AuthPageDots(count: 4, activeIndex: 2),
+        const AuthPageDots(count: 4, activeIndex: 3),
         const SizedBox(height: 24),
       ],
     );
