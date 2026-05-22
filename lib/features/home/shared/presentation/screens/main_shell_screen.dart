@@ -9,6 +9,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
 
 /// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
@@ -41,7 +42,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 isOnline: _isOnline,
                 onOnlineChanged: (v) => setState(() => _isOnline = v),
                 userType: auth.userType,
-                onAvatarTap: () => _confirmLogout(context),
+                avatarUrl: auth.avatarUrl,
+                onAvatarTap: () async {
+                  final result = await Navigator.push<MainNavTab>(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                  if (result != null && mounted) {
+                    setState(() => _tab = result);
+                  }
+                },
               ),
               Expanded(
                 child: ColoredBox(
@@ -84,27 +94,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _confirmLogout(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có muốn đăng xuất?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && context.mounted) {
-      await context.read<AuthProvider>().logout();
-      if (context.mounted) navigateToLogin();
-    }
   }
 
   Widget _buildBody(String? userType) {

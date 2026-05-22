@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
@@ -9,6 +12,7 @@ class MainAppHeader extends StatelessWidget {
     required this.isOnline,
     required this.onOnlineChanged,
     required this.userType,
+    this.avatarUrl,
     this.onAvatarTap,
     this.onLocationTap,
   });
@@ -17,6 +21,7 @@ class MainAppHeader extends StatelessWidget {
   final bool isOnline;
   final ValueChanged<bool> onOnlineChanged;
   final String? userType;
+  final String? avatarUrl;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onLocationTap;
 
@@ -59,15 +64,7 @@ class MainAppHeader extends StatelessWidget {
                     width: 50,
                     height: 50,
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/main/avatar_placeholder.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.person,
-                          color: AppColors.primary,
-                          size: 30,
-                        ),
-                      ),
+                      child: _buildAvatarImage(),
                     ),
                   ),
                 ),
@@ -142,6 +139,34 @@ class MainAppHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarImage() {
+    final url = avatarUrl?.trim() ?? '';
+    if (url.isEmpty || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+      return Image.asset(
+        'assets/images/main/avatar_placeholder.png',
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.person,
+          color: AppColors.primary,
+          size: 30,
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => Image.asset(
+        'assets/images/main/avatar_placeholder.png',
+        fit: BoxFit.cover,
+      ),
+      errorWidget: (_, __, ___) => Image.asset(
+        'assets/images/main/avatar_placeholder.png',
+        fit: BoxFit.cover,
       ),
     );
   }

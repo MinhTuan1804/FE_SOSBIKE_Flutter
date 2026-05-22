@@ -20,6 +20,10 @@ class UserResponseDto {
   final String? email;
   final String userType;
   final String? avatarUrl;
+  final bool isPhoneVerified;
+  final bool isActive;
+  final String? gender;
+  final String? dateOfBirth;
 
   UserResponseDto({
     required this.userID,
@@ -28,6 +32,10 @@ class UserResponseDto {
     this.email,
     required this.userType,
     this.avatarUrl,
+    this.isPhoneVerified = false,
+    this.isActive = false,
+    this.gender,
+    this.dateOfBirth,
   });
 
   factory UserResponseDto.fromJson(Map<String, dynamic> json) {
@@ -38,6 +46,10 @@ class UserResponseDto {
       email: json['email'],
       userType: json['userType'] ?? json['usertype'] ?? 'CUSTOMER',
       avatarUrl: json['avatarUrl'] ?? json['avatarurl'],
+      isPhoneVerified: json['isPhoneVerified'] ?? json['isphoneverified'] ?? false,
+      isActive: json['isActive'] ?? json['isactive'] ?? false,
+      gender: json['gender'],
+      dateOfBirth: json['dateOfBirth'] ?? json['dateofbirth'],
     );
   }
 }

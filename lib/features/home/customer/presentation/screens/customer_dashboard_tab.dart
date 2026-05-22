@@ -1,11 +1,27 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-class CustomerDashboardTab extends StatelessWidget {
+class CustomerDashboardTab extends StatefulWidget {
   const CustomerDashboardTab({super.key});
 
   @override
+  State<CustomerDashboardTab> createState() => _CustomerDashboardTabState();
+}
+
+class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VehicleProvider>().fetchMyVehicles();
+    });
+  }
+
   Widget build(BuildContext context) {
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -61,16 +77,17 @@ class CustomerDashboardTab extends StatelessWidget {
                     flex: 4,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Image.asset(
-                        'assets/images/main/red_motorcycle.png',
-                        height: 220,
-                        fit: BoxFit.fitHeight,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.motorcycle,
-                          size: 100,
-                          color: Colors.white54,
-                        ),
-                      ),
+                      child:
+                         Image.asset(
+                              'assets/images/main/red_motorcycle.png',
+                              height: 220,
+                              fit: BoxFit.fitHeight,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.motorcycle,
+                                size: 100,
+                                color: Colors.white54,
+                              ),
+                            ),
                     ),
                   ),
 

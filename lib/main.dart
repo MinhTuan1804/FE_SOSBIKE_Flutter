@@ -18,6 +18,8 @@ import 'features/home/data/repositories/home_repository.dart';
 import 'features/home/presentation/providers/home_provider.dart';
 import 'features/membership/data/repositories/membership_repository.dart';
 import 'features/membership/presentation/providers/membership_provider.dart';
+import 'features/profile/data/repositories/vehicle_repository.dart';
+import 'features/profile/presentation/providers/vehicle_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +40,7 @@ void main() async {
   final authRepository = AuthRepository(dioClient);
   final homeRepository = HomeRepository();
   final membershipRepository = MembershipRepository(dioClient);
+  final vehicleRepository = VehicleRepository(dioClient);
   final backendOtpService = BackendOtpService(dioClient);
 
   final authProvider = AuthProvider(authRepository, authService);
@@ -61,6 +64,7 @@ void main() async {
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
+        ChangeNotifierProvider(create: (_) => VehicleProvider(vehicleRepository)),
       ],
       child: const MyApp(),
     ),

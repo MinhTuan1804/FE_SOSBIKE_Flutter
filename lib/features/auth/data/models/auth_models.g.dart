@@ -25,6 +25,10 @@ UserResponseDto _$UserResponseDtoFromJson(Map<String, dynamic> json) =>
       email: json['email'] as String?,
       userType: json['userType'] as String,
       avatarUrl: json['avatarUrl'] as String?,
+      isPhoneVerified: json['isPhoneVerified'] as bool? ?? false,
+      isActive: json['isActive'] as bool? ?? false,
+      gender: json['gender'] as String?,
+      dateOfBirth: json['dateOfBirth'] as String?,
     );
 
 Map<String, dynamic> _$UserResponseDtoToJson(UserResponseDto instance) =>
@@ -35,11 +39,15 @@ Map<String, dynamic> _$UserResponseDtoToJson(UserResponseDto instance) =>
       'email': instance.email,
       'userType': instance.userType,
       'avatarUrl': instance.avatarUrl,
+      'isPhoneVerified': instance.isPhoneVerified,
+      'isActive': instance.isActive,
+      'gender': instance.gender,
+      'dateOfBirth': instance.dateOfBirth,
     };
 
 AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(
   accessToken: json['accessToken'] as String,
-  refreshToken: json['refreshToken'] as String,
+  refreshToken: json['refreshToken'] as String?,
   accessTokenExpiry: DateTime.parse(json['accessTokenExpiry'] as String),
   user: UserResponseDto.fromJson(json['user'] as Map<String, dynamic>),
 );

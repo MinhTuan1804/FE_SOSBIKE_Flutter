@@ -7,6 +7,7 @@ import 'package:fe_moblie_flutter/core/utils/jwt_utils.dart';
 class AuthService {
   static const _keyToken = 'jwt_token';
   static const _keyUserName = 'user_full_name';
+  static const _keyAvatarUrl = 'user_avatar_url';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -97,10 +98,32 @@ class AuthService {
     }
   }
 
+  Future<void> saveAvatarUrl(String? avatarUrl) async {
+    try {
+      if (avatarUrl == null || avatarUrl.isEmpty) {
+        await _storage.delete(key: _keyAvatarUrl);
+      } else {
+        await _storage.write(key: _keyAvatarUrl, value: avatarUrl);
+      }
+    } catch (e) {
+      debugPrint('AuthService.saveAvatarUrl: $e');
+    }
+  }
+
+  Future<String?> getAvatarUrl() async {
+    try {
+      return await _storage.read(key: _keyAvatarUrl);
+    } catch (e) {
+      debugPrint('AuthService.getAvatarUrl: $e');
+      return null;
+    }
+  }
+
   Future<void> clearUserProfile() async {
     try {
       await _storage.delete(key: _keyUserName);
       await _storage.delete(key: 'user_type');
+      await _storage.delete(key: _keyAvatarUrl);
     } catch (e) {
       debugPrint('AuthService.clearUserProfile: $e');
     }

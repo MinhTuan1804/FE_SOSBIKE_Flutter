@@ -13,6 +13,8 @@ class MembershipScreen extends StatefulWidget {
   State<MembershipScreen> createState() => _MembershipScreenState();
 }
 
+const _membershipBackground = Color(0xFF141414);
+
 class _MembershipScreenState extends State<MembershipScreen> {
   final PageController _pageController = PageController(viewportFraction: 0.78);
   bool _loaded = false;
@@ -43,19 +45,28 @@ class _MembershipScreenState extends State<MembershipScreen> {
         final isCustomer = (auth.user?.userType ?? 'CUSTOMER').toUpperCase() == 'CUSTOMER';
 
         if (provider.isLoading && plans.isEmpty) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+          return const ColoredBox(
+            color: _membershipBackground,
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          );
         }
 
         if (provider.errorMessage != null && plans.isEmpty) {
-          return _ErrorState(message: provider.errorMessage!, onRetry: provider.load);
+          return ColoredBox(
+            color: _membershipBackground,
+            child: _ErrorState(message: provider.errorMessage!, onRetry: provider.load),
+          );
         }
 
         if (plans.isEmpty) {
-          return _ErrorState(message: 'Chưa có gói thành viên nào.', onRetry: provider.load);
+          return ColoredBox(
+            color: _membershipBackground,
+            child: _ErrorState(message: 'Chưa có gói thành viên nào.', onRetry: provider.load),
+          );
         }
 
         return ColoredBox(
-          color: const Color(0xFF141414),
+          color: _membershipBackground,
           child: Column(
             children: [
               const SizedBox(height: 8),

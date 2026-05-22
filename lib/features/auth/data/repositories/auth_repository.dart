@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fe_moblie_flutter/core/network/dio_client.dart';
 import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
 import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
@@ -79,36 +81,76 @@ class AuthRepository {
     }
   }
 
+  Future<UserResponseDto> getMine() async {
+    try {
+      final response = await _dioClient.dio.get('/users/mine');
+      return UserResponseDto.fromJson(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   /// Cập nhật thông tin cơ bản sau đăng ký.
-  Future<bool> updateProfile({
+  Future<String?> updateProfile({
     required String fullName,
     required DateTime dateOfBirth,
     required String gender,
     String? email,
     String? referralCode,
     File? avatarFile,
+    String? oldAvatarUrl,
   }) async {
     try {
+      final uploadedAvatarUrl =
+          avatarFile != null ? await _uploadAvatarToFirebase(avatarFile, oldAvatarUrl) : null;
       final formData = FormData.fromMap({
         'fullName': fullName,
         'dateOfBirth': dateOfBirth.toIso8601String(),
         'gender': gender,
         if (email != null) 'email': email,
         if (referralCode != null) 'referralCode': referralCode,
-        if (avatarFile != null)
-          'avatar': await MultipartFile.fromFile(
-            avatarFile.path,
-            filename: 'avatar.jpg',
-          ),
+        if (uploadedAvatarUrl != null) 'avatarUrl': uploadedAvatarUrl,
       });
 
       await _dioClient.dio.put(
         ApiEndpoints.updateProfile,
         data: formData,
       );
-      return true;
+      return uploadedAvatarUrl;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
+  }
+
+  Future<String> _uploadAvatarToFirebase(File avatarFile, String? oldAvatarUrl) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('Người dùng chưa đăng nhập Firebase.');
+    }
+
+    final rawExt = avatarFile.path.contains('.')
+        ? avatarFile.path.split('.').last
+        : 'jpg';
+    final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
+    final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final ref = FirebaseStorage.instance.ref().child('avatars/${user.uid}/$fileName');
+
+    await ref.putFile(
+      avatarFile,
+      SettableMetadata(contentType: 'image/$ext'),
+    );
+    final newUrl = await ref.getDownloadURL();
+
+    if (_isFirebaseStorageUrl(oldAvatarUrl) && oldAvatarUrl != newUrl) {
+      final oldRef = FirebaseStorage.instance.refFromURL(oldAvatarUrl!);
+      await oldRef.delete();
+    }
+
+    return newUrl;
+  }
+
+  bool _isFirebaseStorageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return false;
+    return url.startsWith('gs://') || url.contains('firebasestorage.googleapis.com');
   }
 }

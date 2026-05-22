@@ -20,6 +20,7 @@ class AuthProvider extends ChangeNotifier {
   bool _authReady = false;
   UserResponseDto? _user;
   String? _displayName;
+  String? _avatarUrl;
   String? _verificationId;
 
   bool get isLoading => _isLoading;
@@ -28,9 +29,17 @@ class AuthProvider extends ChangeNotifier {
   bool get authReady => _authReady;
   UserResponseDto? get user => _user;
   String get displayName => _displayName ?? _user?.fullName ?? 'Khách hàng';
+  String? get avatarUrl => _avatarUrl ?? _user?.avatarUrl;
 
   String? _userType;
   String? get userType => _userType ?? _user?.userType;
+  
+  String? get phoneNumber => _user?.phoneNumber;
+  String? get email => _user?.email;
+  String? get gender => _user?.gender;
+  String? get dateOfBirth => _user?.dateOfBirth;
+  bool get isPhoneVerified => _user?.isPhoneVerified ?? false;
+  bool get isActive => _user?.isActive ?? false;
 
   /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {
@@ -44,6 +53,17 @@ class AuthProvider extends ChangeNotifier {
     if (_isAuthenticated) {
       _displayName = await _authService.getUserName();
       _userType = await _authService.getUserType();
+      _avatarUrl = await _authService.getAvatarUrl();
+      
+      // Fetch full profile data so ProfileScreen shows real info even after app restart
+      try {
+        _user = await _repository.getMine();
+        _displayName = _user?.fullName ?? _displayName;
+        _userType = _user?.userType ?? _userType;
+        _avatarUrl = _user?.avatarUrl ?? _avatarUrl;
+      } catch (e) {
+        debugPrint('AuthProvider.checkAuthStatus getMine error: $e');
+      }
     }
     _authReady = true;
     notifyListeners();
@@ -53,10 +73,12 @@ class AuthProvider extends ChangeNotifier {
     await _authService.saveToken(response.accessToken);
     await _authService.saveUserName(response.user.fullName);
     await _authService.saveUserType(response.user.userType);
+    await _authService.saveAvatarUrl(response.user.avatarUrl);
     _isAuthenticated = true;
     _user = response.user;
     _displayName = response.user.fullName;
     _userType = response.user.userType;
+    _avatarUrl = response.user.avatarUrl;
   }
 
   Future<bool> checkPhoneExists(String phoneNumber) async {
@@ -242,7 +264,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Cập nhật thông tin cơ bản (Họ tên, Ngày sinh, Giới tính, Email, Mã giới thiệu, Avatar)
-  /// sau khi đăng ký thành công.
+  /// sau khi đăng ký thành công hoặc từ màn hình Chỉnh sửa.
   Future<bool> updateProfile({
     required String fullName,
     required DateTime dateOfBirth,
@@ -256,18 +278,31 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = await _repository.updateProfile(
+      final uploadedAvatarUrl = await _repository.updateProfile(
         fullName: fullName,
         dateOfBirth: dateOfBirth,
         gender: gender,
         email: email,
         referralCode: referralCode,
         avatarFile: avatarFile,
+        oldAvatarUrl: _avatarUrl,
       );
-      if (success) {
-        _displayName = fullName;
+      
+      // Update local storage strings
+      _displayName = fullName;
+      await _authService.saveUserName(fullName);
+      
+      if (uploadedAvatarUrl != null) {
+        _avatarUrl = uploadedAvatarUrl;
+        await _authService.saveAvatarUrl(uploadedAvatarUrl);
       }
-      return success;
+
+      // Re-fetch full user profile to sync everything (DOB, Gender, etc.)
+      try {
+        _user = await _repository.getMine();
+      } catch (_) {}
+
+      return true;
     } catch (e, st) {
       debugPrint('AuthProvider.updateProfile error: $e\n$st');
       _errorMessage = e.toString();

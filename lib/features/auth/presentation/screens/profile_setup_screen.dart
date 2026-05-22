@@ -44,11 +44,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  Future<void> _pickAvatar() async {
+  Future<void> _pickAvatar(ImageSource source) async {
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 512,
         maxHeight: 512,
         imageQuality: 80,
@@ -59,6 +59,40 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     } catch (e) {
       debugPrint('Lỗi chọn ảnh: $e');
     }
+  }
+
+  void _showAvatarPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Chụp ảnh'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAvatar(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Chọn từ thư viện'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAvatar(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _goBack() => authPop(context);
@@ -172,9 +206,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       firebaseIdToken: await firebaseUser?.getIdToken(),
     );
 
+    var profileUpdated = true;
     if (success) {
       // Nếu đăng ký thành công, tùy chọn cập nhật thêm ngày sinh, giới tính, avatar
-      await authProvider.updateProfile(
+      profileUpdated = await authProvider.updateProfile(
         fullName: name,
         dateOfBirth: _selectedDob!,
         gender: _genderApiValue,
@@ -188,13 +223,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     if (mounted) setState(() => _saving = false);
 
-    if (success) {
+    if (success && profileUpdated) {
       if (mounted) navigateToHome();
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Đăng ký hồ sơ thất bại'),
+            content: Text(authProvider.errorMessage ?? 'Cập nhật hồ sơ thất bại'),
           ),
         );
       }
@@ -250,7 +285,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         // â”€â”€ Avatar â”€â”€
         Center(
           child: GestureDetector(
-            onTap: _pickAvatar,
+            onTap: _showAvatarPicker,
             child: Stack(
               children: [
                 CircleAvatar(
