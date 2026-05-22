@@ -6,25 +6,38 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import 'package:fe_moblie_flutter/main.dart';
+import 'package:fe_moblie_flutter/core/services/auth_service.dart';
+import 'package:fe_moblie_flutter/core/network/dio_client.dart';
+import 'package:fe_moblie_flutter/features/auth/data/repositories/auth_repository.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Provide a minimal AuthProvider so AuthGate can read it during init
+    final authService = AuthService();
+    final dioClient = DioClient(authService);
+    final authRepository = AuthRepository(dioClient);
+    final authProvider = AuthProvider(authRepository, authService);
+    unawaited(authProvider.checkAuthStatus());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Build our app with provider and trigger a frame.
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: const MyApp(),
+      ),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify app builds and shows root MaterialApp (basic smoke test).
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
