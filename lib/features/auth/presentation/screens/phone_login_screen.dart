@@ -1,6 +1,10 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/network/error_message.dart';
+import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/otp_login_screen.dart';
@@ -41,41 +45,37 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     return '+84$digits';
   }
 
-  bool get _isPhoneValid {
-    final digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
-    return digits.length >= 9 && digits.length <= 11;
-  }
+  bool get _isPhoneValid => isValidVietnamPhone(_phoneController.text);
 
   void _onContinue() async {
     if (!_isPhoneValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số điện thoại hợp lệ')),
-      );
-      return;
-    }
-
-    if (widget.role == UserRole.mechanic) {
-      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Thợ máy chưa được hỗ trợ. Vui lòng chọn Người đi xe.'),
+          content: Text(
+            'Số điện thoại không hợp lệ. Dùng số VN 10 số (vd: 0912345678, 0977999888)',
+          ),
         ),
       );
       return;
     }
 
     final authProvider = context.read<AuthProvider>();
+    final localPhone = toLocalVietnamPhone(_phoneController.text);
 
     // 1. Check if phone exists in the backend
-    final phoneExists = await authProvider.checkPhoneExists(_normalizedPhone);
+    final phoneExists = await authProvider.checkPhoneExists(localPhone);
 
-    // Stop if there was an error during check (authProvider handles its own error message, but we need to check if it's set)
-    if (authProvider.errorMessage != null && authProvider.errorMessage!.startsWith('Lỗi khi kiểm tra')) {
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(authProvider.errorMessage!)),
-         );
-       }
-       return;
+    if (phoneExists == null) {
+      if (mounted && authProvider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage!),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+      return;
     }
 
     // 2. Validate based on Mode
@@ -97,7 +97,56 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       return;
     }
 
-    // 3. If validation passes, proceed to send OTP via Firebase
+    // Web / local BE: không dùng Firebase SMS
+    if (kIsWeb) {
+      if (_mode == AuthMode.login) {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PasswordLoginScreen(
+              role: widget.role,
+              mode: _mode,
+              phoneNumber: localPhone,
+            ),
+          ),
+        );
+        return;
+      }
+
+      try {
+        authProvider.setLoading(true);
+        final otpService = context.read<BackendOtpService>();
+        final sent = await otpService.sendOtp(localPhone, purpose: 'register');
+        authProvider.setLoading(false);
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OtpLoginScreen(
+              role: widget.role,
+              mode: _mode,
+              phoneNumber: localPhone,
+              useBackendOtp: true,
+              initialDebugCode: sent.debugCode,
+              resendCooldownSeconds: 15,
+            ),
+          ),
+        );
+      } catch (e) {
+        authProvider.setLoading(false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessageFrom(e)),
+              duration: const Duration(seconds: 5),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // Mobile: Firebase SMS OTP
     authProvider.verifyPhoneNumber(
       phoneNumber: _normalizedPhone,
       onCodeSent: (verificationId) {
@@ -250,7 +299,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           },
         ),
         const SizedBox(height: 20),
-        AuthPageDots(count: _mode == AuthMode.login ? 3 : 4, activeIndex: 1),
+        AuthPageDots(count: _mode == AuthMode.login ? 3 : 4, activeIndex: 2),
         const SizedBox(height: 24),
       ],
     );

@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
@@ -9,7 +8,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
-import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/screens/user_profile_screen.dart';
 
 /// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
@@ -22,6 +21,17 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   MainNavTab _tab = MainNavTab.orders;
   bool _isOnline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      await context.read<AuthProvider>().fetchMyProfile(silent: true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,18 +49,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
             children: [
               MainAppHeader(
                 userName: auth.displayName,
+                avatarUrl: auth.avatarUrl,
                 isOnline: _isOnline,
                 onOnlineChanged: (v) => setState(() => _isOnline = v),
                 userType: auth.userType,
-                avatarUrl: auth.avatarUrl,
-                onAvatarTap: () async {
-                  final result = await Navigator.push<MainNavTab>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                onAvatarTap: () {
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(builder: (_) => const UserProfileScreen()),
                   );
-                  if (result != null && mounted) {
-                    setState(() => _tab = result);
-                  }
+                },
                 },
               ),
               Expanded(

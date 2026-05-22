@@ -67,7 +67,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   onPressed: _onNext,
                 ),
                 const SizedBox(height: 20),
-                const AuthPageDots(count: 4, activeIndex: 0),
+                const AuthPageDots(count: 4, activeIndex: 1),
                 const SizedBox(height: 16),
               ],
             ),

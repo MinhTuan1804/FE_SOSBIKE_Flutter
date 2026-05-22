@@ -1,10 +1,13 @@
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:fe_moblie_flutter/core/network/dio_client.dart';
 import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
 import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
+import 'package:fe_moblie_flutter/features/profile/data/models/user_profile_models.dart';
 import '../models/auth_models.dart';
 
 class AuthRepository {
@@ -49,6 +52,17 @@ class AuthRepository {
     String? email,
     String? firebaseIdToken,
     String? otpToken,
+    String? identityCard,
+    String? licensePlate,
+    String? vehicleModel,
+    String? vehicleGeneration,
+    String? driverLicenseNumber,
+    String? currentAddress,
+    DateTime? dateOfBirth,
+    String? bankCode,
+    String? bankName,
+    String? bankAccountNumber,
+    String? bankAccountHolder,
   }) async {
     try {
       final response = await _dioClient.dio.post(
@@ -61,6 +75,17 @@ class AuthRepository {
           if (email != null) 'email': email,
           if (firebaseIdToken != null) 'firebaseIdToken': firebaseIdToken,
           if (otpToken != null) 'otpToken': otpToken,
+          if (identityCard != null) 'identityCard': identityCard,
+          if (licensePlate != null) 'licensePlate': licensePlate,
+          if (vehicleModel != null) 'vehicleModel': vehicleModel,
+          if (vehicleGeneration != null) 'vehicleGeneration': vehicleGeneration,
+          if (driverLicenseNumber != null) 'driverLicenseNumber': driverLicenseNumber,
+          if (currentAddress != null) 'currentAddress': currentAddress,
+          if (dateOfBirth != null) 'dateOfBirth': dateOfBirth!.toIso8601String().split('T').first,
+          if (bankCode != null) 'bankCode': bankCode,
+          if (bankName != null) 'bankName': bankName,
+          if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
+          if (bankAccountHolder != null) 'bankAccountHolder': bankAccountHolder,
         },
       );
       return AuthResponse.fromJson(response.data);
@@ -83,8 +108,74 @@ class AuthRepository {
 
   Future<UserResponseDto> getMine() async {
     try {
-      final response = await _dioClient.dio.get('/users/mine');
-      return UserResponseDto.fromJson(response.data);
+      final response = await _dioClient.dio.get(
+        ApiEndpoints.userMe,
+        options: Options(extra: {'skipAuthLogout': true}),
+      );
+      return UserResponseDto.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<UserProfileDto> getMyProfile() async {
+    try {
+      final response = await _dioClient.dio.get(
+        ApiEndpoints.userMe,
+        options: Options(extra: {'skipAuthLogout': true}),
+      );
+      return UserProfileDto.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Cập nhật hồ sơ (text + avatar tùy chọn).
+  Future<String?> updateMyProfile({
+    required String fullName,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? email,
+    String? currentAddress,
+    String? licensePlate,
+    String? vehicleModel,
+    String? vehicleGeneration,
+    String? driverLicenseNumber,
+    String? bankName,
+    String? bankAccountNumber,
+    String? bankAccountHolder,
+    XFile? avatarFile,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'fullName': fullName,
+        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth.toIso8601String().split('T').first,
+        if (gender != null) 'gender': gender,
+        if (email != null) 'email': email,
+        if (currentAddress != null) 'currentAddress': currentAddress,
+        if (licensePlate != null) 'licensePlate': licensePlate,
+        if (vehicleModel != null) 'vehicleModel': vehicleModel,
+        if (vehicleGeneration != null) 'vehicleGeneration': vehicleGeneration,
+        if (driverLicenseNumber != null) 'driverLicenseNumber': driverLicenseNumber,
+        if (bankName != null) 'bankName': bankName,
+        if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
+        if (bankAccountHolder != null) 'bankAccountHolder': bankAccountHolder,
+        if (avatarFile != null) 'avatar': await _multipartFromXFile(avatarFile, 'avatar.jpg'),
+      });
+
+      final response = await _dioClient.dio.put(
+        ApiEndpoints.updateProfile,
+        data: formData,
+      );
+      final data = response.data;
+      if (data is Map && data['avatarUrl'] != null) {
+        return data['avatarUrl'] as String;
+      }
+      return null;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -128,9 +219,7 @@ class AuthRepository {
       throw StateError('Người dùng chưa đăng nhập Firebase.');
     }
 
-    final rawExt = avatarFile.path.contains('.')
-        ? avatarFile.path.split('.').last
-        : 'jpg';
+    final rawExt = avatarFile.path.contains('.') ? avatarFile.path.split('.').last : 'jpg';
     final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
     final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
     final ref = FirebaseStorage.instance.ref().child('avatars/${user.uid}/$fileName');
@@ -142,8 +231,12 @@ class AuthRepository {
     final newUrl = await ref.getDownloadURL();
 
     if (_isFirebaseStorageUrl(oldAvatarUrl) && oldAvatarUrl != newUrl) {
-      final oldRef = FirebaseStorage.instance.refFromURL(oldAvatarUrl!);
-      await oldRef.delete();
+      try {
+        final oldRef = FirebaseStorage.instance.refFromURL(oldAvatarUrl!);
+        await oldRef.delete();
+      } catch (_) {
+        // ignore delete errors
+      }
     }
 
     return newUrl;
@@ -152,5 +245,34 @@ class AuthRepository {
   bool _isFirebaseStorageUrl(String? url) {
     if (url == null || url.trim().isEmpty) return false;
     return url.startsWith('gs://') || url.contains('firebasestorage.googleapis.com');
+
+  Future<void> uploadMechanicDocuments({
+    XFile? portrait,
+    XFile? vehicleRegistration,
+    XFile? vehicleInsurance,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        if (portrait != null) 'portrait': await _multipartFromXFile(portrait, 'portrait.jpg'),
+        if (vehicleRegistration != null)
+          'vehicleRegistration': await _multipartFromXFile(vehicleRegistration, 'registration.jpg'),
+        if (vehicleInsurance != null)
+          'vehicleInsurance': await _multipartFromXFile(vehicleInsurance, 'insurance.jpg'),
+      });
+
+      await _dioClient.dio.put(
+        ApiEndpoints.mechanicDocuments,
+        data: formData,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  static Future<MultipartFile> _multipartFromXFile(XFile file, String fallbackName) async {
+    final bytes = await file.readAsBytes();
+    final name = file.name.isNotEmpty ? file.name : fallbackName;
+    return MultipartFile.fromBytes(bytes, filename: name);
+  }
   }
 }

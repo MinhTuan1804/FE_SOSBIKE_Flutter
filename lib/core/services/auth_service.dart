@@ -25,11 +25,14 @@ class AuthService {
   }
 
   Future<String?> getToken() async {
+    if (_memoryToken != null && _memoryToken!.isNotEmpty) {
+      return _memoryToken;
+    }
     try {
       final stored = await _storage
           .read(key: _keyToken)
           .timeout(const Duration(seconds: 3), onTimeout: () => null);
-      if (stored != null) {
+      if (stored != null && stored.isNotEmpty) {
         _memoryToken = stored;
         return stored;
       }
@@ -98,12 +101,17 @@ class AuthService {
     }
   }
 
-  Future<void> saveAvatarUrl(String? avatarUrl) async {
+  Future<void> saveAvatarUrl(String? url) async {
     try {
-      if (avatarUrl == null || avatarUrl.isEmpty) {
+      if (url == null || url.isEmpty) {
         await _storage.delete(key: _keyAvatarUrl);
       } else {
-        await _storage.write(key: _keyAvatarUrl, value: avatarUrl);
+        await _storage.write(key: _keyAvatarUrl, value: url);
+      }
+    } catch (e) {
+      debugPrint('AuthService.saveAvatarUrl: $e');
+    }
+  }
       }
     } catch (e) {
       debugPrint('AuthService.saveAvatarUrl: $e');

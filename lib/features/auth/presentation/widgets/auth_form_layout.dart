@@ -8,10 +8,12 @@ class AuthFormLayout extends StatelessWidget {
     super.key,
     required this.children,
     this.bottomFixed,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.onDrag,
   });
 
   final List<Widget> children;
   final Widget? bottomFixed;
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class AuthFormLayout extends StatelessWidget {
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior: keyboardDismissBehavior,
                     padding: EdgeInsets.fromLTRB(24, 8, 24, 16 + bottomInset),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
