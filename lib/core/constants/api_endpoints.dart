@@ -13,6 +13,7 @@ class ApiEndpoints {
   static const String checkPhone = '/Auth/check-phone';
   static const String users = '/users';
   static const String updateProfile = '/users/profile';
+
   static const String membershipPlans = '/customer-memberships/plans';
   static const String currentMembership = '/customer-memberships/me';
   static const String subscribeMembership = '/customer-memberships/subscribe';
@@ -20,4 +21,5 @@ class ApiEndpoints {
   static const String resetMembershipTest = '/customer-memberships/me/dev-reset';
   static const String paymentIntents = '/payments/intents';
   static const String payments = '/payments';
+
 }

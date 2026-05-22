@@ -18,7 +18,7 @@ class AuthRepository {
         ApiEndpoints.login,
         data: LoginRequest(phoneNumber: phoneNumber, password: password).toJson(),
       );
-      
+
       return AuthResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);

@@ -236,7 +236,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
-  // â”€â”€ Reusable input decoration â”€â”€
+  // ── Reusable input decoration ──
   InputDecoration _fieldDecoration(String hint, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
@@ -260,7 +260,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  // â”€â”€ Field label â”€â”€
+  // ── Field label ──
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -282,7 +282,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         AuthBackHeader(onBack: _goBack),
         const SizedBox(height: 24),
 
-        // â”€â”€ Avatar â”€â”€
+        // ── Avatar ──
         Center(
           child: GestureDetector(
             onTap: _showAvatarPicker,
@@ -424,7 +424,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 20),
 
-        // â”€â”€ Email â”€â”€
+        // ── Email ──
         _label('Email'),
         TextField(
           controller: _emailController,
