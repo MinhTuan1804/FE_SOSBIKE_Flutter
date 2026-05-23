@@ -112,11 +112,6 @@ class AuthService {
       debugPrint('AuthService.saveAvatarUrl: $e');
     }
   }
-      }
-    } catch (e) {
-      debugPrint('AuthService.saveAvatarUrl: $e');
-    }
-  }
 
   Future<String?> getAvatarUrl() async {
     try {

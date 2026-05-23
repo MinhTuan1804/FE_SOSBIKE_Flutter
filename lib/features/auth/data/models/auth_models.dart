@@ -24,6 +24,7 @@ class UserResponseDto {
   final bool isActive;
   final String? gender;
   final String? dateOfBirth;
+  final String? currentAddress;
 
   UserResponseDto({
     required this.userID,
@@ -36,6 +37,7 @@ class UserResponseDto {
     this.isActive = false,
     this.gender,
     this.dateOfBirth,
+    this.currentAddress,
   });
 
   factory UserResponseDto.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class UserResponseDto {
       isActive: json['isActive'] ?? json['isactive'] ?? false,
       gender: json['gender'],
       dateOfBirth: json['dateOfBirth'] ?? json['dateofbirth'],
+      currentAddress: json['currentAddress'] ?? json['currentaddress'],
     );
   }
 }

@@ -9,6 +9,7 @@ class UserProfileDto {
     this.dateOfBirth,
     this.gender,
     this.currentAddress,
+    this.isPhoneVerified = false,
     this.mechanic,
     this.wallet,
   });
@@ -22,6 +23,7 @@ class UserProfileDto {
   final DateTime? dateOfBirth;
   final String? gender;
   final String? currentAddress;
+  final bool isPhoneVerified;
   final MechanicProfileDto? mechanic;
   final WalletProfileDto? wallet;
 
@@ -46,6 +48,7 @@ class UserProfileDto {
       dateOfBirth: dob,
       gender: json['gender'] as String?,
       currentAddress: json['currentAddress'] as String? ?? json['currentaddress'] as String?,
+      isPhoneVerified: json['isPhoneVerified'] ?? json['isphoneverified'] ?? false,
       mechanic: mechanicJson == null ? null : MechanicProfileDto.fromJson(mechanicJson),
       wallet: walletJson == null ? null : WalletProfileDto.fromJson(walletJson),
     );

@@ -212,6 +212,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         subtitle: 'Email',
                       ),
                       const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
+                      _InfoRow(
+                        icon: Icons.location_on_outlined,
+                        title: (auth.currentAddress != null && auth.currentAddress!.isNotEmpty) ? auth.currentAddress! : 'Chưa cập nhật', 
+                        subtitle: 'Địa chỉ hiện tại',
+                      ),
+                      const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
                       IntrinsicHeight(
                         child: Row(
                           children: [

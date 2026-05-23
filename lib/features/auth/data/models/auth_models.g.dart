@@ -29,6 +29,7 @@ UserResponseDto _$UserResponseDtoFromJson(Map<String, dynamic> json) =>
       isActive: json['isActive'] as bool? ?? false,
       gender: json['gender'] as String?,
       dateOfBirth: json['dateOfBirth'] as String?,
+      currentAddress: json['currentAddress'] as String?,
     );
 
 Map<String, dynamic> _$UserResponseDtoToJson(UserResponseDto instance) =>
@@ -43,6 +44,7 @@ Map<String, dynamic> _$UserResponseDtoToJson(UserResponseDto instance) =>
       'isActive': instance.isActive,
       'gender': instance.gender,
       'dateOfBirth': instance.dateOfBirth,
+      'currentAddress': instance.currentAddress,
     };
 
 AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(

@@ -66,7 +66,24 @@ class MainAppHeader extends StatelessWidget {
                     width: 50,
                     height: 50,
                     child: ClipOval(
-                      child: _buildAvatarImage(),
+                      child: avatarUrl != null && avatarUrl!.isNotEmpty
+                          ? AppNetworkImage(
+                              url: avatarUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: Image.asset(
+                                'assets/images/main/avatar_placeholder.png',
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Image.asset(
+                              'assets/images/main/avatar_placeholder.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.person,
+                                color: AppColors.primary,
+                                size: 30,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -110,19 +127,20 @@ class MainAppHeader extends StatelessWidget {
           ),
           Positioned(
             top: 0,
-            right: isCustomer ? -20 : 0,
+            right: isCustomer ? 10 : 0,
             bottom: 0,
             width: stripW,
             child: Center(
               child: isCustomer
                   ? Container(
-                      width: 40,
-                      height: 40,
+                      width: 50,
+                      height: 50,
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
+                        
                       ),
-                      child: _LocationButton(onTap: onLocationTap),
+                      child: IconButton(onPressed: (){}, icon: Icon(Icons.location_on, color: AppColors.primary, size: 30)),
                     )
                   : FittedBox(
                       fit: BoxFit.scaleDown,

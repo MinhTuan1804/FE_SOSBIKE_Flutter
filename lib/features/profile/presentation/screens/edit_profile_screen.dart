@@ -19,6 +19,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   
   late TextEditingController _nameController;
   late TextEditingController _emailController;
+  late TextEditingController _addressController;
   
   DateTime? _dateOfBirth;
   String? _gender;
@@ -33,6 +34,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     
     _nameController = TextEditingController(text: auth.displayName);
     _emailController = TextEditingController(text: auth.email);
+    _addressController = TextEditingController(text: auth.currentAddress);
     
     if (auth.dateOfBirth != null && auth.dateOfBirth!.isNotEmpty) {
       try {
@@ -50,6 +52,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -139,6 +142,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       dateOfBirth: _dateOfBirth!,
       gender: _gender ?? 'OTHER',
       email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+      currentAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       avatarFile: _avatarFile,
     );
 
@@ -316,6 +320,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             fontSize: 16,
                             color: _dateOfBirth == null ? Colors.grey[600] : Colors.black87,
                           ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Current Address
+                    TextFormField(
+                      controller: _addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Địa chỉ hiện tại',
+                        prefixIcon: const Icon(Icons.location_on_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),

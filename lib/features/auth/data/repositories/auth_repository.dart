@@ -176,17 +176,13 @@ class AuthRepository {
       throw ApiException.fromDioError(e);
     }
   }
-    } on DioException catch (e) {
-      throw ApiException.fromDioError(e);
-    }
-  }
-
   /// Cập nhật thông tin cơ bản sau đăng ký.
   Future<String?> updateProfile({
     required String fullName,
     required DateTime dateOfBirth,
     required String gender,
     String? email,
+    String? currentAddress,
     String? referralCode,
     File? avatarFile,
     String? oldAvatarUrl,
@@ -199,6 +195,7 @@ class AuthRepository {
         'dateOfBirth': dateOfBirth.toIso8601String(),
         'gender': gender,
         if (email != null) 'email': email,
+        if (currentAddress != null) 'currentAddress': currentAddress,
         if (referralCode != null) 'referralCode': referralCode,
         if (uploadedAvatarUrl != null) 'avatarUrl': uploadedAvatarUrl,
       });
@@ -245,6 +242,7 @@ class AuthRepository {
   bool _isFirebaseStorageUrl(String? url) {
     if (url == null || url.trim().isEmpty) return false;
     return url.startsWith('gs://') || url.contains('firebasestorage.googleapis.com');
+  }
 
   Future<void> uploadMechanicDocuments({
     XFile? portrait,
@@ -273,6 +271,5 @@ class AuthRepository {
     final bytes = await file.readAsBytes();
     final name = file.name.isNotEmpty ? file.name : fallbackName;
     return MultipartFile.fromBytes(bytes, filename: name);
-  }
   }
 }

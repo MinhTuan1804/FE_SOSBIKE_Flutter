@@ -8,7 +8,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
-import 'package:fe_moblie_flutter/features/profile/presentation/screens/user_profile_screen.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
 
 /// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
@@ -55,9 +55,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 userType: auth.userType,
                 onAvatarTap: () {
                   Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(builder: (_) => const UserProfileScreen()),
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
                   );
-                },
                 },
               ),
               Expanded(

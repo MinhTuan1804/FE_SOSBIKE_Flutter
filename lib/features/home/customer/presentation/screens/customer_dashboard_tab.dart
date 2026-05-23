@@ -38,7 +38,14 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                   children: [
                     Expanded(
                       child: _ActionCard(
-                        icon: Icons.shield_outlined,
+                        customIcon: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFBF2121), width: 2),
+                          ),
+                          child: Icon(Icons.error, color: Colors.red[400], size: 28),
+                        ),
                         title: 'Cảnh báo nguy hiểm',
                         onTap: () {},
                       ),
@@ -46,7 +53,14 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _ActionCard(
-                        icon: Icons.location_on_outlined,
+                        customIcon: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFBF2121), width: 2),
+                          ),
+                          child: Icon(Icons.location_on, color: Colors.red[400], size: 28),
+                        ),
                         title: 'Chia sẻ lộ trình',
                         onTap: () {},
                       ),
@@ -105,7 +119,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                               'Sổ bảo dưỡng',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -143,7 +157,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                           percentage: 74,
                           progressColor: Colors.green,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
 
                         // Đặt lịch button
                         ElevatedButton(
@@ -153,7 +167,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
-                              side: const BorderSide(color: Colors.white24),
+                              side: const BorderSide(color: Colors.white),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                             minimumSize: const Size(100, 36),
@@ -216,13 +230,13 @@ class _SosBanner extends StatelessWidget {
 
           // SOS Text top-right
           const Positioned(
-            top: 20,
+            top: 12,
             right: 20,
             child: Text(
               'SOS Ngay!',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 28,
+                fontSize: 34,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.0,
                 shadows: [
@@ -238,7 +252,7 @@ class _SosBanner extends StatelessWidget {
             right: 16,
             child: ElevatedButton.icon(
               onPressed: () {},
-              icon: const Icon(Icons.emergency, color: Colors.white, size: 20),
+              icon: const Icon(Icons.start, color: Colors.white, size: 20),
               label: const Text(
                 'Bắt đầu',
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
@@ -261,12 +275,14 @@ class _SosBanner extends StatelessWidget {
 
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
-    required this.icon,
+    this.icon,
+    this.customIcon,
     required this.title,
     required this.onTap,
   });
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? customIcon;
   final String title;
   final VoidCallback onTap;
 
@@ -291,7 +307,7 @@ class _ActionCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.red[400], size: 28),
+            customIcon ?? Icon(icon, color: Colors.red[400], size: 28),
             const SizedBox(height: 12),
             Text(
               title,

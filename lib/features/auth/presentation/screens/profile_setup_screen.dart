@@ -41,6 +41,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _referralController = TextEditingController();
   final _identityController = TextEditingController();
   final _plateController = TextEditingController();
+  final _addressController = TextEditingController();
 
   DateTime? _selectedDob;
   Gender? _selectedGender;
@@ -203,17 +204,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
 
     final identity = _identityController.text.trim();
-    final plate = _plateController.text.trim().toUpperCase();
     if (_isMechanic) {
       if (identity.length < 6) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Số CCCD/CMND không hợp lệ')),
-        );
-        return;
-      }
-      if (plate.length < 4) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Biển số xe không hợp lệ')),
         );
         return;
       }
@@ -236,7 +230,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       email: email.isNotEmpty ? email : null,
       firebaseIdToken: await firebaseUser?.getIdToken(),
       identityCard: _isMechanic ? identity : null,
-      licensePlate: _isMechanic ? plate : null,
+      currentAddress: _addressController.text.trim().isNotEmpty 
+          ? _addressController.text.trim() 
+          : null,
+      dateOfBirth: _selectedDob,
     );
 
     var profileUpdated = true;
@@ -458,7 +455,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         const SizedBox(height: 20),
 
         // ── Email ──
-        _label('Email'),
+        _label('Email (Tùy chọn)'),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -474,6 +471,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         const SizedBox(height: 20),
 
+        // ── Địa chỉ hiện tại ──
+        _label('Địa chỉ hiện tại'),
+        TextField(
+          controller: _addressController,
+          decoration: _fieldDecoration(
+            'Nhập địa chỉ của bạn',
+            suffixIcon: const Icon(
+              Icons.location_on_outlined,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
+        ),
+
         if (_isMechanic) ...[
           const SizedBox(height: 20),
           _label('Số CCCD / CMND'),
@@ -484,13 +495,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               FilteringTextInputFormatter.digitsOnly,
             ],
             decoration: _fieldDecoration('001234567890'),
-          ),
-          const SizedBox(height: 20),
-          _label('Biển số xe'),
-          TextField(
-            controller: _plateController,
-            textCapitalization: TextCapitalization.characters,
-            decoration: _fieldDecoration('59A1-12345'),
           ),
         ],
 

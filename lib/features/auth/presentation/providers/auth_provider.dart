@@ -41,12 +41,13 @@ class AuthProvider extends ChangeNotifier {
   String? _userType;
   String? get userType => _userType ?? _user?.userType;
   
-  String? get phoneNumber => _user?.phoneNumber;
-  String? get email => _user?.email;
-  String? get gender => _user?.gender;
-  String? get dateOfBirth => _user?.dateOfBirth;
-  bool get isPhoneVerified => _user?.isPhoneVerified ?? false;
-  bool get isActive => _user?.isActive ?? false;
+  String? get phoneNumber => _user?.phoneNumber ?? _profile?.phoneNumber;
+  String? get email => _user?.email ?? _profile?.email;
+  String? get gender => _user?.gender ?? _profile?.gender;
+  String? get dateOfBirth => _user?.dateOfBirth ?? _profile?.dateOfBirth?.toIso8601String();
+  String? get currentAddress => _user?.currentAddress ?? _profile?.currentAddress;
+  bool get isPhoneVerified => (_user?.isPhoneVerified == true) || (_profile?.isPhoneVerified == true);
+  bool get isActive => (_user?.isActive == true);
 
   /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {
@@ -73,6 +74,8 @@ class AuthProvider extends ChangeNotifier {
         _displayName = _user?.fullName ?? _displayName;
         _userType = _user?.userType ?? _userType;
         _avatarUrl = _user?.avatarUrl ?? _avatarUrl;
+        
+        _profile = await _repository.getMyProfile();
       } catch (e) {
         debugPrint('AuthProvider.checkAuthStatus getMine error: $e');
       }
@@ -92,6 +95,11 @@ class AuthProvider extends ChangeNotifier {
     _displayName = response.user.fullName;
     _userType = response.user.userType;
     _avatarUrl = response.user.avatarUrl;
+    
+    // Also fetch the extended profile right after login so getters relying on _profile work
+    try {
+      _profile = await _repository.getMyProfile();
+    } catch (_) {}
   }
 
   /// `null` = lỗi mạng/API; `true`/`false` = kết quả kiểm tra SĐT.
@@ -299,7 +307,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Cập nhật thông tin cơ bản (Họ tên, Ngày sinh, Giới tính, Email, Mã giới thiệu, Avatar)
+  /// Cập nhật thông tin cơ bản (Họ tên, Ngày sinh, Giới tính, Email, Mã giới thiệu, Avatar, Địa chỉ)
   /// sau khi đăng ký thành công hoặc từ màn hình Chỉnh sửa.
   Future<bool> updateProfile({
     required String fullName,
@@ -307,6 +315,7 @@ class AuthProvider extends ChangeNotifier {
     required String gender,
     String? email,
     String? referralCode,
+    String? currentAddress,
     File? avatarFile,
   }) async {
     _isLoading = true;
@@ -320,6 +329,7 @@ class AuthProvider extends ChangeNotifier {
         gender: gender,
         email: email,
         referralCode: referralCode,
+        currentAddress: currentAddress,
         avatarFile: avatarFile,
         oldAvatarUrl: _avatarUrl,
       );
@@ -442,11 +452,10 @@ class AuthProvider extends ChangeNotifier {
 
   /// Upload giấy tờ thợ sau khi đã có JWT (đăng ký xong).
   Future<bool> uploadMechanicDocuments(MechanicRegisterDraft draft) async {
-    if (draft.portraitFile == null ||
-        draft.vehicleRegistrationFile == null ||
+    if (draft.portraitFile == null &&
+        draft.vehicleRegistrationFile == null &&
         draft.vehicleInsuranceFile == null) {
-      _errorMessage = 'Thiếu ảnh chân dung, cà vẹt hoặc bảo hiểm xe';
-      return false;
+      return true; // Không có gì để upload
     }
 
     _isLoading = true;
@@ -455,9 +464,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await _repository.uploadMechanicDocuments(
-        portrait: draft.portraitFile!,
-        vehicleRegistration: draft.vehicleRegistrationFile!,
-        vehicleInsurance: draft.vehicleInsuranceFile!,
+        portrait: draft.portraitFile,
+        vehicleRegistration: draft.vehicleRegistrationFile,
+        vehicleInsurance: draft.vehicleInsuranceFile,
       );
       return true;
     } catch (e, st) {

@@ -9,7 +9,6 @@ import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.d
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
-import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_document_upload_tile.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_layout.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
@@ -25,16 +24,6 @@ class MechanicRegisterInfoScreen extends StatefulWidget {
   final String phoneNumber;
   final String? otpToken;
 
-  static const _vehicleSuggestions = [
-    'Honda SH125i',
-    'Honda SH150i',
-    'Honda Vision',
-    'Yamaha Exciter',
-    'Yamaha Sirius',
-  ];
-
-  static const _generationSuggestions = ['2018', '2019', '2020', '2022', '2024', '2025'];
-
   @override
   State<MechanicRegisterInfoScreen> createState() => _MechanicRegisterInfoScreenState();
 }
@@ -44,18 +33,12 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
   final _identityController = TextEditingController();
   final _addressController = TextEditingController();
   final _emailController = TextEditingController();
-  final _plateController = TextEditingController();
-  final _vehicleController = TextEditingController();
-  final _generationController = TextEditingController();
-  final _driverLicenseNoController = TextEditingController();
   final _bankAccountController = TextEditingController();
   final _bankNameController = TextEditingController();
   final _bankHolderController = TextEditingController();
 
   DateTime? _dob;
   XFile? _portraitFile;
-  XFile? _registrationFile;
-  XFile? _insuranceFile;
 
   @override
   void dispose() {
@@ -63,10 +46,6 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
     _identityController.dispose();
     _addressController.dispose();
     _emailController.dispose();
-    _plateController.dispose();
-    _vehicleController.dispose();
-    _generationController.dispose();
-    _driverLicenseNoController.dispose();
     _bankAccountController.dispose();
     _bankNameController.dispose();
     _bankHolderController.dispose();
@@ -103,24 +82,14 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
     final name = _nameController.text.trim();
     final identity = _identityController.text.trim();
     final address = _addressController.text.trim();
-    final plate = _plateController.text.trim().toUpperCase();
-    final vehicle = _vehicleController.text.trim();
-    final generation = _generationController.text.trim();
-    final licenseNo = _driverLicenseNoController.text.trim();
     final bankAcc = _bankAccountController.text.trim();
 
     if (name.length < 2) return _snack('Vui lòng nhập họ và tên');
     if (identity.length < 6) return _snack('CCCD/CMND không hợp lệ');
     if (_dob == null) return _snack('Vui lòng chọn ngày tháng năm sinh');
     if (address.length < 5) return _snack('Vui lòng nhập địa chỉ hiện tại');
-    if (plate.length < 4) return _snack('Biển số xe không hợp lệ');
-    if (vehicle.length < 2) return _snack('Vui lòng nhập loại xe');
-    if (generation.length < 2) return _snack('Vui lòng nhập đời xe');
-    if (licenseNo.length < 5) return _snack('Vui lòng nhập số bằng lái xe');
     if (bankAcc.length < 6) return _snack('Vui lòng nhập số tài khoản ngân hàng');
     if (_portraitFile == null) return _snack('Vui lòng tải ảnh chân dung');
-    if (_registrationFile == null) return _snack('Vui lòng tải ảnh cà vẹt xe');
-    if (_insuranceFile == null) return _snack('Vui lòng tải ảnh bảo hiểm xe');
 
     final draft = MechanicRegisterDraft(
       phoneNumber: widget.phoneNumber,
@@ -129,16 +98,15 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
       dateOfBirth: _dob!,
       currentAddress: address,
       email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-      licensePlate: plate,
-      vehicleModel: vehicle,
-      vehicleGeneration: generation,
-      driverLicenseNumber: licenseNo,
       bankName: _bankNameController.text.trim().isEmpty ? null : _bankNameController.text.trim(),
       bankAccountNumber: bankAcc,
       bankAccountHolder: _bankHolderController.text.trim().isEmpty ? name : _bankHolderController.text.trim(),
       portraitFile: _portraitFile,
-      vehicleRegistrationFile: _registrationFile,
-      vehicleInsuranceFile: _insuranceFile,
+      // Những thông tin xe tạm thời bỏ trống hoặc gán giá trị mặc định theo yêu cầu
+      licensePlate: 'N/A',
+      vehicleModel: 'N/A',
+      vehicleGeneration: 'N/A',
+      driverLicenseNumber: 'N/A',
     );
 
     Navigator.of(context).push(
@@ -239,53 +207,12 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
         const SizedBox(height: 16),
         _field('Địa chỉ hiện tại', _addressController, hint: 'Số nhà, phường, quận, tỉnh...', required: true),
         _field('Email (nếu có)', _emailController, hint: 'example@email.com', email: true),
-        _field('Biển số xe', _plateController, hint: '59A1-12345', upperCase: true, required: true),
-        _field('Loại xe', _vehicleController, hint: 'Honda SH125i', required: true),
-        Wrap(
-          spacing: 6,
-          runSpacing: 4,
-          children: MechanicRegisterInfoScreen._vehicleSuggestions
-              .map((s) => ActionChip(
-                    label: Text(s, style: const TextStyle(fontSize: 11)),
-                    onPressed: () => _vehicleController.text = s,
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        _field('Đời xe', _generationController, hint: '2020, 2024...', required: true),
-        Wrap(
-          spacing: 6,
-          children: MechanicRegisterInfoScreen._generationSuggestions
-              .map((s) => ActionChip(
-                    label: Text(s, style: const TextStyle(fontSize: 11)),
-                    onPressed: () => _generationController.text = s,
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        _field('Số bằng lái xe', _driverLicenseNoController, hint: '1234567890', required: true),
         const SizedBox(height: 8),
         const Text('Tài khoản ngân hàng nhận tiền', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         _field('Tên ngân hàng', _bankNameController, hint: 'Vietcombank, Techcombank...'),
         _field('Số tài khoản', _bankAccountController, hint: '1234567890', digitsOnly: true, required: true),
         _field('Chủ tài khoản', _bankHolderController, hint: 'Trùng họ tên hoặc để trống'),
-        const SizedBox(height: 16),
-        AuthDocumentUploadTile(
-          label: 'Ảnh cà vẹt xe',
-          required: true,
-          file: _registrationFile,
-          hint: 'Chụp rõ toàn bộ giấy đăng ký xe.',
-          onChanged: (f) => setState(() => _registrationFile = f),
-        ),
-        const SizedBox(height: 16),
-        AuthDocumentUploadTile(
-          label: 'Ảnh bảo hiểm xe',
-          required: true,
-          file: _insuranceFile,
-          hint: 'Chụp rõ giấy bảo hiểm còn hiệu lực.',
-          onChanged: (f) => setState(() => _insuranceFile = f),
-        ),
         const SizedBox(height: 28),
         SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 16),
