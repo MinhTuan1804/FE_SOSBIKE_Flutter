@@ -10,7 +10,10 @@ class AuthService {
   static const _keyAvatarUrl = 'user_avatar_url';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
   );
 
   String? _memoryToken;

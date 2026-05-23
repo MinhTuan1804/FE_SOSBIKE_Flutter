@@ -85,17 +85,9 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
         userType: widget.role.apiValue,
         firebaseIdToken: widget.firebaseIdToken,
         otpToken: widget.otpToken,
-        identityCard: draft?.identityCard ?? widget.identityCard,
-        licensePlate: draft?.licensePlate ?? widget.licensePlate,
-        vehicleModel: draft?.vehicleModel,
-        vehicleGeneration: draft?.vehicleGeneration,
-        driverLicenseNumber: draft?.driverLicenseNumber,
         currentAddress: draft?.currentAddress,
         dateOfBirth: draft?.dateOfBirth,
         email: draft?.email,
-        bankName: draft?.bankName,
-        bankAccountNumber: draft?.bankAccountNumber,
-        bankAccountHolder: draft?.bankAccountHolder,
       );
     } else {
       success = await auth.login(widget.phoneNumber, password);

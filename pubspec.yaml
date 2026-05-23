@@ -96,6 +96,9 @@ flutter:
     - assets/images/main/customer_home_thanhtoan.png
     - assets/images/main/customer_home_thongbao.png
 
+    - assets/images/found_mechanic/tim_tho.png
+    - assets/images/found_mechanic/tim_tiem.png
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

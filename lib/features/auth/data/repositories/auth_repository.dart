@@ -52,17 +52,8 @@ class AuthRepository {
     String? email,
     String? firebaseIdToken,
     String? otpToken,
-    String? identityCard,
-    String? licensePlate,
-    String? vehicleModel,
-    String? vehicleGeneration,
-    String? driverLicenseNumber,
     String? currentAddress,
     DateTime? dateOfBirth,
-    String? bankCode,
-    String? bankName,
-    String? bankAccountNumber,
-    String? bankAccountHolder,
   }) async {
     try {
       final response = await _dioClient.dio.post(
@@ -75,17 +66,8 @@ class AuthRepository {
           if (email != null) 'email': email,
           if (firebaseIdToken != null) 'firebaseIdToken': firebaseIdToken,
           if (otpToken != null) 'otpToken': otpToken,
-          if (identityCard != null) 'identityCard': identityCard,
-          if (licensePlate != null) 'licensePlate': licensePlate,
-          if (vehicleModel != null) 'vehicleModel': vehicleModel,
-          if (vehicleGeneration != null) 'vehicleGeneration': vehicleGeneration,
-          if (driverLicenseNumber != null) 'driverLicenseNumber': driverLicenseNumber,
           if (currentAddress != null) 'currentAddress': currentAddress,
-          if (dateOfBirth != null) 'dateOfBirth': dateOfBirth!.toIso8601String().split('T').first,
-          if (bankCode != null) 'bankCode': bankCode,
-          if (bankName != null) 'bankName': bankName,
-          if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
-          if (bankAccountHolder != null) 'bankAccountHolder': bankAccountHolder,
+          if (dateOfBirth != null) 'dateOfBirth': dateOfBirth.toIso8601String().split('T').first,
         },
       );
       return AuthResponse.fromJson(response.data);

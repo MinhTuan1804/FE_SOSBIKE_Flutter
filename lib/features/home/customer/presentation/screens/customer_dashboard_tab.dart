@@ -1,8 +1,7 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
 
 class CustomerDashboardTab extends StatefulWidget {
   const CustomerDashboardTab({super.key});
@@ -12,6 +11,8 @@ class CustomerDashboardTab extends StatefulWidget {
 }
 
 class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
+  bool _showFindMechanicSelection = false;
+
   @override
   void initState() {
     super.initState();
@@ -20,7 +21,11 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
     });
   }
 
+  @override
   Widget build(BuildContext context) {
+    if (_showFindMechanicSelection) {
+      return _buildFindMechanicSelectionView();
+    }
 
     return SingleChildScrollView(
       child: Column(
@@ -32,7 +37,11 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               children: [
-                const _SosBanner(),
+                _SosBanner(onStart: () {
+                  setState(() {
+                    _showFindMechanicSelection = true;
+                  });
+                }),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -194,10 +203,93 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
       ),
     );
   }
+
+  Widget _buildFindMechanicSelectionView() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF3B1818), Color(0xFF1C0A0A)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        children: [
+          const SizedBox(height: 20),
+          // Card 1: Tìm Thợ
+          _buildSelectionCard(
+            assetPath: 'assets/images/found_mechanic/tim_tho.png',
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(builder: (_) => const FindMechanicFlowPage()),
+              ).then((_) {
+                // Return to dashboard when exiting the flow
+                setState(() {
+                  _showFindMechanicSelection = false;
+                });
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Card 2: Tìm Tiệm
+          _buildSelectionCard(
+            assetPath: 'assets/images/found_mechanic/tim_tiem.png',
+            onTap: () {
+              // Placeholder behavior or message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tính năng tìm tiệm sẽ sớm khả dụng!')),
+              );
+            },
+          ),
+
+          // Bottom padding to avoid nav bar overlap
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectionCard({
+    required String assetPath,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white24, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Image.asset(
+            assetPath,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            errorBuilder: (_, __, ___) => Container(
+              color: Colors.grey[800],
+              child: const Icon(Icons.broken_image, color: Colors.white, size: 60),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SosBanner extends StatelessWidget {
-  const _SosBanner();
+  const _SosBanner({required this.onStart});
+  final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +343,7 @@ class _SosBanner extends StatelessWidget {
             bottom: 16,
             right: 16,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: onStart,
               icon: const Icon(Icons.start, color: Colors.white, size: 20),
               label: const Text(
                 'Bắt đầu',
