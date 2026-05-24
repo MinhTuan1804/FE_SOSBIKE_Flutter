@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -147,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const EditProfileScreen(),
+                                builder: (context) => const PageLoader(child: EditProfileScreen()),
                               ),
                             );
                           },
@@ -271,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AddVehicleScreen(),
+                            builder: (context) => const PageLoader(child: AddVehicleScreen()),
                           ),
                         );
                       },

@@ -1,7 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
+import 'package:fe_moblie_flutter/features/danger_warning/presentation/screens/danger_warning_screen.dart';
+import 'package:fe_moblie_flutter/features/share_route/presentation/screens/share_route_screen.dart';
+import 'package:fe_moblie_flutter/features/booking/presentation/screens/booking_screen.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_shop/find_shop_flow_page.dart';
 
 class CustomerDashboardTab extends StatefulWidget {
   const CustomerDashboardTab({super.key});
@@ -56,7 +61,13 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                           child: Icon(Icons.error, color: Colors.red[400], size: 28),
                         ),
                         title: 'Cảnh báo nguy hiểm',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const PageLoader(child: DangerWarningScreen()),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -71,7 +82,13 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                           child: Icon(Icons.location_on, color: Colors.red[400], size: 28),
                         ),
                         title: 'Chia sẻ lộ trình',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const PageLoader(child: ShareRouteScreen()),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -128,7 +145,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                               'Sổ bảo dưỡng',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -170,7 +187,13 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
 
                         // Đặt lịch button
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PageLoader(child: BookingScreen()),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF8B1A1A),
                             foregroundColor: Colors.white,
@@ -208,7 +231,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF3B1818), Color(0xFF1C0A0A)],
+          colors: [Color(0xFF0A0202), Color(0xFF600808)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -216,13 +239,17 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 30),
           // Card 1: Tìm Thợ
           _buildSelectionCard(
             assetPath: 'assets/images/found_mechanic/tim_tho.png',
+            title: 'Tìm Thợ',
+            buttonText: 'Đặt ngay',
             onTap: () {
               Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(builder: (_) => const FindMechanicFlowPage()),
+                MaterialPageRoute(
+                  builder: (_) => const PageLoader(child: FindMechanicFlowPage()),
+                ),
               ).then((_) {
                 // Return to dashboard when exiting the flow
                 setState(() {
@@ -236,11 +263,19 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
           // Card 2: Tìm Tiệm
           _buildSelectionCard(
             assetPath: 'assets/images/found_mechanic/tim_tiem.png',
+            title: 'Tìm Tiệm',
+            buttonText: 'Đi Ngay',
             onTap: () {
-              // Placeholder behavior or message
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tính năng tìm tiệm sẽ sớm khả dụng!')),
-              );
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => const PageLoader(child: FindShopFlowPage()),
+                ),
+              ).then((_) {
+                // Return to dashboard when exiting the flow
+                setState(() {
+                  _showFindMechanicSelection = false;
+                });
+              });
             },
           ),
 
@@ -253,33 +288,102 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
 
   Widget _buildSelectionCard({
     required String assetPath,
+    required String title,
+    required String buttonText,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 200,
+        height: 230,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white24, width: 1.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 8,
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Image.asset(
-            assetPath,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            errorBuilder: (_, __, ___) => Container(
-              color: Colors.grey[800],
-              child: const Icon(Icons.broken_image, color: Colors.white, size: 60),
-            ),
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            children: [
+              // Background Image
+              Positioned.fill(
+                child: Image.asset(
+                  assetPath,
+                  fit: BoxFit.none,
+                  width: double.infinity,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.grey[800],
+                    child: const Icon(Icons.broken_image, color: Colors.white, size: 60),
+                  ),
+                ),
+              ),
+
+              // Title text at top-left
+              Positioned(
+                top: 10,
+                left: 20,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.8),
+                        offset: const Offset(2, 3),
+                        blurRadius: 8,
+                      ),
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        offset: const Offset(-1, -1),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Button at bottom-right
+              Positioned(
+                bottom: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC02020), // Vibrant red matching Figma brand red/button
+                    borderRadius: BorderRadius.circular(30), // fully rounded pill
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -294,7 +398,7 @@ class _SosBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 160,
+      height: 150,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
@@ -367,14 +471,12 @@ class _SosBanner extends StatelessWidget {
 
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
-    this.icon,
-    this.customIcon,
+    required this.customIcon,
     required this.title,
     required this.onTap,
   });
 
-  final IconData? icon;
-  final Widget? customIcon;
+  final Widget customIcon;
   final String title;
   final VoidCallback onTap;
 
@@ -399,7 +501,7 @@ class _ActionCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            customIcon ?? Icon(icon, color: Colors.red[400], size: 28),
+            customIcon,
             const SizedBox(height: 12),
             Text(
               title,

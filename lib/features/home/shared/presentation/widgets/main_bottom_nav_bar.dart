@@ -47,7 +47,7 @@ class MainBottomNavBar extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final totalH = _barHeight + _bumpProtrusion + bottom;
     final slotW = width / _tabCount;
-    final activeIndex = showActive ? current.index : 0;
+    final activeIndex = showActive ? current.index : 100;
     final cx = slotW * activeIndex + slotW / 2;
     final circleBottom = bottom + _barHeight - _bumpRadius + _bumpProtrusion;
 
@@ -64,8 +64,8 @@ class MainBottomNavBar extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
-            height: _barHeight + bottom,
+            bottom: -18,
+            height: _barHeight + bottom + 30,
             child: const DecoratedBox(
               decoration: BoxDecoration(
                 color: AppColors.primary,

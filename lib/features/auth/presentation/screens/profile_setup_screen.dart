@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,19 +112,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _goBack() => authPop(context);
-
-  String get _genderLabel {
-    switch (_selectedGender) {
-      case Gender.male:
-        return 'Nam';
-      case Gender.female:
-        return 'Nữ';
-      case Gender.other:
-        return 'Khác';
-      default:
-        return 'Chọn giới tính';
-    }
-  }
 
   String get _genderApiValue {
     switch (_selectedGender) {

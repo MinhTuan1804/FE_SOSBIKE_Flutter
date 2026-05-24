@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/location_select_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/add_note_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/searching_view.dart';

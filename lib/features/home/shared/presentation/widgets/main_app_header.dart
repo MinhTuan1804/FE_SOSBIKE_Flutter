@@ -1,9 +1,6 @@
-import 'dart:math';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
-import 'package:fe_moblie_flutter/core/widgets/app_network_image.dart';
 
 /// Header đỏ full width; vùng Trực tuyến kéo sát mép phải (Figma).
 class MainAppHeader extends StatelessWidget {
@@ -59,33 +56,52 @@ class MainAppHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                 const SizedBox(width: 16),
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onAvatarTap,
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    child: ClipOval(
-                      child: avatarUrl != null && avatarUrl!.isNotEmpty
-                          ? AppNetworkImage(
-                              url: avatarUrl!,
-                              fit: BoxFit.cover,
-                              errorWidget: Image.asset(
-                                'assets/images/main/avatar_placeholder.png',
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Image.asset(
-                              'assets/images/main/avatar_placeholder.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.person,
-                                color: AppColors.primary,
-                                size: 30,
-                              ),
-                            ),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onAvatarTap,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: ClipOval(
+                          child: _buildAvatarImage(),
+                        ),
+                      ),
                     ),
-                  ),
+                    Positioned(
+                      top: -4,
+                      left: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE01B), // Gold/Yellow
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.white, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'VIP',
+                          style: TextStyle(
+                            color: Color(0xFFC01515), // Red text
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -181,23 +197,6 @@ class MainAppHeader extends StatelessWidget {
         'assets/images/main/avatar_placeholder.png',
         fit: BoxFit.cover,
       ),
-    );
-  }
-}
-
-class _LocationButton extends StatelessWidget {
-  const _LocationButton({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onTap ?? () {},
-      icon: const Icon(Icons.location_on_rounded),
-      color: AppColors.primary,
-      iconSize: 20,
-      tooltip: 'Vị trí',
     );
   }
 }

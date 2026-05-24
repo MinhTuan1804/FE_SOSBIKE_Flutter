@@ -1,8 +1,7 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.dart';

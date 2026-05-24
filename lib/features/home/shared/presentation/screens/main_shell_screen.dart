@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
@@ -9,6 +9,8 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
+import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 
 /// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
@@ -38,6 +40,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final auth = context.watch<AuthProvider>();
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
+    final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER');
 
     return Scaffold(
       extendBody: true,
@@ -47,18 +50,21 @@ class _MainShellScreenState extends State<MainShellScreen> {
         children: [
           Column(
             children: [
-              MainAppHeader(
-                userName: auth.displayName,
-                avatarUrl: auth.avatarUrl,
-                isOnline: _isOnline,
-                onOnlineChanged: (v) => setState(() => _isOnline = v),
-                userType: auth.userType,
-                onAvatarTap: () {
-                  Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                },
-              ),
+              if (showMainHeader)
+                MainAppHeader(
+                  userName: auth.displayName,
+                  avatarUrl: auth.avatarUrl,
+                  isOnline: _isOnline,
+                  onOnlineChanged: (v) => setState(() => _isOnline = v),
+                  userType: auth.userType,
+                  onAvatarTap: () {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(
+                        builder: (_) => const PageLoader(child: ProfileScreen()),
+                      ),
+                    );
+                  },
+                ),
               Expanded(
                 child: ColoredBox(
                   color: auth.userType == 'CUSTOMER' ? Colors.white : Colors.black,
@@ -112,10 +118,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
           iconAsset: 'assets/images/main/nav_history.png',
         ),
       MainNavTab.wallet => const MembershipScreen(),
-      MainNavTab.maintenance => const MainPlaceholderTab(
-          title: 'Bảo trì',
-          iconAsset: 'assets/images/main/nav_maintenance.png',
-        ),
+      MainNavTab.maintenance => userType == 'CUSTOMER'
+          ? const NotificationsTabScreen()
+          : const MainPlaceholderTab(
+              title: 'Bảo trì',
+              iconAsset: 'assets/images/main/nav_maintenance.png',
+            ),
     };
   }
 }

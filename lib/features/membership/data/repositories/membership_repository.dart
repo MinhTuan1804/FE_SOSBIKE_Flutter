@@ -129,14 +129,10 @@ class MembershipRepository {
         planId: planId,
         paymentMethod: paymentMethod,
       );
-      final current = await confirmPayment(
+      return await confirmPayment(
         paymentId: intent.paymentId,
         autoRenew: autoRenew,
       );
-      if (current == null) {
-        throw const FormatException('Subscription was not created after payment confirmation.');
-      }
-      return current;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
