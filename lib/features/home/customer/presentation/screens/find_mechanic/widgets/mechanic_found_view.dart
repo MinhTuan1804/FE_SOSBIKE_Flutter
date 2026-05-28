@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 
 class MechanicFoundView extends StatelessWidget {
   const MechanicFoundView({
@@ -13,6 +15,8 @@ class MechanicFoundView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feeRate = context.watch<AppConfigProvider>().config.defaultPlatformFeeRate;
+    
     return Column(
       children: [
         _buildFlowHeader(context, onBack: onCancel),
@@ -163,6 +167,24 @@ class MechanicFoundView extends StatelessWidget {
                   ),
                   Text(
                     '15,000 VND',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Phí nền tảng',
+                    style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    '$feeRate%',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 16,
