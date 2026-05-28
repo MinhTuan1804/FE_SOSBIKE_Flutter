@@ -1,36 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/chat_provider.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/screens/chat_detail_screen.dart';
 
-class MessageListView extends StatelessWidget {
+class MessageListView extends StatefulWidget {
   const MessageListView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        // Message Item 1
-        _buildMessageItem(
-          context,
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60',
-          title: 'Tiệm sửa xe Thanh Hải',
-          subtitle: 'Em đến nơi rồi ạ.',
-          time: '16:50 T4',
-          unreadCount: 2,
-          isUnread: true,
-        ),
-        const Divider(height: 1, color: Colors.black12, indent: 80),
+  State<MessageListView> createState() => _MessageListViewState();
+}
 
-        // Message Item 2
-        _buildMessageItem(
+class _MessageListViewState extends State<MessageListView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatProvider>().loadConversations();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chat = context.watch<ChatProvider>();
+    final conversations = chat.conversations;
+
+    if (chat.isLoadingConversations) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (chat.errorMessage != null) {
+      return _buildEmptyState(context, chat.errorMessage!);
+    }
+
+    if (conversations.isEmpty) {
+      return _buildEmptyState(context, 'Chưa có cuộc trò chuyện nào.');
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: conversations.length,
+      separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.black12, indent: 80),
+      itemBuilder: (context, index) {
+        final item = conversations[index];
+        return _buildMessageItem(
           context,
-          avatarUrl: '', // Will use default silhouette
-          title: 'Nguyen Van B • Tiệm sửa xe 68',
-          subtitle: 'Cảm ơn quý khách đã sử dụng dịch vụ của cửa hàng chúng em.',
-          time: '18:56 T6',
-          unreadCount: 0,
-          isUnread: false,
-        ),
-      ],
+          avatarUrl: item.otherUserAvatarUrl ?? '',
+          title: item.otherUserName,
+          subtitle: item.lastMessage ?? 'Chưa có tin nhắn.',
+          time: _formatTime(item.lastMessageAt),
+          unreadCount: item.unreadCount,
+          isUnread: item.unreadCount > 0,
+          onTap: () async {
+            final chatProvider = context.read<ChatProvider>();
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChatDetailScreen(
+                  orderId: item.orderId,
+                  title: item.otherUserName,
+                  avatarUrl: item.otherUserAvatarUrl,
+                ),
+              ),
+            );
+            if (!mounted) return;
+            await chatProvider.loadConversations();
+          },
+        );
+      },
     );
   }
 
@@ -42,9 +78,10 @@ class MessageListView extends StatelessWidget {
     required String time,
     required int unreadCount,
     required bool isUnread,
+    required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
@@ -169,5 +206,23 @@ class MessageListView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildEmptyState(BuildContext context, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime? time) {
+    if (time == null) return '';
+    return DateFormat('HH:mm E', 'vi').format(time);
   }
 }
