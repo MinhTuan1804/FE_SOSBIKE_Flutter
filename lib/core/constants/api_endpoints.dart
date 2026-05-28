@@ -23,5 +23,7 @@ class ApiEndpoints {
   static const String paymentIntents = '/payments/intents';
   static const String payments = '/payments';
   static const String mechanicDocuments = '/mechanics/me/documents';
-
+  static const String mechanicDashboard = '/mechanics/me/dashboard';
+  static const String mechanicCustomerHistory = '/mechanics/me/history';
+  static const String mechanicWallet = '/mechanics/me/wallet';
 }

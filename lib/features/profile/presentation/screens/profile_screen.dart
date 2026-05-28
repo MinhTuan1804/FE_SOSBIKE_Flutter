@@ -1,0 +1,626 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/screens/add_vehicle_screen.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  static const _bgColor = Color(0xFFF9F9F9); // Nền xám nhạt
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VehicleProvider>().fetchMyVehicles();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final vehicleProvider = context.watch<VehicleProvider>();
+
+    return Scaffold(
+      backgroundColor: _bgColor,
+      extendBody: true,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          'Thông tin cá nhân',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          _SettingsMenu(auth: auth, context: context),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Khối nền đỏ phía trên
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+            child: Container(color: AppColors.primary),
+          ),
+          
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 16), // Khoảng cách trước thẻ đè lên nền đỏ
+
+                // 1. Thẻ Header Profile (Đè lên nền đỏ)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Avatar với icon edit
+                      Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: _buildAvatarImage(auth.avatarUrl),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Tên & ID
+                      Text(
+                        auth.displayName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+                      
+                      // Nút Edit Profile
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PageLoader(child: EditProfileScreen()),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'Chỉnh sửa thông tin cá nhân',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 2. Phần Thông tin cá nhân
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Thông tin cá nhân',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Icon(Icons.assignment_ind_outlined, color: AppColors.primary, size: 24),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      _InfoRow(
+                        icon: Icons.phone_outlined,
+                        title: auth.phoneNumber ?? 'Chưa cập nhật', 
+                        subtitle: 'Số điện thoại',
+                        isVerified: auth.isPhoneVerified,
+                      ),
+                      const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
+                      _InfoRow(
+                        icon: Icons.email_outlined,
+                        title: (auth.email != null && auth.email!.isNotEmpty) ? auth.email! : 'Chưa cập nhật', 
+                        subtitle: 'Email',
+                      ),
+                      const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
+                      _InfoRow(
+                        icon: Icons.location_on_outlined,
+                        title: (auth.currentAddress != null && auth.currentAddress!.isNotEmpty) ? auth.currentAddress! : 'Chưa cập nhật', 
+                        subtitle: 'Địa chỉ hiện tại',
+                      ),
+                      const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
+                      IntrinsicHeight(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _InfoRow(
+                                icon: Icons.female,
+                                title: _formatGender(auth.gender),
+                                subtitle: 'Giới tính',
+                                padding: const EdgeInsets.only(left: 16, top: 16, bottom: 16, right: 8),
+                              ),
+                            ),
+                            const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+                            Expanded(
+                              child: _InfoRow(
+                                icon: Icons.cake_outlined,
+                                title: auth.dateOfBirth ?? 'Chưa cập nhật',
+                                subtitle: 'Ngày sinh',
+                                padding: const EdgeInsets.only(left: 8, top: 16, bottom: 16, right: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 3. Phần Phương tiện của tôi
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: const Text(
+                    'Phương tiện của tôi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                if (vehicleProvider.isLoading)
+                  const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                else if (vehicleProvider.vehicles.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PageLoader(child: AddVehicleScreen()),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: const Text('Thêm thông tin xe'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ...vehicleProvider.vehicles.map<Widget>((v) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFC8102E), // Màu đỏ đậm cho thẻ xe
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Ảnh xe bên trái, to ra
+
+                        
+                        // Chi tiết xe
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${v.brand} ${v.model}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Biển số: ${v.licenseplate}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  _VehicleBadge(label: _formatVehicleType(v.vehicletype)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        if (v.photourl != null && v.photourl!.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: v.photourl!,
+                              width: 120,
+                              height: 100,
+                              fit: BoxFit.fill,
+                              placeholder: (context, url) => Container(
+                                width: 80, height: 80, color: Colors.white24,
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                width: 80, height: 80, color: Colors.white24,
+                                child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 36),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: 80, height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 36),
+                          ),
+
+                      ],
+                    ),
+                  )),
+
+                const SizedBox(height: 120), // Khoảng trống cho thanh điều hướng
+              ],
+            ),
+          ),
+          
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Material(
+              color: AppColors.primary,
+              clipBehavior: Clip.none,
+              child: MainBottomNavBar(
+                current: MainNavTab.orders,
+                onChanged: (t) => Navigator.pop(context, t),
+                userType: auth.userType,
+                showActive: false,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarImage(String? avatarUrl) {
+    final url = avatarUrl?.trim() ?? '';
+    if (url.isEmpty || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+      return Image.asset(
+        'assets/images/main/avatar_placeholder.png',
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey[200],
+          child: const Icon(
+            Icons.person,
+            color: Colors.grey,
+            size: 50,
+          ),
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => Image.asset(
+        'assets/images/main/avatar_placeholder.png',
+        fit: BoxFit.cover,
+      ),
+      errorWidget: (_, __, ___) => Image.asset(
+        'assets/images/main/avatar_placeholder.png',
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  String _formatVehicleType(String typeCode) {
+    switch (typeCode.toUpperCase()) {
+      case 'SCOOTER':
+        return 'Xe tay ga';
+      case 'MANUAL':
+        return 'Xe số';
+      case 'ELECTRIC':
+        return 'Xe máy điện';
+      case 'OTHER':
+        return 'Khác';
+      default:
+        return typeCode;
+    }
+  }
+
+  String _formatGender(String? genderCode) {
+    if (genderCode == null || genderCode.isEmpty) return 'Chưa cập nhật';
+    switch (genderCode.toUpperCase()) {
+      case 'MALE':
+        return 'Nam';
+      case 'FEMALE':
+        return 'Nữ';
+      case 'OTHER':
+        return 'Khác';
+      default:
+        return genderCode;
+    }
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.isVerified,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool? isVerified;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    if (isVerified != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isVerified! ? Colors.green[50] : Colors.red[50],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isVerified! ? 'ĐÃ XÁC THỰC' : 'CHƯA XÁC THỰC',
+                          style: TextStyle(
+                            color: isVerified! ? Colors.green : Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ]
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VehicleBadge extends StatelessWidget {
+  const _VehicleBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsMenu extends StatefulWidget {
+  const _SettingsMenu({
+    required this.auth,
+    required this.context,
+  });
+
+  final AuthProvider auth;
+  final BuildContext context;
+
+  @override
+  State<_SettingsMenu> createState() => _SettingsMenuState();
+}
+
+class _SettingsMenuState extends State<_SettingsMenu> {
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.settings_outlined, color: Colors.white),
+      offset: const Offset(0, 40),
+      onSelected: (value) async {
+        if (value == 'logout') {
+          await _handleLogout(context);
+        }
+      },
+      itemBuilder: (BuildContext context) => [
+        const PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, color: AppColors.primary, size: 20),
+              SizedBox(width: 12),
+              Text(
+                'Đăng xuất',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Đăng xuất'),
+        content: const Text('Bạn có muốn đăng xuất?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      await context.read<AuthProvider>().logout();
+      if (context.mounted) navigateToLogin();
+    }
+  }
+}

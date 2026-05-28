@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:fe_moblie_flutter/core/widgets/app_network_image.dart';
 
 /// Ô upload ảnh giấy tờ (Figma: khung xám + icon camera).
@@ -26,20 +27,12 @@ class AuthDocumentUploadTile extends StatelessWidget {
   final VoidCallback? onViewExisting;
 
   Future<void> _pick(BuildContext context) async {
-    try {
-      final picked = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1600,
-        imageQuality: 85,
-      );
-      onChanged(picked);
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không chọn được ảnh: $e')),
-        );
-      }
-    }
+    final picked = await pickImageFromCameraOrGallery(
+      context,
+      maxWidth: 1600,
+      imageQuality: 85,
+    );
+    if (picked != null) onChanged(picked);
   }
 
   @override

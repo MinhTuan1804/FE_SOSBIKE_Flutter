@@ -9,11 +9,13 @@ class MainBottomNavBar extends StatelessWidget {
     required this.current,
     required this.onChanged,
     required this.userType,
+    this.showActive = true,
   });
 
   final MainNavTab current;
   final ValueChanged<MainNavTab> onChanged;
   final String? userType;
+  final bool showActive;
 
   static const _barHeight = 65.0;
   static const _bumpRadius = 34.0;
@@ -45,7 +47,8 @@ class MainBottomNavBar extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final totalH = _barHeight + _bumpProtrusion + bottom;
     final slotW = width / _tabCount;
-    final cx = slotW * current.index + slotW / 2;
+    final activeIndex = showActive ? current.index : 100;
+    final cx = slotW * activeIndex + slotW / 2;
     final circleBottom = bottom + _barHeight - _bumpRadius + _bumpProtrusion;
 
     final isCustomer = userType?.toUpperCase() == 'CUSTOMER';
@@ -61,8 +64,8 @@ class MainBottomNavBar extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
-            height: _barHeight + bottom,
+            bottom: -18,
+            height: _barHeight + bottom + 30,
             child: const DecoratedBox(
               decoration: BoxDecoration(
                 color: AppColors.primary,
@@ -75,40 +78,48 @@ class MainBottomNavBar extends StatelessWidget {
           ),
 
           // Animated Bump Circle
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutBack,
-            left: cx - _bumpRadius,
-            bottom: circleBottom,
-            width: _bumpRadius + 35,
-            height: _bumpRadius + 20,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(25),
+          if (showActive)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutBack,
+              left: cx - _bumpRadius,
+              bottom: circleBottom,
+              width: _bumpRadius + 35,
+              height: _bumpRadius + 20,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
           // Animated Floating Wheel Icon
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutBack,
-            left: cx - (_wheelSize / 2),
-            bottom: circleBottom + (_bumpRadius * 2) - 18,
-            child: Image.asset(
-              'assets/images/main/fab_wheel.png',
-              width: _wheelSize,
-              height: _wheelSize,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.settings,
-                color: Colors.white,
-                size: _wheelSize,
+          if (showActive)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutBack,
+              left: cx - (_wheelSize / 2),
+              bottom: circleBottom + (_bumpRadius * 2) - 18,
+              child: Image.asset(
+                'assets/images/main/fab_wheel.png',
+                width: _wheelSize,
+                height: _wheelSize,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.settings,
+                  color: Colors.white,
+                  size: _wheelSize,
+                ),
               ),
             ),
-          ),
 
           // Tabs
           Positioned(
@@ -118,7 +129,7 @@ class MainBottomNavBar extends StatelessWidget {
             height: _barHeight + _bumpProtrusion,
             child: Row(
               children: itemsToUse.map((item) {
-                final isSelected = current == item.$1;
+                final isSelected = showActive && current == item.$1;
                 return Expanded(
                   child: GestureDetector(
                     onTap: () => onChanged(item.$1),

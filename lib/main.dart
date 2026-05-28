@@ -18,6 +18,14 @@ import 'features/home/data/repositories/home_repository.dart';
 import 'features/home/presentation/providers/home_provider.dart';
 import 'features/membership/data/repositories/membership_repository.dart';
 import 'features/membership/presentation/providers/membership_provider.dart';
+import 'features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
+import 'features/home/mechanic/data/repositories/mechanic_history_repository.dart';
+import 'features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
+import 'features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
+import 'features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
+import 'features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
+import 'features/profile/data/repositories/vehicle_repository.dart';
+import 'features/profile/presentation/providers/vehicle_provider.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -25,9 +33,13 @@ void main() async {
 
   if (!kIsWeb) {
     try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      } else {
+        debugPrint('Firebase already initialized, skipping.');
+      }
     } catch (e) {
       debugPrint('Firebase initialization failed: $e');
     }
@@ -43,6 +55,10 @@ void main() async {
   final authRepository = AuthRepository(dioClient);
   final homeRepository = HomeRepository();
   final membershipRepository = MembershipRepository(dioClient);
+  final mechanicDashboardRepository = MechanicDashboardRepository(dioClient);
+  final mechanicHistoryRepository = MechanicHistoryRepository(dioClient);
+  final mechanicWalletRepository = MechanicWalletRepository(dioClient);
+  final vehicleRepository = VehicleRepository(dioClient);
   final backendOtpService = BackendOtpService(dioClient);
 
   final authProvider = AuthProvider(authRepository, authService);
@@ -67,6 +83,10 @@ void main() async {
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicWalletProvider(mechanicWalletRepository)),
+        ChangeNotifierProvider(create: (_) => VehicleProvider(vehicleRepository)),
       ],
       child: const MyApp(),
     ),

@@ -69,7 +69,9 @@ flutter:
     - assets/images/login/pattern_bg.png
     - assets/images/login/screen_otp.png
     - assets/images/login/screen_password.png
+    - assets/images/main/
     - assets/images/main/avatar_placeholder.png
+    - assets/images/main/background.png
     - assets/images/main/header_toggle_track.png
     - assets/images/main/map_card.png
     - assets/images/main/btn_view_trips.png
