@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
@@ -28,6 +29,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigProvider>().config;
     if (_showFindMechanicSelection) {
       return _buildFindMechanicSelectionView();
     }
@@ -42,11 +44,14 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               children: [
-                _SosBanner(onStart: () {
-                  setState(() {
-                    _showFindMechanicSelection = true;
-                  });
-                }),
+                _SosBanner(
+                  brandName: appConfig.ui.brandName,
+                  onStart: () {
+                    setState(() {
+                      _showFindMechanicSelection = true;
+                    });
+                  },
+                ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -392,7 +397,8 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
 }
 
 class _SosBanner extends StatelessWidget {
-  const _SosBanner({required this.onStart});
+  const _SosBanner({required this.brandName, required this.onStart});
+  final String brandName;
   final VoidCallback onStart;
 
   @override
@@ -425,11 +431,11 @@ class _SosBanner extends StatelessWidget {
           ),
 
           // SOS Text top-right
-          const Positioned(
+          Positioned(
             top: 12,
             right: 20,
             child: Text(
-              'SOS Ngay!',
+              brandName,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 34,
