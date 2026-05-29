@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'core/config/app_config_provider.dart';
+import 'core/config/app_config_repository.dart';
 import 'core/navigation/app_navigator.dart';
 import 'core/navigation/auth_gate.dart';
 import 'core/navigation/auth_navigation.dart';
@@ -18,6 +20,9 @@ import 'features/home/data/repositories/home_repository.dart';
 import 'features/home/presentation/providers/home_provider.dart';
 import 'features/membership/data/repositories/membership_repository.dart';
 import 'features/membership/presentation/providers/membership_provider.dart';
+import 'features/notifications/data/repositories/chat_repository.dart';
+import 'features/notifications/data/services/chat_realtime_service.dart';
+import 'features/notifications/presentation/providers/chat_provider.dart';
 import 'features/profile/data/repositories/vehicle_repository.dart';
 import 'features/profile/presentation/providers/vehicle_provider.dart';
 import 'firebase_options.dart';
@@ -44,6 +49,9 @@ void main() async {
   // 1. Khởi tạo Services dùng chung
   final authService = AuthService();
   final dioClient = DioClient(authService);
+  final appConfigRepository = AppConfigRepository(dioClient);
+  final appConfigProvider = AppConfigProvider(appConfigRepository);
+  unawaited(appConfigProvider.load());
 
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
@@ -51,6 +59,8 @@ void main() async {
   final membershipRepository = MembershipRepository(dioClient);
   final vehicleRepository = VehicleRepository(dioClient);
   final backendOtpService = BackendOtpService(dioClient);
+  final chatRepository = ChatRepository(dioClient);
+  final chatRealtimeService = ChatRealtimeService(authService);
 
   final authProvider = AuthProvider(authRepository, authService);
   unawaited(authProvider.checkAuthStatus());
@@ -71,9 +81,11 @@ void main() async {
     MultiProvider(
       providers: [
         Provider<BackendOtpService>.value(value: backendOtpService),
+        ChangeNotifierProvider<AppConfigProvider>.value(value: appConfigProvider),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
+        ChangeNotifierProvider(create: (_) => ChatProvider(chatRepository, chatRealtimeService)),
         ChangeNotifierProvider(create: (_) => VehicleProvider(vehicleRepository)),
       ],
       child: const MyApp(),
@@ -86,9 +98,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = context.watch<AppConfigProvider>().config;
     return MaterialApp(
       navigatorKey: appNavigatorKey,
-      title: 'SOSbike',
+      title: appConfig.ui.brandName,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

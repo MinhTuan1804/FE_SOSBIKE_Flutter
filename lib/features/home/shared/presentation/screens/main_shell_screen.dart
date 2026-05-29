@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
@@ -38,6 +40,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final appConfig = context.watch<AppConfigProvider>().config;
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
     final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER');
@@ -71,6 +74,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
+                      if (auth.userType == 'CUSTOMER')
+                        Positioned.fill(
+                          child: _CustomerHomeBackground(backgroundUrl: appConfig.ui.homeBackgroundUrl),
+                        ),
                       Positioned.fill(
                         child: Padding(
                           padding: EdgeInsets.only(bottom: navH * 0.35),
@@ -153,6 +160,34 @@ class _SosFab extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CustomerHomeBackground extends StatelessWidget {
+  const _CustomerHomeBackground({required this.backgroundUrl});
+
+  final String backgroundUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = backgroundUrl.trim();
+    if (url.isEmpty) {
+      return const ColoredBox(color: Colors.white);
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image(
+          image: CachedNetworkImageProvider(url),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.white),
+        ),
+        Container(
+          color: Colors.white.withValues(alpha: 0.82),
+        ),
+      ],
     );
   }
 }

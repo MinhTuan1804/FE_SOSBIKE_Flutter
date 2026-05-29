@@ -23,5 +23,13 @@ class ApiEndpoints {
   static const String paymentIntents = '/payments/intents';
   static const String payments = '/payments';
   static const String mechanicDocuments = '/mechanics/me/documents';
+  static const String appConfig = '/config/app';
+
+  static const String chatConversations = '/chats/conversations';
+
+  static String chatMessages(String orderId) => '/chats/orders/$orderId/messages';
+
+  static String chatMarkRead(String orderId) => '/chats/orders/$orderId/read';
+
   static const String refreshToken = '/Auth/refresh-token';
 }
