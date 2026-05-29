@@ -8,9 +8,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+
+import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
+import 'package:fe_moblie_flutter/core/config/app_config_repository.dart';
 
 import 'package:fe_moblie_flutter/main.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
@@ -27,10 +29,17 @@ void main() {
     final authProvider = AuthProvider(authRepository, authService);
     unawaited(authProvider.checkAuthStatus());
 
-    // Build our app with provider and trigger a frame.
+    final appConfigRepository = AppConfigRepository(dioClient);
+    final appConfigProvider = AppConfigProvider(appConfigRepository);
+    unawaited(appConfigProvider.load());
+
+    // Build our app with providers and trigger a frame.
     await tester.pumpWidget(
-      ChangeNotifierProvider<AuthProvider>.value(
-        value: authProvider,
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AppConfigProvider>.value(value: appConfigProvider),
+          ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+        ],
         child: const MyApp(),
       ),
     );

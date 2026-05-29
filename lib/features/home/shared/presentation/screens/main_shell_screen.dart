@@ -15,7 +15,20 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
-import 'package:fe_moblie_flutter/features/profile/presentation/screens/user_profile_screen.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
+import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
+import 'package:fe_moblie_flutter/core/widgets/app_background.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_accept_order_screen.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_arrival_screen.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_line_item.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_inspect_vehicle_view.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_payment_complete_view.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_repair_confirm_view.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_incoming_request_popup.dart';
+
+enum _MechanicOrderFlow { none, accept, arrival, inspect, repair, complete }
 
 /// Shell sau đăng nhập: header + nội dung tab + bottom nav + FAB SOS (Figma).
 class MainShellScreen extends StatefulWidget {
@@ -111,19 +124,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final appConfig = context.watch<AppConfigProvider>().config;
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
     final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER');
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: Colors.black,
-      body: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Column(
-            children: [
+    final shellBody = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Column(
+          children: [
+            if (showMainHeader)
               MainAppHeader(
                 userName: auth.displayName,
                 avatarUrl: auth.avatarUrl,
@@ -132,46 +142,94 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 userType: auth.userType,
                 onAvatarTap: () {
                   Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(builder: (_) => const UserProfileScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const PageLoader(child: ProfileScreen()),
+                    ),
                   );
                 },
               ),
-              Expanded(
-                child: ColoredBox(
-                  color: auth.userType == 'CUSTOMER' ? Colors.white : Colors.black,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned.fill(
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: navH * 0.35),
-                          child: _buildBody(auth.userType),
-                        ),
-                      ),
-                      if (auth.userType != 'CUSTOMER')
-                        Positioned(
-                          right: 12,
-                          bottom: navH + 8,
-                          child: _SosFab(onPressed: () {}),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            Expanded(
+              child: auth.userType == 'CUSTOMER'
+                  ? ColoredBox(
+                      color: Colors.white,
+                      child: _buildTabStack(navH),
+                    )
+                  : _buildTabStack(navH),
+            ),
+          ],
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Material(
+            color: AppColors.primary,
+            clipBehavior: Clip.none,
+            child: MainBottomNavBar(
+              current: _tab,
+              onChanged: (t) {
+                setState(() => _tab = t);
+                if (t == MainNavTab.history && auth.userType != 'CUSTOMER') {
+                  context.read<MechanicHistoryProvider>().load(force: true);
+                }
+                if (t == MainNavTab.wallet && auth.userType != 'CUSTOMER') {
+                  context.read<MechanicWalletProvider>().load(force: true);
+                }
+              },
+              userType: auth.userType,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: auth.userType == 'CUSTOMER' ? Colors.white : const Color(0xFF8B1A1A),
+      body: auth.userType == 'CUSTOMER'
+          ? shellBody
+          : AppBackground(child: shellBody),
+    );
+  }
+
+  Widget _buildTabStack(double navH) {
+    final auth = context.watch<AuthProvider>();
+    final appConfig = context.watch<AppConfigProvider>().config;
+    final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
+    final contentBottomPad = inOrderFlow ? navH : navH * 0.35;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (auth.userType == 'CUSTOMER')
+          Positioned.fill(
+            child: _CustomerHomeBackground(backgroundUrl: appConfig.ui.homeBackgroundUrl),
+          ),
+        Positioned.fill(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: contentBottomPad),
+            child: _buildBody(auth.userType),
+          ),
+        ),
+        if (auth.userType != 'CUSTOMER' &&
+            _orderFlow == _MechanicOrderFlow.none &&
+            _showIncomingRequest) ...[
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeIncomingRequest,
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.black.withValues(alpha: 0.35)),
+            ),
           ),
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Material(
-              color: AppColors.primary,
-              clipBehavior: Clip.none,
-              child: MainBottomNavBar(
-                current: _tab,
-                onChanged: (t) => setState(() => _tab = t),
-                userType: auth.userType,
-              ),
+            left: 14,
+            right: 14,
+            bottom: navH + 76,
+            child: MechanicIncomingRequestPopup(
+              request: _incomingRequest,
+              onCancel: _closeIncomingRequest,
+              onAccept: _acceptIncomingRequest,
+              onViewMore: _closeIncomingRequest,
             ),
           ),
         ],
@@ -231,15 +289,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
       MainNavTab.orders => userType == 'CUSTOMER'
           ? const CustomerDashboardTab()
           : const MechanicDashboardTab(),
-      MainNavTab.history => const MainPlaceholderTab(
-          title: 'Lịch sử',
-          iconAsset: 'assets/images/main/nav_history.png',
-        ),
-      MainNavTab.wallet => const MembershipScreen(),
-      MainNavTab.maintenance => const MainPlaceholderTab(
-          title: 'Bảo trì',
-          iconAsset: 'assets/images/main/nav_maintenance.png',
-        ),
+      MainNavTab.history => userType == 'CUSTOMER'
+          ? const MainPlaceholderTab(
+              title: 'Lịch sử',
+              iconAsset: 'assets/images/main/nav_history.png',
+            )
+          : const MechanicCustomerHistoryTab(),
+      MainNavTab.wallet => userType == 'CUSTOMER'
+          ? const MembershipScreen()
+          : const MechanicWalletTab(),
+      MainNavTab.maintenance => userType == 'CUSTOMER'
+          ? const NotificationsTabScreen()
+          : const MechanicActivityTab(),
     };
   }
 }
