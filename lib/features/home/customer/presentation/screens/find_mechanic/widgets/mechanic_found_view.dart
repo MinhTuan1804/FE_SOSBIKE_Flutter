@@ -15,7 +15,7 @@ class MechanicFoundView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final feeRate = context.watch<AppConfigProvider>().config.defaultPlatformFeeRate;
+    final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
     
     return Column(
       children: [
