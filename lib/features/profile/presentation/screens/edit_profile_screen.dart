@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -25,7 +26,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _gender;
   File? _avatarFile;
 
-  final ImagePicker _picker = ImagePicker();
+  Future<void> _pickImage() async {
+    final picked = await pickImageFromCameraOrGallery(
+      context,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      setState(() => _avatarFile = File(picked.path));
+    }
+  }
 
   @override
   void initState() {

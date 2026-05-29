@@ -70,5 +70,9 @@
 	<string>Ứng dụng cần truy cập vị trí của bạn để hiển thị bản đồ và tìm cửa hàng sửa xe gần nhất.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Ứng dụng cần truy cập vị trí của bạn để hiển thị bản đồ và tìm cửa hàng sửa xe gần nhất.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ứng dụng cần quyền camera để chụp ảnh hồ sơ và giấy tờ.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ứng dụng cần quyền thư viện ảnh để chọn ảnh tải lên.</string>
 </dict>
 </plist>

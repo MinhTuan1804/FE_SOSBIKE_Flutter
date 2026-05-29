@@ -211,73 +211,103 @@ class _MechanicOnlineStrip extends StatelessWidget {
   final bool isOnline;
   final ValueChanged<bool> onChanged;
 
+  static const _stripWidth = 84.0;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 84,
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      width: _stripWidth,
+      padding: const EdgeInsets.fromLTRB(10, 7, 8, 7),
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.horizontal(left: Radius.circular(26)),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            AppColors.primaryDark.withValues(alpha: 0.95),
-            const Color(0xFF6B1010),
+            Color(0xFFC41E1E),
+            Color(0xFF9A1515),
+            Color(0xFF6E1010),
           ],
+          stops: [0.0, 0.52, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 10,
-            offset: const Offset(-3, 2),
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 14,
+            offset: const Offset(-2, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1,
+          color: Colors.white.withValues(alpha: 0.14),
+          width: 0.8,
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
                 width: 6,
                 height: 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isOnline
-                      ? const Color(0xFF7CFC9A)
-                      : Colors.white.withValues(alpha: 0.35),
+                      ? const Color(0xFF86F5A8)
+                      : Colors.white.withValues(alpha: 0.42),
                   boxShadow: isOnline
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF7CFC9A).withValues(alpha: 0.7),
-                            blurRadius: 6,
+                            color: const Color(0xFF86F5A8).withValues(alpha: 0.75),
+                            blurRadius: 8,
+                            spreadRadius: 0.5,
                           ),
                         ]
                       : null,
                 ),
               ),
-              const SizedBox(width: 5),
-              const Text(
-                'Trực tuyến',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                  height: 1,
+              const SizedBox(width: 4),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Trực tuyến',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.98),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.1,
+                      height: 1.05,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.22),
+                          offset: const Offset(0, 0.5),
+                          blurRadius: 1.5,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          _OnlineToggle(value: isOnline, onChanged: onChanged),
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: _OnlineToggle(value: isOnline, onChanged: onChanged),
+          ),
         ],
       ),
     );
@@ -290,7 +320,7 @@ class _OnlineToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  static const _trackW = 60.0;
+  static const _trackW = 58.0;
   static const _trackH = 24.0;
   static const _thumbSize = 18.0;
   static const _pad = 3.0;
@@ -302,44 +332,58 @@ class _OnlineToggle extends StatelessWidget {
       label: value ? 'Đang trực tuyến' : 'Đang ngoại tuyến',
       child: GestureDetector(
         onTap: () => onChanged(!value),
+        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
           width: _trackW,
           height: _trackH,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(_trackH / 2),
             gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: value
-                  ? [
-                      const Color(0xFFFF6B6B),
-                      AppColors.primary,
+                  ? const [
+                      Color(0xFFFF7A7A),
+                      Color(0xFFE83838),
+                      Color(0xFFC41E1E),
                     ]
-                  : [
-                      const Color(0xFF5C0D0D),
-                      const Color(0xFF3D0808),
+                  : const [
+                      Color(0xFF4A0A0A),
+                      Color(0xFF2E0606),
+                      Color(0xFF1F0404),
                     ],
+              stops: value ? const [0.0, 0.5, 1.0] : const [0.0, 0.55, 1.0],
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 4,
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
+              ),
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.06),
+                blurRadius: 0,
+                offset: const Offset(0, -0.5),
               ),
               if (value)
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.45),
-                  blurRadius: 8,
-                  spreadRadius: -2,
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  spreadRadius: -3,
                 ),
             ],
+            border: Border.all(
+              color: Colors.white.withValues(alpha: value ? 0.18 : 0.08),
+              width: 0.6,
+            ),
           ),
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               AnimatedAlign(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 240),
                 curve: Curves.easeOutCubic,
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
                 child: Padding(
@@ -348,13 +392,25 @@ class _OnlineToggle extends StatelessWidget {
                     width: _thumbSize,
                     height: _thumbSize,
                     decoration: BoxDecoration(
-                      color: Colors.white,
                       shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFF3F3F3),
+                        ],
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
+                          color: Colors.black.withValues(alpha: 0.22),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                        BoxShadow(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          blurRadius: 0,
+                          offset: const Offset(0, -0.5),
                         ),
                       ],
                     ),
@@ -363,22 +419,31 @@ class _OnlineToggle extends StatelessWidget {
               ),
               Positioned.fill(
                 child: IgnorePointer(
-                  child: Align(
-                    alignment:
-                        value ? Alignment.centerLeft : Alignment.centerRight,
+                  child: Center(
                     child: Padding(
                       padding: EdgeInsets.only(
-                        left: value ? 10 : 6,
-                        right: value ? 6 : 10,
+                        left: value ? 4 : 22,
+                        right: value ? 22 : 4,
                       ),
-                      child: Text(
-                        value ? 'on' : 'off',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white.withValues(alpha: 0.95),
-                          height: 1,
-                          letterSpacing: 0.5,
+                      child: Align(
+                        alignment:
+                            value ? Alignment.centerLeft : Alignment.centerRight,
+                        child: Text(
+                          value ? 'on' : 'off',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withValues(alpha: 0.96),
+                            height: 1,
+                            letterSpacing: 0.35,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.35),
+                                offset: const Offset(0, 0.5),
+                                blurRadius: 1.5,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

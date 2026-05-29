@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
@@ -59,8 +60,8 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
   }
 
   Future<void> _pickPortrait() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+    final picked = await pickImageFromCameraOrGallery(
+      context,
       maxWidth: 512,
       imageQuality: 85,
     );

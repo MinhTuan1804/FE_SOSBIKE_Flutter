@@ -86,11 +86,17 @@ class MainBottomNavBar extends StatelessWidget {
               bottom: circleBottom,
               width: _bumpRadius + 35,
               height: _bumpRadius + 20,
-              child: Container(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
               ),
             ),

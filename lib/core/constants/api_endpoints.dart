@@ -32,4 +32,7 @@ class ApiEndpoints {
   static String chatMarkRead(String orderId) => '/chats/orders/$orderId/read';
 
   static const String refreshToken = '/Auth/refresh-token';
+  static const String mechanicDashboard = '/mechanics/me/dashboard';
+  static const String mechanicCustomerHistory = '/mechanics/me/history';
+  static const String mechanicWallet = '/mechanics/me/wallet';
 }

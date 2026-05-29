@@ -1,0 +1,44 @@
+import 'package:flutter/foundation.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_wallet_models.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
+
+class MechanicWalletProvider extends ChangeNotifier {
+  MechanicWalletProvider(this._repository);
+
+  final MechanicWalletRepository _repository;
+
+  MechanicWalletData? _data;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  MechanicWalletData? get data => _data;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  List<MechanicWalletTransaction> get transactions => _data?.transactions ?? const [];
+
+  Future<void> load({bool force = false}) async {
+    if (_isLoading) return;
+    if (!force && _data != null) return;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _data = await _repository.getWallet();
+      if (kDebugMode && (_data?.transactions.isEmpty ?? true) && (_data?.balance ?? 0) == 0) {
+        _data = MechanicWalletData.sample;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      if (kDebugMode) {
+        _data = MechanicWalletData.sample;
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refresh() => load(force: true);
+}
