@@ -6,6 +6,7 @@ import 'package:fe_moblie_flutter/core/utils/jwt_utils.dart';
 
 class AuthService {
   static const _keyToken = 'jwt_token';
+  static const _keyRefreshToken = 'refresh_token';
   static const _keyUserName = 'user_full_name';
   static const _keyAvatarUrl = 'user_avatar_url';
 
@@ -125,11 +126,37 @@ class AuthService {
     }
   }
 
+  Future<void> saveRefreshToken(String token) async {
+    try {
+      await _storage.write(key: _keyRefreshToken, value: token);
+    } catch (e) {
+      debugPrint('AuthService.saveRefreshToken: $e');
+    }
+  }
+
+  Future<String?> getRefreshToken() async {
+    try {
+      return await _storage.read(key: _keyRefreshToken);
+    } catch (e) {
+      debugPrint('AuthService.getRefreshToken: $e');
+      return null;
+    }
+  }
+
+  Future<void> deleteRefreshToken() async {
+    try {
+      await _storage.delete(key: _keyRefreshToken);
+    } catch (e) {
+      debugPrint('AuthService.deleteRefreshToken: $e');
+    }
+  }
+
   Future<void> clearUserProfile() async {
     try {
       await _storage.delete(key: _keyUserName);
       await _storage.delete(key: 'user_type');
       await _storage.delete(key: _keyAvatarUrl);
+      await _storage.delete(key: _keyRefreshToken);
     } catch (e) {
       debugPrint('AuthService.clearUserProfile: $e');
     }

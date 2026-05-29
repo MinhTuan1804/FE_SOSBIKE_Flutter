@@ -73,7 +73,7 @@ class _AddNoteViewState extends State<AddNoteView> {
                     maxLines: 4,
                     maxLength: 200,
                     decoration: InputDecoration(
-                      hintText: 'Thêm chi tiết điểm đón (vd: gần tạp hóa A)',
+                      hintText: 'Thêm chi tiết vị trí bị nạn (vd: gần tạp hóa A)',
                       hintStyle: TextStyle(color: Colors.grey[400]),
                       counterText: '', // Hide default counter
                       contentPadding: const EdgeInsets.all(16),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:fe_moblie_flutter/core/constants/app_assets.dart';
 import 'package:fe_moblie_flutter/core/navigation/app_navigator.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
@@ -34,11 +35,29 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _bootstrap() async {
+    try {
+      await _requestLocationPermission();
+    } catch (e) {
+      debugPrint('Lỗi yêu cầu quyền vị trí: $e');
+    }
+
     final auth = context.read<AuthProvider>();
     await auth.checkAuthStatus();
     if (!mounted) return;
     auth.forceAuthReady();
     _repairRootStackIfNeeded();
+  }
+
+  Future<void> _requestLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
   }
 
   /// Stack cũ (push auth lên root, mất AuthGate): gộp về một route AuthGate.

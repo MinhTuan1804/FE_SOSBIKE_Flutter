@@ -23,5 +23,5 @@ class ApiEndpoints {
   static const String paymentIntents = '/payments/intents';
   static const String payments = '/payments';
   static const String mechanicDocuments = '/mechanics/me/documents';
-
+  static const String refreshToken = '/Auth/refresh-token';
 }

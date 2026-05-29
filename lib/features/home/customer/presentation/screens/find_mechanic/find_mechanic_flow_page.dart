@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/location_select_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/add_note_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/searching_view.dart';
@@ -102,6 +103,18 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
   }
 
   Widget _buildMapBackground() {
+    if (_step == FindMechanicStep.locationSelect) {
+      return Container(
+        color: Colors.white,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+            strokeWidth: 3,
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         Positioned.fill(
@@ -132,12 +145,13 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
       FindMechanicStep.locationSelect => LocationSelectView(
           mechanicNote: _mechanicNote,
           onBack: () => Navigator.of(context).pop(),
-          onAddNote: () {
+          onAddNote: () {},
+          onConfirmLocation: _startSearchingFlow,
+          onNoteChanged: (note) {
             setState(() {
-              _step = FindMechanicStep.addNote;
+              _mechanicNote = note;
             });
           },
-          onConfirmLocation: _startSearchingFlow,
         ),
       FindMechanicStep.addNote => AddNoteView(
           initialNote: _mechanicNote,

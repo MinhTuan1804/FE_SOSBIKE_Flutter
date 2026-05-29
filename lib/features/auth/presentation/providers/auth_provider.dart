@@ -85,6 +85,9 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _persistSession(AuthResponse response) async {
     await _authService.saveToken(response.accessToken);
+    if (response.refreshToken != null) {
+      await _authService.saveRefreshToken(response.refreshToken!);
+    }
     await _authService.saveUserName(response.user.fullName);
     await _authService.saveUserType(response.user.userType);
     await _authService.saveAvatarUrl(response.user.avatarUrl);
@@ -480,6 +483,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _authService.deleteToken();
+    await _authService.deleteRefreshToken();
     await _authService.clearUserProfile();
     _isAuthenticated = false;
     _authReady = true;
