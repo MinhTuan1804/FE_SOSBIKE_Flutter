@@ -1,9 +1,21 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiEndpoints {
   /// BE deploy (nginx) — HTTP. Emulator local: `http://10.0.2.2:<port>/api`; máy thật: IP LAN hoặc URL này.
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api',
-  );
+  static String get baseUrl {
+    try {
+      if (dotenv.isInitialized) {
+        return dotenv.env['API_BASE_URL'] ?? const String.fromEnvironment(
+          'API_BASE_URL',
+          defaultValue: 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api',
+        );
+      }
+    } catch (_) {}
+    return const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api',
+    );
+  }
 
   static const String login = '/Auth/login';
   static const String firebaseLogin = '/FirebaseAuth/login';

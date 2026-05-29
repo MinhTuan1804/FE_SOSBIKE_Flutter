@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
 class LocationSelectView extends StatefulWidget {
@@ -33,6 +34,15 @@ class _LocationSelectViewState extends State<LocationSelectView> {
 
   LatLng? _deviceLocation; // Vị trí GPS thực tế
   String _selectedAddress = 'Vị trí hiện tại của bạn';
+
+  String get _goongApiKey {
+    try {
+      if (dotenv.isInitialized) {
+        return dotenv.env['GOONG_API_KEY'] ?? '';
+      }
+    } catch (_) {}
+    return '';
+  }
 
   int _selectedItemIndex = 0;
   bool _isLoadingAddress = false;
@@ -183,7 +193,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         'https://rsapi.goong.io/Geocode',
         queryParameters: {
           'address': query,
-          'api_key': 'J7uk8GJZvzozpZ8p631cnxMVXUNVz0O0juQCSAJq',
+          'api_key': _goongApiKey,
         },
       );
 
@@ -426,7 +436,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         'https://rsapi.goong.io/Geocode',
         queryParameters: {
           'latlng': '${latLng.latitude},${latLng.longitude}',
-          'api_key': 'J7uk8GJZvzozpZ8p631cnxMVXUNVz0O0juQCSAJq',
+          'api_key': _goongApiKey,
         },
       );
       if (response.statusCode == 200 && response.data != null) {

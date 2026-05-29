@@ -47,3 +47,6 @@ app.*.map.json
 # Firebase / Google (không push secret)
 google-services.json
 **/google-services.json
+
+# Environment variables
+.env
