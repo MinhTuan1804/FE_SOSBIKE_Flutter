@@ -109,6 +109,15 @@ class _MechanicSetupProfileScreenState
       if (_portrait == null) return _snack('Vui lòng tải ảnh chân dung');
     }
 
+    if (tab == 3) {
+      // Bắt buộc có tài khoản ngân hàng để nhận tiền từ đơn và tiền di chuyển
+      final bankAcc = _bankAccCtrl.text.trim();
+      final bankHolder = _bankHolderCtrl.text.trim();
+      if (_bankName == null || bankAcc.length < 6 || bankHolder.length < 2) {
+        return _snack('Vui lòng điền đầy đủ tài khoản ngân hàng để có thể nhận việc');
+      }
+    }
+
     if (tab < 3) {
       _tabCtrl.animateTo(tab + 1);
     } else {
@@ -611,45 +620,44 @@ class _MechanicSetupProfileScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4FF),
+              color: const Color(0xFFFFEBEE),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFEF5350), width: 0.8),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
-                Icon(Icons.info_outline_rounded,
-                    size: 15, color: Color(0xFF3B82F6)),
+                Icon(Icons.warning_amber_rounded,
+                    size: 16, color: Color(0xFFC62828)),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Thông tin ngân hàng dùng để nhận tiền khi hoàn thành đơn. '
-                    'Bạn có thể bỏ qua và cập nhật sau trong Hồ sơ.',
+                    'BẮT BUỘC: Phải có tài khoản ngân hàng để nhận thanh toán đơn và tiền di chuyển từ khách. '
+                    'Không thể bắt đầu làm việc nếu thiếu thông tin này.',
                     style: TextStyle(
-                        fontSize: 12, color: Color(0xFF3B82F6)),
+                        fontSize: 12, color: Color(0xFFC62828), fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          _sectionLabel('Ngân hàng'),
+          _sectionLabel('Ngân hàng *'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _bankName,
             isExpanded: true,
-            decoration: _dropDeco('Chọn ngân hàng'),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Bỏ qua')),
-              ..._kBanks.map(
-                  (b) => DropdownMenuItem(value: b, child: Text(b))),
-            ],
+            decoration: _dropDeco('Chọn ngân hàng nhận tiền'),
+            items: _kBanks
+                .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                .toList(),
             onChanged: (v) => setState(() => _bankName = v),
           ),
           const SizedBox(height: 16),
           _field('Số tài khoản', _bankAccCtrl,
-              hint: '1234567890', digitsOnly: true),
+              hint: '1234567890', digitsOnly: true, required: true),
           _field('Chủ tài khoản', _bankHolderCtrl,
-              hint: 'Nguyễn Văn A'),
+              hint: 'Nguyễn Văn A', required: true),
         ],
       ),
     );
@@ -678,7 +686,7 @@ class _StatusBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Tài khoản đang chờ admin phê duyệt. '
-              'Hãy hoàn thiện hồ sơ để được duyệt nhanh hơn.',
+              'Phải có tài khoản ngân hàng đầy đủ thì mới bắt đầu nhận đơn được.',
               style: TextStyle(fontSize: 12, color: Color(0xFFE65100)),
             ),
           ),
@@ -733,15 +741,27 @@ Widget _field(
   TextEditingController ctrl, {
   String? hint,
   bool digitsOnly = false,
+  bool required = false,
 }) =>
     Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
+          RichText(
+            text: TextSpan(
               style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600)),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary),
+              children: [
+                TextSpan(text: label),
+                if (required)
+                  const TextSpan(
+                      text: ' *', style: TextStyle(color: AppColors.primary)),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: ctrl,

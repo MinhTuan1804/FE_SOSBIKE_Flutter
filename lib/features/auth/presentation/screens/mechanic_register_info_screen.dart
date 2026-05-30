@@ -140,9 +140,9 @@ class _MechanicRegisterInfoScreenState
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Sau khi đăng ký, bạn sẽ hoàn thiện hồ sơ thợ '
-                  '(chuyên môn, khu vực, ảnh xác thực...) trong ứng dụng '
-                  'và chờ admin phê duyệt trước khi nhận đơn.',
+                  'Sau khi đăng ký, bạn phải hoàn thiện hồ sơ thợ '
+                  '(chuyên môn + tài khoản ngân hàng bắt buộc) trong app '
+                  'và chờ admin duyệt trước khi có thể nhận việc.',
                   style:
                       TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
                 ),
