@@ -760,8 +760,6 @@ Widget _field(
         ],
       ),
     );
-  }
-}
 
 // ── Custom chip cho chuyên môn (đúng style Figma - solid red khi chọn) ───────
 
