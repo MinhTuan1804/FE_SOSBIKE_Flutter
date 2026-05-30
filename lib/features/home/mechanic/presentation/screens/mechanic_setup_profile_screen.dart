@@ -14,8 +14,6 @@ const _kSpecialties = [
   'Vá lốp', 'Cứu hộ', 'Thay bình ắc quy', 'Rửa xe',
 ];
 
-const _kRadiusOptions = [5, 10, 20, 50];
-
 const _kProvinces = [
   'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ',
   'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu',
@@ -61,11 +59,9 @@ class _MechanicSetupProfileScreenState
   final _descCtrl = TextEditingController();
   bool _availableNow = true;
 
-  // ── Khu vực ─────────────────────────────────────────────────────────
+  // ── Khu vực (thuật toán quét đơn tự động quyết định bán kính & tận nơi) ─────
   String? _province;
   final _districtCtrl = TextEditingController();
-  int _radius = 10;
-  bool _homeService = true;
 
   // ── Xác thực ────────────────────────────────────────────────────────
   XFile? _cccdFront;
@@ -417,7 +413,8 @@ class _MechanicSetupProfileScreenState
         ),
       );
 
-  // ── Tab 2: Khu vực ────────────────────────────────────────────────────────
+  // ── Tab 2: Khu vực hoạt động ────────────────────────────────────────────────
+  // (Bán kính phục vụ & có nhận sửa tận nơi do thuật toán quét đơn BE quyết định)
 
   Widget _tabServiceArea() {
     return SingleChildScrollView(
@@ -444,66 +441,8 @@ class _MechanicSetupProfileScreenState
             decoration:
                 _textDeco('Quận Bình Thạnh, Huyện Củ Chi...'),
           ),
-          const SizedBox(height: 20),
-          _sectionLabel('Bán kính phục vụ'),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: _kRadiusOptions.map((r) {
-              final sel = _radius == r;
-              return ChoiceChip(
-                label: Text('$r km'),
-                selected: sel,
-                onSelected: (_) => setState(() => _radius = r),
-                selectedColor: AppColors.primary,
-                labelStyle: TextStyle(
-                  color: sel ? Colors.white : AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                side: BorderSide(
-                    color: sel
-                        ? AppColors.primary
-                        : const Color(0xFFDDDDDD)),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.home_repair_service_outlined,
-                    size: 22, color: AppColors.primary),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Nhận sửa tận nơi',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600)),
-                      Text('Thợ sẵn sàng đến địa điểm khách hàng',
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textSecondary)),
-                    ],
-                  ),
-                ),
-                Switch.adaptive(
-                  value: _homeService,
-                  onChanged: (v) => setState(() => _homeService = v),
-                  activeThumbColor: AppColors.primary,
-                ),
-              ],
-            ),
-          ),
+          // Bán kính & "sửa tận nơi" do thuật toán quét đơn bên BE tự động xử lý.
+          // Thợ không cần chọn thủ công ở đây.
         ],
       ),
     );

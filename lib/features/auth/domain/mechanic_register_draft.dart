@@ -1,7 +1,8 @@
 import 'package:image_picker/image_picker.dart';
 
-/// Dữ liệu form đăng ký thợ qua 5 bước.
-/// Các trường ngân hàng / giấy tờ là optional — có thể cập nhật sau trong hồ sơ.
+/// Dữ liệu form đăng ký thợ (chỉ bước cơ bản).
+/// Các thông tin nâng cao (chuyên môn, khu vực, xác thực, ngân hàng) được hoàn thiện sau trong app.
+/// Bán kính & "sửa tận nơi" do thuật toán quét đơn bên BE quyết định.
 class MechanicRegisterDraft {
   const MechanicRegisterDraft({
     required this.phoneNumber,
@@ -15,11 +16,9 @@ class MechanicRegisterDraft {
     this.yearsOfExperience,
     this.professionalDescription,
     this.isAvailableNow = true,
-    // Khu vực
+    // Khu vực (dùng cho thuật toán quét đơn)
     this.province,
     this.district,
-    this.serviceRadiusKm,
-    this.hasHomeService,
     // Xác thực
     this.cccdFrontFile,
     this.cccdBackFile,
@@ -48,11 +47,9 @@ class MechanicRegisterDraft {
   final String? professionalDescription;
   final bool isAvailableNow;
 
-  // ── Khu vực nhận việc ────────────────────────────────────────────────────
+  // ── Khu vực nhận việc (thuật toán quét đơn tự động) ───────────────────────
   final String? province;
   final String? district;
-  final int? serviceRadiusKm;
-  final bool? hasHomeService;
 
   // ── Xác thực thợ ─────────────────────────────────────────────────────────
   final XFile? cccdFrontFile;
