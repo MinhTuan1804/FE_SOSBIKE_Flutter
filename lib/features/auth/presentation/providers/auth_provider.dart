@@ -41,6 +41,22 @@ class AuthProvider extends ChangeNotifier {
   String? _userType;
   String? get userType => _userType ?? _user?.userType;
 
+  // ── Convenience getters from UserProfileDto ─────────────────────────────
+  String? get phoneNumber => _profile?.phoneNumber ?? _user?.phoneNumber;
+  String? get email => _profile?.email;
+  String? get currentAddress => _profile?.currentAddress;
+  String? get gender => _profile?.gender;
+  /// Ngày sinh dạng 'dd/MM/yyyy', hoặc null nếu chưa có.
+  String? get dateOfBirth {
+    final dob = _profile?.dateOfBirth;
+    if (dob == null) return null;
+    return '${dob.day.toString().padLeft(2, '0')}/'
+        '${dob.month.toString().padLeft(2, '0')}/'
+        '${dob.year}';
+  }
+  /// Xác thực SĐT — hiện chưa theo dõi từ BE, mặc định true khi đã đăng nhập.
+  bool get isPhoneVerified => _isAuthenticated;
+
   /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {
     if (_authReady) return;
@@ -350,6 +366,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> saveMyProfile({
     required String fullName,
     DateTime? dateOfBirth,
+    String? gender,
     String? email,
     String? currentAddress,
     String? licensePlate,
@@ -370,6 +387,7 @@ class AuthProvider extends ChangeNotifier {
       final newAvatar = await _repository.updateMyProfile(
         fullName: fullName,
         dateOfBirth: dateOfBirth,
+        gender: gender,
         email: email,
         currentAddress: currentAddress,
         licensePlate: licensePlate,
