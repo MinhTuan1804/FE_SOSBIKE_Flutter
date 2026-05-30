@@ -9,6 +9,8 @@ import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Danh sách chuyên môn do bên app quyết định (hardcode).
+/// BE chỉ nhận danh sách string này khi thợ submit hồ sơ.
 const _kSpecialties = [
   'Sửa xe máy', 'Sửa ô tô', 'Điện xe', 'Máy gầm / Động cơ',
   'Vá lốp', 'Cứu hộ', 'Thay bình ắc quy', 'Rửa xe',
@@ -329,28 +331,11 @@ class _MechanicSetupProfileScreenState
             runSpacing: 8,
             children: _kSpecialties.map((s) {
               final sel = _specialties.contains(s);
-              return FilterChip(
-                label: Text(s),
+              return _SpecialtyChip(
+                label: s,
                 selected: sel,
-                onSelected: (_) => setState(() =>
+                onTap: () => setState(() =>
                     sel ? _specialties.remove(s) : _specialties.add(s)),
-                selectedColor: AppColors.primary.withValues(alpha: 0.12),
-                checkmarkColor: AppColors.primary,
-                labelStyle: TextStyle(
-                  color: sel ? AppColors.primary : AppColors.textPrimary,
-                  fontWeight:
-                      sel ? FontWeight.w700 : FontWeight.w400,
-                  fontSize: 13,
-                ),
-                side: BorderSide(
-                    color: sel
-                        ? AppColors.primary
-                        : const Color(0xFFDDDDDD)),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                backgroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4),
               );
             }).toList(),
           ),
@@ -775,3 +760,61 @@ Widget _field(
         ],
       ),
     );
+  }
+}
+
+// ── Custom chip cho chuyên môn (đúng style Figma - solid red khi chọn) ───────
+
+class _SpecialtyChip extends StatelessWidget {
+  const _SpecialtyChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: selected ? null : Border.all(color: const Color(0xFFDDDDDD)),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.22),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              const Icon(Icons.check, size: 15, color: Colors.white),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : AppColors.textPrimary,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
