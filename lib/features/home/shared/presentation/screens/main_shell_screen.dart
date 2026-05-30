@@ -11,10 +11,10 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_placeholder_tab.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
-import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
@@ -126,7 +126,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final auth = context.watch<AuthProvider>();
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
-    final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER');
+    final showMainHeader = !((_tab == MainNavTab.maintenance || _tab == MainNavTab.wallet) && auth.userType == 'CUSTOMER');
 
     final shellBody = Stack(
       clipBehavior: Clip.none,
@@ -296,7 +296,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             )
           : const MechanicCustomerHistoryTab(),
       MainNavTab.wallet => userType == 'CUSTOMER'
-          ? const MembershipScreen()
+          ? const CustomerWalletTab()
           : const MechanicWalletTab(),
       MainNavTab.maintenance => userType == 'CUSTOMER'
           ? const NotificationsTabScreen()
