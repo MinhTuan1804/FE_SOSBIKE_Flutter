@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_priority_models.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
 
-/// Màn **Gói Ưu Tiên / Gói Cơ Bản** cho thợ (Figma).
+/// Màn **Gói Ưu Tiên / Gói Cơ Bản** cho thợ.
 class MechanicPriorityPackageScreen extends StatefulWidget {
   const MechanicPriorityPackageScreen({super.key, this.initialIndex = 0});
 
@@ -23,6 +25,9 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
       viewportFraction: 0.82,
       initialPage: _currentPage,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MechanicSubscriptionProvider>().load();
+    });
   }
 
   @override
@@ -62,6 +67,21 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
                 onBack: () => Navigator.of(context).pop(),
               ),
               const SizedBox(height: 6),
+              // --- Card gói đang dùng ---
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: Consumer<MechanicSubscriptionProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.isLoading) {
+                      return const _ActivePlanSkeleton();
+                    }
+                    return _ActivePlanCard(
+                      subscription: prov.subscription,
+                      onRefresh: () => prov.refresh(),
+                    );
+                  },
+                ),
+              ),
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
@@ -85,7 +105,7 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
                           plan: plan,
                           activeTierIndex: index,
                           onTierTap: _goToPage,
-                          onUpgrade: plan.showUpgradeButton ? () => _showUpgradeSnack(context, plan) : null,
+                          onUpgrade: plan.showUpgradeButton ? () => _showUpgradeDialog(context, plan) : null,
                         ),
                       ),
                     );
@@ -101,12 +121,370 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
     );
   }
 
-  void _showUpgradeSnack(BuildContext context, MechanicPriorityPlan plan) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Nâng cấp ${plan.title} — tính năng thanh toán đang hoàn thiện.')),
+  void _showUpgradeDialog(BuildContext context, MechanicPriorityPlan plan) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Đăng ký ${plan.title}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Giá: ${plan.priceLabel}${plan.periodLabel}'),
+            const SizedBox(height: 8),
+            const Text('Tính năng thanh toán đang được hoàn thiện.\nVui lòng quay lại sau.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Chức năng đăng ký ${plan.title} sắp ra mắt!')),
+              );
+            },
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
     );
   }
 }
+
+// ─── Active Plan Card ─────────────────────────────────────────────────────────
+
+class _ActivePlanCard extends StatelessWidget {
+  const _ActivePlanCard({required this.subscription, required this.onRefresh});
+
+  final MechanicCurrentSubscription subscription;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!subscription.hasActivePlan) {
+      return _NoActivePlanBanner(onRefresh: onRefresh);
+    }
+
+    final Color cardBg;
+    final Color accentColor;
+    final IconData tierIcon;
+
+    switch (subscription.planTier) {
+      case MechanicPriorityTier.premium:
+        cardBg = const Color(0xFF3D2000);
+        accentColor = const Color(0xFFFFD95E);
+        tierIcon = Icons.workspace_premium_rounded;
+        break;
+      case MechanicPriorityTier.standard:
+        cardBg = const Color(0xFF3D0A0A);
+        accentColor = const Color(0xFFFFB45B);
+        tierIcon = Icons.star_rounded;
+        break;
+      case MechanicPriorityTier.free:
+        cardBg = const Color(0xFF1C2730);
+        accentColor = const Color(0xFF37BCE5);
+        tierIcon = Icons.person_outline_rounded;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accentColor.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accentColor.withValues(alpha: 0.18),
+                  border: Border.all(color: accentColor, width: 1.5),
+                ),
+                child: Icon(tierIcon, color: accentColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'GÓI ĐANG DÙNG',
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.6)),
+                          ),
+                          child: const Text(
+                            'ĐANG HOẠT ĐỘNG',
+                            style: TextStyle(
+                              color: Color(0xFF22C55E),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subscription.planName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: onRefresh,
+                icon: Icon(Icons.refresh_rounded, color: accentColor, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(color: accentColor.withValues(alpha: 0.3), height: 1),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _InfoChip(
+                icon: Icons.percent_rounded,
+                label: 'Phí sàn',
+                value: subscription.feeRateLabel,
+                color: accentColor,
+              ),
+              const SizedBox(width: 8),
+              if (subscription.endDate != null) ...[
+                _InfoChip(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Hết hạn',
+                  value: subscription.expiryLabel,
+                  color: accentColor,
+                ),
+                const SizedBox(width: 8),
+              ],
+              _InfoChip(
+                icon: Icons.hourglass_bottom_rounded,
+                label: 'Còn lại',
+                value: subscription.daysRemaining > 0
+                    ? '${subscription.daysRemaining} ngày'
+                    : 'Không giới hạn',
+                color: accentColor,
+              ),
+            ],
+          ),
+          if (subscription.autoRenew == true) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.autorenew_rounded, color: accentColor, size: 13),
+                const SizedBox(width: 4),
+                Text(
+                  'Tự động gia hạn đã bật',
+                  style: TextStyle(
+                    color: accentColor.withValues(alpha: 0.85),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 10),
+                const SizedBox(width: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color.withValues(alpha: 0.8),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoActivePlanBanner extends StatelessWidget {
+  const _NoActivePlanBanner({required this.onRefresh});
+
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A2530),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.1),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            ),
+            child: const Icon(Icons.person_outline_rounded, color: Colors.white70, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'GÓI ĐANG DÙNG',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Gói Cơ Bản (Miễn Phí)',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'Phí sàn 10% · Nhận đơn tốc độ tiêu chuẩn',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onRefresh,
+            icon: Icon(Icons.refresh_rounded, color: Colors.white.withValues(alpha: 0.6), size: 18),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivePlanSkeleton extends StatelessWidget {
+  const _ActivePlanSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            color: Colors.white60,
+            strokeWidth: 2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
   const _Header({required this.title, required this.onBack});
@@ -141,6 +519,8 @@ class _Header extends StatelessWidget {
     );
   }
 }
+
+// ─── Plan Card ────────────────────────────────────────────────────────────────
 
 class _PriorityPlanCard extends StatelessWidget {
   const _PriorityPlanCard({
@@ -238,7 +618,9 @@ class _PriorityPlanCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          plan.tier == MechanicPriorityTier.free ? 'Gói cơ bản' : 'Premium ${plan.periodLabel.contains('Năm') ? 'Annual' : 'Monthly'}',
+                          plan.tier == MechanicPriorityTier.free
+                              ? 'Gói cơ bản'
+                              : 'Premium ${plan.periodLabel.contains('Năm') ? 'Annual' : 'Monthly'}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -317,10 +699,12 @@ class _PriorityPlanCard extends StatelessWidget {
                             foregroundColor: plan.tier == MechanicPriorityTier.premium
                                 ? const Color(0xFF3D2200)
                                 : Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: const Text(
-                            'Nâng cấp ngay!',
+                            'Đăng ký ngay!',
                             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5),
                           ),
                         ),
@@ -336,6 +720,8 @@ class _PriorityPlanCard extends StatelessWidget {
     );
   }
 }
+
+// ─── Tier Pills ───────────────────────────────────────────────────────────────
 
 class _TierPillsRow extends StatelessWidget {
   const _TierPillsRow({
@@ -384,6 +770,8 @@ class _TierPillsRow extends StatelessWidget {
   }
 }
 
+// ─── Benefit Row ──────────────────────────────────────────────────────────────
+
 class _BenefitRow extends StatelessWidget {
   const _BenefitRow({required this.text, required this.color});
 
@@ -416,6 +804,8 @@ class _BenefitRow extends StatelessWidget {
   }
 }
 
+// ─── Page Dots ────────────────────────────────────────────────────────────────
+
 class _PageDots extends StatelessWidget {
   const _PageDots({required this.count, required this.activeIndex});
 
@@ -442,6 +832,8 @@ class _PageDots extends StatelessWidget {
     );
   }
 }
+
+// ─── Card Pattern Painter ─────────────────────────────────────────────────────
 
 class _CardPatternPainter extends CustomPainter {
   const _CardPatternPainter(this.style);

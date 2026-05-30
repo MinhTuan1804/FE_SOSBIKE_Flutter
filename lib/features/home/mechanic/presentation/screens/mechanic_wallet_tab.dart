@@ -256,8 +256,6 @@ class _WalletCard extends StatelessWidget {
               Expanded(child: _WalletAction(icon: Icons.savings_outlined, label: 'Nạp tiền')),
               SizedBox(width: 8),
               Expanded(child: _WalletAction(icon: Icons.payments_outlined, label: 'Rút tiền')),
-              SizedBox(width: 8),
-              Expanded(child: _WalletAction(icon: Icons.swap_horiz_rounded, label: 'Chuyển khoản')),
             ],
           ),
         ],

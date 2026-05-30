@@ -2,6 +2,75 @@ import 'package:flutter/material.dart';
 
 enum MechanicPriorityTier { free, standard, premium }
 
+/// Thông tin gói thợ đang dùng (từ API).
+class MechanicCurrentSubscription {
+  const MechanicCurrentSubscription({
+    required this.hasActivePlan,
+    this.planName = '',
+    this.planTier = MechanicPriorityTier.free,
+    this.price = 0,
+    this.durationDays = 0,
+    this.platformFeeRate,
+    this.startDate,
+    this.endDate,
+    this.autoRenew,
+    this.status,
+    this.daysRemaining = 0,
+  });
+
+  final bool hasActivePlan;
+  final String planName;
+  final MechanicPriorityTier planTier;
+  final double price;
+  final int durationDays;
+  final double? platformFeeRate;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final bool? autoRenew;
+  final String? status;
+  final int daysRemaining;
+
+  String get feeRateLabel => platformFeeRate != null
+      ? '${(platformFeeRate! * 100).toStringAsFixed(0)}%'
+      : '--';
+
+  String get expiryLabel {
+    if (endDate == null) return '--';
+    final d = endDate!.toLocal();
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/'
+        '${d.year}';
+  }
+
+  factory MechanicCurrentSubscription.fromJson(Map<String, dynamic> json) {
+    final tierStr = (json['planTier']?.toString() ?? 'FREE').toUpperCase();
+    return MechanicCurrentSubscription(
+      hasActivePlan: json['hasActivePlan'] == true,
+      planName: json['planName']?.toString() ?? '',
+      planTier: tierStr == 'PREMIUM'
+          ? MechanicPriorityTier.premium
+          : tierStr == 'STANDARD'
+              ? MechanicPriorityTier.standard
+              : MechanicPriorityTier.free,
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      durationDays: (json['durationDays'] as num?)?.toInt() ?? 0,
+      platformFeeRate: (json['platformFeeRate'] as num?)?.toDouble(),
+      startDate: json['startDate'] != null
+          ? DateTime.tryParse(json['startDate'].toString())
+          : null,
+      endDate: json['endDate'] != null
+          ? DateTime.tryParse(json['endDate'].toString())
+          : null,
+      autoRenew: json['autoRenew'] as bool?,
+      status: json['status']?.toString(),
+      daysRemaining: (json['daysRemaining'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  static MechanicCurrentSubscription get empty =>
+      const MechanicCurrentSubscription(hasActivePlan: false);
+}
+
 class MechanicPriorityPlan {
   const MechanicPriorityPlan({
     required this.tier,
