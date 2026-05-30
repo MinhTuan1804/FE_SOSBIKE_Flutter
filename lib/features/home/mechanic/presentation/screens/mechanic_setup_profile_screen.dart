@@ -9,13 +9,6 @@ import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Danh sách chuyên môn do bên app quyết định (hardcode).
-/// BE chỉ nhận danh sách string này khi thợ submit hồ sơ.
-const _kSpecialties = [
-  'Sửa xe máy', 'Sửa ô tô', 'Điện xe', 'Máy gầm / Động cơ',
-  'Vá lốp', 'Cứu hộ', 'Thay bình ắc quy', 'Rửa xe',
-];
-
 const _kProvinces = [
   'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ',
   'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu',
@@ -55,13 +48,7 @@ class _MechanicSetupProfileScreenState
     with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
 
-  // ── Chuyên môn ──────────────────────────────────────────────────────
-  final Set<String> _specialties = {};
-  int? _yearsExp;
-  final _descCtrl = TextEditingController();
-  bool _availableNow = true;
-
-  // ── Khu vực (thuật toán quét đơn tự động quyết định bán kính & tận nơi) ─────
+  // ── Khu vực hoạt động (thuật toán quét đơn tự động) ─────────────────────────
   String? _province;
   final _districtCtrl = TextEditingController();
 
@@ -79,13 +66,12 @@ class _MechanicSetupProfileScreenState
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl = TabController(length: 3, vsync: this);
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
-    _descCtrl.dispose();
     _districtCtrl.dispose();
     _bankAccCtrl.dispose();
     _bankHolderCtrl.dispose();
@@ -99,19 +85,16 @@ class _MechanicSetupProfileScreenState
   void _saveAndNext() {
     final tab = _tabCtrl.index;
 
-    if (tab == 0 && _specialties.isEmpty) {
-      return _snack('Vui lòng chọn ít nhất 1 chuyên môn');
-    }
-    if (tab == 1 && _province == null) {
+    if (tab == 0 && _province == null) {
       return _snack('Vui lòng chọn tỉnh/thành phố');
     }
-    if (tab == 2) {
+    if (tab == 1) {
       if (_cccdFront == null) return _snack('Vui lòng tải ảnh CCCD mặt trước');
       if (_cccdBack == null) return _snack('Vui lòng tải ảnh CCCD mặt sau');
       if (_portrait == null) return _snack('Vui lòng tải ảnh chân dung');
     }
 
-    if (tab == 3) {
+    if (tab == 2) {
       // Bắt buộc có tài khoản ngân hàng để nhận tiền từ đơn và tiền di chuyển
       final bankAcc = _bankAccCtrl.text.trim();
       final bankHolder = _bankHolderCtrl.text.trim();
@@ -120,7 +103,7 @@ class _MechanicSetupProfileScreenState
       }
     }
 
-    if (tab < 3) {
+    if (tab < 2) {
       _tabCtrl.animateTo(tab + 1);
     } else {
       _submit();
@@ -224,7 +207,6 @@ class _MechanicSetupProfileScreenState
             unselectedLabelStyle:
                 const TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
             tabs: const [
-              Tab(text: 'Chuyên môn'),
               Tab(text: 'Khu vực'),
               Tab(text: 'Xác thực'),
               Tab(text: 'Ngân hàng'),
@@ -241,7 +223,6 @@ class _MechanicSetupProfileScreenState
               controller: _tabCtrl,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _tabSpecialty(),
                 _tabServiceArea(),
                 _tabPhotos(),
                 _tabBank(),
@@ -260,7 +241,7 @@ class _MechanicSetupProfileScreenState
     return AnimatedBuilder(
       animation: _tabCtrl,
       builder: (_, __) {
-        final isLastTab = _tabCtrl.index == 3;
+        final isLastTab = _tabCtrl.index == 2;
         return Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           decoration: const BoxDecoration(
@@ -314,100 +295,7 @@ class _MechanicSetupProfileScreenState
 
   // ── Tab 1: Chuyên môn ─────────────────────────────────────────────────────
 
-  Widget _tabSpecialty() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Chuyên môn *'),
-          const SizedBox(height: 4),
-          const Text('Chọn tất cả dịch vụ bạn có thể làm',
-              style:
-                  TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _kSpecialties.map((s) {
-              final sel = _specialties.contains(s);
-              return _SpecialtyChip(
-                label: s,
-                selected: sel,
-                onTap: () => setState(() =>
-                    sel ? _specialties.remove(s) : _specialties.add(s)),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          _sectionLabel('Số năm kinh nghiệm'),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<int>(
-            initialValue: _yearsExp,
-            decoration: _dropDeco('Chọn số năm'),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Chưa rõ')),
-              ...List.generate(
-                31,
-                (i) => DropdownMenuItem(
-                  value: i,
-                  child: Text(i == 0 ? 'Dưới 1 năm' : '$i năm'),
-                ),
-              ),
-            ],
-            onChanged: (v) => setState(() => _yearsExp = v),
-          ),
-          const SizedBox(height: 20),
-          _sectionLabel('Mô tả ngắn (tuỳ chọn)'),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _descCtrl,
-            maxLines: 3,
-            maxLength: 200,
-            decoration: _textDeco(
-                'Ví dụ: Thợ Honda 5 năm, chuyên điện và máy gầm...'),
-          ),
-          const SizedBox(height: 16),
-          _onlineTile(),
-        ],
-      ),
-    );
-  }
-
-  Widget _onlineTile() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.circle, size: 10, color: Color(0xFF4CAF50)),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Sẵn sàng nhận việc ngay',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600)),
-                  Text('Hệ thống sẽ ưu tiên phân đơn cho thợ Online',
-                      style: TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary)),
-                ],
-              ),
-            ),
-            Switch.adaptive(
-              value: _availableNow,
-              onChanged: (v) => setState(() => _availableNow = v),
-              activeThumbColor: AppColors.primary,
-            ),
-          ],
-        ),
-      );
-
-  // ── Tab 2: Khu vực hoạt động ────────────────────────────────────────────────
+  // ── Tab 1: Khu vực hoạt động ────────────────────────────────────────────────
   // (Bán kính phục vụ & có nhận sửa tận nơi do thuật toán quét đơn BE quyết định)
 
   Widget _tabServiceArea() {
@@ -760,59 +648,3 @@ Widget _field(
         ],
       ),
     );
-
-// ── Custom chip cho chuyên môn (đúng style Figma - solid red khi chọn) ───────
-
-class _SpecialtyChip extends StatelessWidget {
-  const _SpecialtyChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: selected ? null : Border.all(color: const Color(0xFFDDDDDD)),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.22),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (selected) ...[
-              const Icon(Icons.check, size: 15, color: Colors.white),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? Colors.white : AppColors.textPrimary,
-                fontSize: 13,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
