@@ -6,6 +6,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_wa
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_income_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_priority_package_screen.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_deposit_screen.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_withdraw_screen.dart';
 
 enum _WalletSection { wallet, income }
 
@@ -79,7 +81,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
                     children: [
-                      _WalletCard(balanceLabel: wallet.balanceLabel),
+                      _WalletCard(balanceLabel: wallet.balanceLabel, balance: wallet.balance),
                       const SizedBox(height: 12),
                       _PriorityPackageBanner(
                         onTap: () {
@@ -189,9 +191,12 @@ class _ToggleChip extends StatelessWidget {
 }
 
 class _WalletCard extends StatelessWidget {
-  const _WalletCard({required this.balanceLabel});
+  const _WalletCard({required this.balanceLabel, required this.balance});
 
   final String balanceLabel;
+  final int balance;
+
+  int get _balanceInt => balance;
 
   @override
   Widget build(BuildContext context) {
@@ -252,10 +257,32 @@ class _WalletCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            children: const [
-              Expanded(child: _WalletAction(icon: Icons.savings_outlined, label: 'Nạp tiền')),
-              SizedBox(width: 8),
-              Expanded(child: _WalletAction(icon: Icons.payments_outlined, label: 'Rút tiền')),
+            children: [
+              Expanded(
+                child: _WalletAction(
+                  icon: Icons.savings_outlined,
+                  label: 'Nạp tiền',
+                  onTap: () => Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(
+                      builder: (_) => MechanicDepositScreen(currentBalance: _balanceInt),
+                      fullscreenDialog: true,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _WalletAction(
+                  icon: Icons.payments_outlined,
+                  label: 'Rút tiền',
+                  onTap: () => Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(
+                      builder: (_) => MechanicWithdrawScreen(currentBalance: _balanceInt),
+                      fullscreenDialog: true,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -265,10 +292,11 @@ class _WalletCard extends StatelessWidget {
 }
 
 class _WalletAction extends StatelessWidget {
-  const _WalletAction({required this.icon, required this.label});
+  const _WalletAction({required this.icon, required this.label, required this.onTap});
 
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +304,7 @@ class _WalletAction extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
