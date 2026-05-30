@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_dashboard_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 
 /// Tab Đơn hàng — dashboard theo Figma, dữ liệu từ API.
 class MechanicDashboardTab extends StatefulWidget {
@@ -147,6 +148,9 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ── Banner hoàn thiện hồ sơ (hiển thị nếu chưa được duyệt) ──
+                _SetupProfileBanner(),
+                const SizedBox(height: 4),
                 _MapCard(onViewTrips: () => _showTripsSheet(trips)),
                 const SizedBox(height: 12),
                 IntrinsicHeight(
@@ -495,6 +499,74 @@ class _WhiteCard extends StatelessWidget {
         ],
       ),
       child: child,
+    );
+  }
+}
+
+// ── Banner hoàn thiện hồ sơ ───────────────────────────────────────────────────
+
+class _SetupProfileBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: ẩn banner sau khi admin đã duyệt (kiểm tra status từ AuthProvider)
+    return GestureDetector(
+      onTap: () => Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => const MechanicSetupProfileScreen(),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.92),
+              AppColors.primary.withValues(alpha: 0.75),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.assignment_ind_outlined,
+                  color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hoàn thiện hồ sơ thợ',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Thêm chuyên môn, khu vực & ảnh để được duyệt nhanh hơn',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white70, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
