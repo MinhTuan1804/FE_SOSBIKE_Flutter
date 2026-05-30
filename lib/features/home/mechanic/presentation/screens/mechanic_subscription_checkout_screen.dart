@@ -121,7 +121,7 @@ class _ConfirmScreen extends StatelessWidget {
     final style = plan.style;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1923),
+      backgroundColor: const Color(0xFF1A0A0A),
       body: Column(
         children: [
           // ── Header gradient ──
@@ -258,7 +258,7 @@ class _ConfirmScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A2530),
+                      color: const Color(0xFF2A1010),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: style.accent.withValues(alpha: 0.3),
@@ -366,7 +366,7 @@ class _ConfirmScreen extends StatelessWidget {
                   _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(color: Color(0xFF2A3A4A)),
+                    child: Divider(color: Color(0xFF3A1A1A)),
                   ),
                   _OrderSummaryRow(
                     label: 'Tổng thanh toán',
@@ -385,8 +385,8 @@ class _ConfirmScreen extends StatelessWidget {
       // ── Fixed bottom button ──
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF0F1923),
-          border: Border(top: BorderSide(color: Color(0xFF1E2E3E))),
+          color: Color(0xFF1A0A0A),
+          border: Border(top: BorderSide(color: Color(0xFF2A1010))),
         ),
         padding: EdgeInsets.fromLTRB(
           20,
@@ -477,7 +477,7 @@ class _ProcessingScreenState extends State<_ProcessingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1923),
+      backgroundColor: const Color(0xFF1A0A0A),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -490,7 +490,7 @@ class _ProcessingScreenState extends State<_ProcessingScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1E3A5A), Color(0xFF0D2035)],
+                    colors: [Color(0xFF5A1010), Color(0xFF2D0808)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -586,7 +586,7 @@ class _ResultScreenState extends State<_ResultScreen>
         : const Color(0xFFEF4444).withValues(alpha: 0.3);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1923),
+      backgroundColor: const Color(0xFF1A0A0A),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -658,7 +658,7 @@ class _ResultScreenState extends State<_ResultScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A2530),
+                      color: const Color(0xFF2A1010),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: const Color(0xFF22C55E).withValues(alpha: 0.4),
@@ -823,7 +823,7 @@ class _PaymentMethodTile extends StatelessWidget {
     final isWallet = method == _PaymentMethod.wallet;
     final borderColor = selected
         ? (sufficient ? AppColors.primary : const Color(0xFFEF4444))
-        : const Color(0xFF2A3A4A);
+        : const Color(0xFF3A1A1A);
 
     return GestureDetector(
       onTap: onTap,
@@ -832,8 +832,8 @@ class _PaymentMethodTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF1A2530)
-              : const Color(0xFF151E27),
+              ? const Color(0xFF2A1010)
+              : const Color(0xFF1A0808),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
         ),
@@ -843,18 +843,14 @@ class _PaymentMethodTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isWallet
-                    ? const Color(0xFF1E3A5A)
-                    : const Color(0xFF1A3020),
+                color: AppColors.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 isWallet
                     ? Icons.account_balance_wallet_rounded
                     : Icons.account_balance_rounded,
-                color: isWallet
-                    ? const Color(0xFF60A5FA)
-                    : const Color(0xFF4ADE80),
+                color: AppColors.primary,
                 size: 20,
               ),
             ),
@@ -879,8 +875,8 @@ class _PaymentMethodTile extends StatelessWidget {
                     style: TextStyle(
                       color: isWallet
                           ? (sufficient
-                              ? const Color(0xFF4ADE80)
-                              : const Color(0xFFEF4444))
+                              ? const Color(0xFF22C55E)
+                              : AppColors.primary)
                           : Colors.white.withValues(alpha: 0.4),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -905,7 +901,7 @@ class _PaymentMethodTile extends StatelessWidget {
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF3A4A5A)),
+                  border: Border.all(color: const Color(0xFF4A2020)),
                 ),
               ),
           ],
