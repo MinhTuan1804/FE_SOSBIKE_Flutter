@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fields.dart';
 import 'mechanic_wallet_shared.dart';
 
 /// Màn **Rút tiền** về tài khoản ngân hàng.
@@ -410,22 +412,50 @@ class _OtpScreenState extends State<_OtpScreen> {
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _nodes = List.generate(6, (_) => FocusNode());
 
+  Timer? _timer;
+  int _secondsLeft = 60;
+
   bool get _complete => _ctrls.every((c) => c.text.isNotEmpty);
 
   @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _secondsLeft = 60;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_secondsLeft <= 0) { t.cancel(); return; }
+      if (mounted) setState(() => _secondsLeft--);
+    });
+  }
+
+  @override
   void dispose() {
+    _timer?.cancel();
     for (final c in _ctrls) { c.dispose(); }
     for (final n in _nodes) { n.dispose(); }
     super.dispose();
   }
 
-  void _onDigit(int index, String value) {
-    if (value.length == 1 && index < 5) _nodes[index + 1].requestFocus();
+  void _onOtpChanged(String otp) {
     setState(() {});
+  }
+
+  void _resend() {
+    _startTimer();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Đã gửi lại mã OTP'),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final canResend = _secondsLeft == 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A0A0A),
       body: Column(
@@ -515,85 +545,96 @@ class _OtpScreenState extends State<_OtpScreen> {
 
           // ── Body ──
           Expanded(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const WalletSectionTitle(label: 'Nhập mã OTP'),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
-                    'Mã OTP đã được gửi về số điện thoại đăng ký của bạn',
+                    'Mã OTP đã được gửi về số điện thoại đăng ký',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 13),
                   ),
-                  const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(6, (i) {
-                      return SizedBox(
-                        width: 44,
-                        height: 52,
-                        child: TextField(
-                          controller: _ctrls[i],
-                          focusNode: _nodes[i],
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900),
-                          decoration: InputDecoration(
-                            counterText: '',
-                            filled: true,
-                            fillColor: _ctrls[i].text.isNotEmpty
-                                ? AppColors.primary.withValues(alpha: 0.2)
-                                : const Color(0xFF2A1010),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: _ctrls[i].text.isNotEmpty
-                                      ? AppColors.primary
-                                      : const Color(0xFF3A1A1A)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(
-                                  color: _ctrls[i].text.isNotEmpty
-                                      ? AppColors.primary
-                                      : const Color(0xFF3A1A1A)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(
-                                  color: AppColors.primary, width: 2),
+
+                  // ── Dev banner ──
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFB74D)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.developer_mode_rounded,
+                            color: Color(0xFFE65100), size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Môi trường DEV',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFFE65100))),
+                              SizedBox(height: 2),
+                              Text('Nhập bất kỳ 6 số để xác nhận',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 4,
+                                      color: Color(0xFF1A1A1A))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ── PinCodeFields (dùng lại widget đăng ký) ──
+                  PinCodeFields(
+                    controllers: _ctrls,
+                    focusNodes: _nodes,
+                    onChanged: _onOtpChanged,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Countdown / Resend
+                  Center(
+                    child: canResend
+                        ? TextButton(
+                            onPressed: _resend,
+                            child: const Text('Gửi lại OTP',
+                                style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700)),
+                          )
+                        : RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.5)),
+                              children: [
+                                const TextSpan(text: 'Gửi lại sau '),
+                                TextSpan(
+                                  text: '$_secondsLeft',
+                                  style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                                const TextSpan(text: ' giây'),
+                              ],
                             ),
                           ),
-                          onChanged: (v) => _onDigit(i, v),
-                          onTapOutside: (_) {},
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Đã gửi lại mã OTP'),
-                                behavior: SnackBarBehavior.floating));
-                      },
-                      child: const Text('Gửi lại mã OTP',
-                          style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700)),
-                    ),
                   ),
                 ],
               ),
@@ -618,6 +659,7 @@ class _OtpScreenState extends State<_OtpScreen> {
               backgroundColor: AppColors.primary,
               disabledBackgroundColor: const Color(0xFF3A1A1A),
               foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
               elevation: 0,
