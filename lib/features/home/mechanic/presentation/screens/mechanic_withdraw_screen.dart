@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fields.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'mechanic_wallet_shared.dart';
 
 /// Màn **Rút tiền** về tài khoản ngân hàng.
@@ -33,9 +34,17 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
 
   Future<void> _confirmOtp() async {
     setState(() => _step = _WithdrawStep.processing);
-    // TODO: gọi API POST /api/wallet/withdraw
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() => _step = _WithdrawStep.success);
+
+    final provider = context.read<MechanicWalletProvider>();
+    final success = await provider.withdraw(_amount);
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() => _step = _WithdrawStep.success);
+    } else {
+      setState(() => _step = _WithdrawStep.failure);
+    }
   }
 
   @override
@@ -92,7 +101,7 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
             key: const ValueKey('success'),
             isSuccess: true,
             title: 'Rút tiền thành công!',
-            subtitle: 'Tiền đang được chuyển về tài khoản của bạn.',
+            subtitle: 'Tiền đã được chuyển về tài khoản ngân hàng của bạn.',
             amount: _amount,
             amountLabel: '-${fmtWalletAmount(_amount)}đ',
             amountColor: const Color(0xFF22C55E),
@@ -102,7 +111,7 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
             key: const ValueKey('failure'),
             isSuccess: false,
             title: 'Rút tiền thất bại',
-            subtitle: 'Không thể xử lý yêu cầu.\nVui lòng kiểm tra và thử lại.',
+            subtitle: context.read<MechanicWalletProvider>().errorMessage ?? 'Không thể xử lý yêu cầu.\nVui lòng kiểm tra và thử lại.',
             amount: _amount,
             amountLabel: '${fmtWalletAmount(_amount)}đ',
             amountColor: AppColors.primary,

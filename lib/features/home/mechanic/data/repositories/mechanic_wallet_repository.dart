@@ -23,4 +23,34 @@ class MechanicWalletRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<Map<String, dynamic>> deposit(int amount, {String? description}) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.mechanicWalletDeposit,
+        data: {
+          'amount': amount,
+          if (description != null && description.isNotEmpty) 'description': description,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> withdraw(int amount, {String? description}) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.mechanicWalletWithdraw,
+        data: {
+          'amount': amount,
+          if (description != null && description.isNotEmpty) 'description': description,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

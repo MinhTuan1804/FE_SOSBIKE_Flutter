@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'mechanic_wallet_shared.dart';
 
 /// Màn **Nạp tiền** vào ví SOSBIKE.
@@ -27,9 +29,17 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
 
   Future<void> _confirmDeposit() async {
     setState(() => _step = _DepositStep.processing);
-    // TODO: gọi API POST /api/wallet/deposit
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() => _step = _DepositStep.success);
+
+    final provider = context.read<MechanicWalletProvider>();
+    final success = await provider.deposit(_amount);
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() => _step = _DepositStep.success);
+    } else {
+      setState(() => _step = _DepositStep.failure);
+    }
   }
 
   @override
@@ -79,7 +89,7 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
             key: const ValueKey('failure'),
             isSuccess: false,
             title: 'Nạp tiền thất bại',
-            subtitle: 'Không xác nhận được giao dịch.\nVui lòng thử lại.',
+            subtitle: context.read<MechanicWalletProvider>().errorMessage ?? 'Không xác nhận được giao dịch.\nVui lòng thử lại.',
             amount: _amount,
             amountLabel: '${fmtWalletAmount(_amount)}đ',
             amountColor: AppColors.primary,

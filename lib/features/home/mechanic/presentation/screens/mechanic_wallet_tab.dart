@@ -93,6 +93,24 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                         },
                       ),
                       const SizedBox(height: 16),
+                      if (wallet.withdrawRequests.isNotEmpty) ...[
+                        const Text(
+                          'Yêu cầu rút tiền',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...wallet.withdrawRequests.map(
+                          (req) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _WithdrawRequestTile(req: req, dateFormat: _dateFormat),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       const Text(
                         'Giao dịch gần đây',
                         style: TextStyle(
@@ -262,12 +280,18 @@ class _WalletCard extends StatelessWidget {
                 child: _WalletAction(
                   icon: Icons.savings_outlined,
                   label: 'Nạp tiền',
-                  onTap: () => Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(
-                      builder: (_) => MechanicDepositScreen(currentBalance: _balanceInt),
-                      fullscreenDialog: true,
-                    ),
-                  ),
+                  onTap: () async {
+                    final provider = context.read<MechanicWalletProvider>();
+                    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => MechanicDepositScreen(currentBalance: _balanceInt),
+                        fullscreenDialog: true,
+                      ),
+                    );
+                    if (result == true && context.mounted) {
+                      provider.refresh();
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -275,12 +299,18 @@ class _WalletCard extends StatelessWidget {
                 child: _WalletAction(
                   icon: Icons.payments_outlined,
                   label: 'Rút tiền',
-                  onTap: () => Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(
-                      builder: (_) => MechanicWithdrawScreen(currentBalance: _balanceInt),
-                      fullscreenDialog: true,
-                    ),
-                  ),
+                  onTap: () async {
+                    final provider = context.read<MechanicWalletProvider>();
+                    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => MechanicWithdrawScreen(currentBalance: _balanceInt),
+                        fullscreenDialog: true,
+                      ),
+                    );
+                    if (result == true && context.mounted) {
+                      provider.refresh();
+                    }
+                  },
                 ),
               ),
             ],
@@ -419,6 +449,20 @@ class _TransactionTile extends StatelessWidget {
                   tx.title,
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF111827)),
                 ),
+                if (tx.isPending) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Chờ xử lý',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFFD97706)),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   tx.description ?? dateFormat.format(tx.createdAt.toLocal()),
@@ -458,6 +502,103 @@ class _EmptyTransactions extends StatelessWidget {
           Text(
             'Chưa có giao dịch nào.',
             style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WithdrawRequestTile extends StatelessWidget {
+  const _WithdrawRequestTile({required this.req, required this.dateFormat});
+
+  final MechanicWithdrawRequest req;
+  final DateFormat dateFormat;
+
+  Color _statusColor(String status) => switch (status.toUpperCase()) {
+        'PENDING' => const Color(0xFFF59E0B),
+        'APPROVED' => const Color(0xFF3B82F6),
+        'REJECTED' => const Color(0xFFDC2626),
+        'COMPLETED' => const Color(0xFF16A34A),
+        _ => const Color(0xFF6B7280),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor(req.status);
+    final subtitle = req.status.toUpperCase() == 'REJECTED' && req.rejectionReason != null
+        ? req.rejectionReason!
+        : '${req.bankName} · ${req.maskedAccount}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.account_balance_outlined, color: statusColor, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        req.amountLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        req.statusLabel,
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: statusColor),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  dateFormat.format(req.requestedAt.toLocal()),
+                  style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
           ),
         ],
       ),

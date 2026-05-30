@@ -27,4 +27,6 @@ class ApiEndpoints {
   static const String mechanicCustomerHistory = '/mechanics/me/history';
   static const String mechanicWallet = '/mechanics/me/wallet';
   static const String mechanicSubscription = '/mechanics/me/subscription';
+  static const String mechanicWalletDeposit = '/mechanics/me/wallet/deposit';
+  static const String mechanicWalletWithdraw = '/mechanics/me/wallet/withdraw';
 }
