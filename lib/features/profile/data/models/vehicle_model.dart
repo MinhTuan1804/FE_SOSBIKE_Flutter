@@ -1,8 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'vehicle_model.g.dart';
-
-@JsonSerializable()
 class VehicleModel {
   final String vehicleid;
   final String brand;
@@ -26,6 +21,31 @@ class VehicleModel {
     this.photourl,
   });
 
-  factory VehicleModel.fromJson(Map<String, dynamic> json) => _$VehicleModelFromJson(json);
-  Map<String, dynamic> toJson() => _$VehicleModelToJson(this);
+  factory VehicleModel.fromJson(Map<String, dynamic> json) {
+    return VehicleModel(
+      vehicleid: '${json['vehicleId'] ?? json['vehicleid'] ?? ''}',
+      brand: '${json['brand'] ?? ''}',
+      model: '${json['model'] ?? ''}',
+      licenseplate: '${json['licensePlate'] ?? json['licenseplate'] ?? ''}',
+      vehicletype: '${json['vehicleType'] ?? json['vehicletype'] ?? ''}',
+      yearofmanufacture: (json['yearOfManufacture'] ?? json['yearofmanufacture']) as int?,
+      color: json['color'] as String?,
+      currentmileage: (json['currentMileage'] ?? json['currentmileage']) as int?,
+      photourl: json['photoUrl'] as String? ?? json['photourl'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'vehicleId': vehicleid,
+      'brand': brand,
+      'model': model,
+      'licensePlate': licenseplate,
+      'vehicleType': vehicletype,
+      if (yearofmanufacture != null) 'yearOfManufacture': yearofmanufacture,
+      if (color != null) 'color': color,
+      if (currentmileage != null) 'currentMileage': currentmileage,
+      if (photourl != null) 'photoUrl': photourl,
+    };
+  }
 }
