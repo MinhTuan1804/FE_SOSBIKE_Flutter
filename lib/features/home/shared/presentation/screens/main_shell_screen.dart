@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_customer_history_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_activity_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_wallet_tab.dart';
@@ -21,6 +24,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_re
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_accept_order_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_arrival_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_line_item.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_session_spare_part.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_inspect_vehicle_view.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_payment_complete_view.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_repair_confirm_view.dart';
@@ -42,6 +46,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   bool _showIncomingRequest = false;
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
+  List<MechanicSessionSparePart> _sessionSpareParts = const [];
   bool _editingRepairItems = false;
 
   static const _incomingRequest = IncomingRescueRequest.sample;
@@ -57,6 +62,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   void _acceptIncomingRequest() {
     _closeIncomingRequest();
+    unawaited(context.read<MechanicRepairProvider>().loadActiveOrder());
     setState(() {
       _orderFlow = _MechanicOrderFlow.accept;
       _tab = MainNavTab.orders;
@@ -67,6 +73,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     setState(() {
       _orderFlow = _MechanicOrderFlow.none;
       _selectedRepairItems = const [];
+      _sessionSpareParts = const [];
       _editingRepairItems = false;
     });
   }
@@ -83,20 +90,49 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _goToRepairFlow(List<MechanicRepairLineItem> items) {
+    final selected = items.isEmpty
+        ? MechanicRepairLineItem.sampleServices.where((e) => e.id == '1').toList()
+        : items;
+    unawaited(context.read<MechanicRepairProvider>().loadSpareParts(force: true));
+    unawaited(
+      context.read<MechanicRepairProvider>().saveQuote(
+            selectedServices: selected,
+            spareParts: _sessionSpareParts,
+          ),
+    );
     setState(() {
-      _selectedRepairItems = items.isEmpty
-          ? MechanicRepairLineItem.sampleItems.where((e) => e.id == '1').toList()
-          : items;
+      _selectedRepairItems = selected;
       _editingRepairItems = false;
       _orderFlow = _MechanicOrderFlow.repair;
     });
   }
 
-  void _goToCompleteFlow() {
+  void _addSessionSparePart(MechanicSessionSparePart part) {
+    setState(() => _sessionSpareParts = [..._sessionSpareParts, part]);
+  }
+
+  void _removeSessionSparePart(String partId) {
+    setState(() => _sessionSpareParts = _sessionSpareParts.where((p) => p.id != partId).toList());
+  }
+
+  Future<void> _completeRepairFlow() async {
+    final repair = context.read<MechanicRepairProvider>();
+    final ok = await repair.completeRepair(
+      selectedServices: _selectedRepairItems,
+      spareParts: _sessionSpareParts,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repair.errorMessage ?? 'Không thể hoàn thành sửa chữa')),
+      );
+      return;
+    }
     setState(() => _orderFlow = _MechanicOrderFlow.complete);
   }
 
   void _confirmArrived() {
+    unawaited(context.read<MechanicRepairProvider>().loadServices(force: true));
     _goToInspectFlow();
   }
 
@@ -237,6 +273,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _buildBody(String? userType) {
+    final repairProvider = context.watch<MechanicRepairProvider>();
+
     if (userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none) {
       return switch (_orderFlow) {
         _MechanicOrderFlow.accept => MechanicAcceptOrderView(
@@ -253,8 +291,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
             key: ValueKey(
               'inspect-${_selectedRepairItems.map((e) => e.id).join('-')}-$_editingRepairItems',
             ),
+            initialItems: repairProvider.services,
             preselectedItems: _selectedRepairItems,
             editingDuringRepair: _editingRepairItems,
+            isLoadingServices: repairProvider.isLoadingServices,
             onBack: () => setState(() {
               if (_editingRepairItems) {
                 _editingRepairItems = false;
@@ -266,10 +306,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
             onStartRepair: _goToRepairFlow,
           ),
         _MechanicOrderFlow.repair => MechanicRepairConfirmView(
-            selectedItems: _selectedRepairItems,
+            selectedServices: _selectedRepairItems,
+            spareParts: _sessionSpareParts,
+            catalogSpareParts: repairProvider.catalogSpareParts,
+            isSubmitting: repairProvider.isSubmitting,
+            isLoadingCatalog: repairProvider.isLoadingSpareParts,
             onBack: () => _goToInspectFlow(editingDuringRepair: true),
-            onAddMoreItems: () => _goToInspectFlow(editingDuringRepair: true),
-            onCompleteRepair: _goToCompleteFlow,
+            onAddMoreServices: () => _goToInspectFlow(editingDuringRepair: true),
+            onAddSparePart: _addSessionSparePart,
+            onRemoveSparePart: _removeSessionSparePart,
+            onCompleteRepair: _completeRepairFlow,
           ),
         _MechanicOrderFlow.complete => MechanicPaymentCompleteView(
             onFinish: _finishOrderFlow,

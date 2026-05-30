@@ -1,33 +1,106 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_line_item.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_session_spare_part.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_title_bar.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_stepper.dart';
 
-/// **Xác nhận sửa xe** — hoàn tất hạng mục (Figma).
-class MechanicRepairConfirmView extends StatelessWidget {
+/// **Sửa xe** — dịch vụ (app) + phụ tùng catalog + phụ tùng cộng thêm.
+class MechanicRepairConfirmView extends StatefulWidget {
   const MechanicRepairConfirmView({
     super.key,
-    required this.selectedItems,
+    required this.selectedServices,
+    required this.spareParts,
+    required this.catalogSpareParts,
     required this.onBack,
-    required this.onAddMoreItems,
+    required this.onAddMoreServices,
+    required this.onAddSparePart,
+    required this.onRemoveSparePart,
     required this.onCompleteRepair,
+    this.isSubmitting = false,
+    this.isLoadingCatalog = false,
   });
 
-  final List<MechanicRepairLineItem> selectedItems;
+  final List<MechanicRepairLineItem> selectedServices;
+  final List<MechanicSessionSparePart> spareParts;
+  final List<MechanicSparePartDto> catalogSpareParts;
   final VoidCallback onBack;
-  final VoidCallback onAddMoreItems;
-  final VoidCallback onCompleteRepair;
+  final VoidCallback onAddMoreServices;
+  final ValueChanged<MechanicSessionSparePart> onAddSparePart;
+  final ValueChanged<String> onRemoveSparePart;
+  final Future<void> Function() onCompleteRepair;
+  final bool isSubmitting;
+  final bool isLoadingCatalog;
 
-  int get _totalPrice => selectedItems.fold(0, (sum, item) => sum + item.price);
+  @override
+  State<MechanicRepairConfirmView> createState() => _MechanicRepairConfirmViewState();
+}
 
-  String get _totalPriceLabel {
-    final formatted = _totalPrice.toString().replaceAllMapped(
+class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
+  final _partNameCtrl = TextEditingController();
+  final _partPriceCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _partNameCtrl.dispose();
+    _partPriceCtrl.dispose();
+    super.dispose();
+  }
+
+  int get _serviceTotal => widget.selectedServices.fold(0, (sum, item) => sum + item.laborFee);
+  int get _partsTotal => widget.spareParts.fold(0, (sum, part) => sum + part.price);
+  int get _grandTotal => _serviceTotal + _partsTotal;
+
+  static String _formatVnd(int amount) {
+    final formatted = amount.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (m) => '${m.group(1) ?? ''}.',
         );
-    return '$formatted VND';
+    return '$formattedđ';
   }
+
+  void _submitSparePart() {
+    final name = _partNameCtrl.text.trim();
+    final price = int.tryParse(_partPriceCtrl.text.trim()) ?? 0;
+    if (name.isEmpty || price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nhập tên phụ tùng và giá hợp lệ')),
+      );
+      return;
+    }
+    widget.onAddSparePart(
+      MechanicSessionSparePart(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        price: price,
+      ),
+    );
+    _partNameCtrl.clear();
+    _partPriceCtrl.clear();
+    FocusScope.of(context).unfocus();
+  }
+
+  void _addCatalogPart(MechanicSparePartDto part) {
+    if (widget.spareParts.any((p) => p.catalogPartId == part.partId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phụ tùng này đã có trong đơn')),
+      );
+      return;
+    }
+    widget.onAddSparePart(
+      MechanicSessionSparePart.fromCatalog(
+        partId: part.partId,
+        name: part.name,
+        price: part.price,
+      ),
+    );
+  }
+
+  bool _isCatalogPartSelected(String partId) =>
+      widget.spareParts.any((p) => p.catalogPartId == partId);
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -38,116 +111,222 @@ class MechanicRepairConfirmView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             MechanicFlowTitleBar(
-              title: 'Xác nhận',
+              title: 'Sửa xe',
               leading: IconButton(
-                onPressed: onBack,
+                onPressed: widget.onBack,
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
               ),
             ),
             Expanded(
               child: Container(
                 color: const Color(0xFFF0FDF4),
-                child: Column(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Hạng mục đã chọn',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: Color(0xFF166534),
+                    _SummaryCard(
+                      serviceTotal: _serviceTotal,
+                      partsTotal: _partsTotal,
+                      grandTotal: _grandTotal,
+                    ),
+                    const SizedBox(height: 14),
+                    _SectionHeader(
+                      title: 'Phụ tùng',
+                      subtitle: 'Chọn từ danh mục hoặc cộng thêm bên dưới',
+                      trailing: _formatVnd(_partsTotal),
+                    ),
+                    const SizedBox(height: 8),
+                    if (widget.isLoadingCatalog)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                    else if (widget.catalogSpareParts.isNotEmpty) ...[
+                      Text(
+                        'Danh mục phụ tùng',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey.shade700),
+                      ),
+                      const SizedBox(height: 6),
+                      ...widget.catalogSpareParts.map((part) {
+                        final selected = _isCatalogPartSelected(part.partId);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Material(
+                            color: selected ? const Color(0xFFDBEAFE) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              onTap: selected ? null : () => _addCatalogPart(part),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: selected
+                                        ? const Color(0xFF2563EB)
+                                        : const Color(0xFF2563EB).withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      selected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                                      color: const Color(0xFF2563EB),
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        part.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                      ),
+                                    ),
+                                    Text(
+                                      _formatVnd(part.price),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                          Text(
-                            _totalPriceLabel,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: Color(0xFF16A34A),
+                        );
+                      }),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Phụ tùng cộng thêm (chỉ đơn này)',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey.shade700),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.4)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextField(
+                            controller: _partNameCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Tên phụ tùng *',
+                              hintText: 'VD: Ruột xe 110/70-17, Lốp sau...',
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _partPriceCtrl,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            decoration: InputDecoration(
+                              labelText: 'Giá phụ tùng (VND) *',
+                              hintText: '150000',
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Material(
+                            color: const Color(0xFF2563EB),
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              onTap: _submitSparePart,
+                              borderRadius: BorderRadius.circular(12),
+                              child: const SizedBox(
+                                height: 44,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Thêm phụ tùng vào đơn',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-                      child: Material(
-                        color: Colors.white,
+                    const SizedBox(height: 8),
+                    if (widget.spareParts.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          'Chưa có phụ tùng. Không thay linh kiện thì bỏ qua, nhấn Hoàn thành.',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                      )
+                    else
+                      ...widget.spareParts.map(
+                        (part) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _LineTile(
+                            label: part.isExtra ? '${part.name} (cộng thêm)' : part.name,
+                            priceLabel: part.priceLabel,
+                            accent: const Color(0xFF2563EB),
+                            onRemove: () => widget.onRemoveSparePart(part.id),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 14),
+                    _SectionHeader(
+                      title: 'Dịch vụ sửa chữa',
+                      subtitle: 'Phí công do app quy định',
+                      trailing: _formatVnd(_serviceTotal),
+                    ),
+                    const SizedBox(height: 8),
+                    Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        onTap: widget.onAddMoreServices,
                         borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: onAddMoreItems,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Chọn thêm hạng mục',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Chọn thêm dịch vụ',
+                                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.primary),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(14),
-                        itemCount: selectedItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final item = selectedItems[index];
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF86EFAC)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 20),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    item.label,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                      color: Color(0xFF166534),
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  item.priceLabel,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                    color: Color(0xFF16A34A),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                    const SizedBox(height: 8),
+                    ...widget.selectedServices.map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _LineTile(label: item.label, priceLabel: item.priceLabel, accent: const Color(0xFF16A34A)),
                       ),
                     ),
                   ],
@@ -157,23 +336,28 @@ class MechanicRepairConfirmView extends StatelessWidget {
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: sheetMaxH),
               child: MechanicOrderFlowSheetBody(
-                title: 'Kiểm tra xe.',
+                title: 'Sửa xe',
                 activeStep: 2,
-                subtitle:
-                    'Sau khi đã sửa xe thành công và chọn các khoản mục thanh toán, hãy nhấn nút "Hoàn thành".',
+                subtitle: 'Nhập phụ tùng (nếu có) rồi nhấn Hoàn thành.',
                 action: Material(
-                  color: const Color(0xFF16A34A),
+                  color: widget.isSubmitting ? const Color(0xFF9CA3AF) : const Color(0xFF16A34A),
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
-                    onTap: onCompleteRepair,
+                    onTap: widget.isSubmitting ? null : () => widget.onCompleteRepair(),
                     borderRadius: BorderRadius.circular(16),
-                    child: const SizedBox(
+                    child: SizedBox(
                       height: 46,
                       child: Center(
-                        child: Text(
-                          'Hoàn thành sửa xe',
-                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
-                        ),
+                        child: widget.isSubmitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(
+                                'Hoàn thành sửa xe · ${_formatVnd(_grandTotal)}',
+                                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                              ),
                       ),
                     ),
                   ),
@@ -183,6 +367,137 @@ class MechanicRepairConfirmView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.serviceTotal,
+    required this.partsTotal,
+    required this.grandTotal,
+  });
+
+  final int serviceTotal;
+  final int partsTotal;
+  final int grandTotal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+      ),
+      child: Column(
+        children: [
+          _row('Dịch vụ sửa chữa', serviceTotal, const Color(0xFF16A34A)),
+          const SizedBox(height: 6),
+          _row('Phụ tùng', partsTotal, const Color(0xFF2563EB)),
+          const Divider(height: 20),
+          _row('Tổng cộng', grandTotal, const Color(0xFF111827), bold: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, int amount, Color color, {bool bold = false}) {
+    final formatted = amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m.group(1) ?? ''}.',
+        );
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
+              fontSize: bold ? 14 : 12,
+              color: const Color(0xFF374151),
+            ),
+          ),
+        ),
+        Text(
+          '$formattedđ',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: bold ? 15 : 13, color: color),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.subtitle, required this.trailing});
+
+  final String title;
+  final String subtitle;
+  final String trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF166534))),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+        Text(trailing, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF111827))),
+      ],
+    );
+  }
+}
+
+class _LineTile extends StatelessWidget {
+  const _LineTile({
+    required this.label,
+    required this.priceLabel,
+    required this.accent,
+    this.onRemove,
+  });
+
+  final String label;
+  final String priceLabel;
+  final Color accent;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(onRemove != null ? Icons.inventory_2_outlined : Icons.build_outlined, color: accent, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: accent.withValues(alpha: 0.9))),
+          ),
+          Text(priceLabel, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: accent)),
+          if (onRemove != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.close_rounded, size: 18),
+              color: Colors.grey.shade600,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

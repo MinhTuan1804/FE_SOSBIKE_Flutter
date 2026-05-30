@@ -10,9 +10,10 @@ class MechanicInspectVehicleView extends StatefulWidget {
     super.key,
     required this.onBack,
     required this.onStartRepair,
-    this.initialItems = MechanicRepairLineItem.sampleItems,
+    this.initialItems = MechanicRepairLineItem.sampleServices,
     this.preselectedItems = const [],
     this.editingDuringRepair = false,
+    this.isLoadingServices = false,
   });
 
   final VoidCallback onBack;
@@ -22,6 +23,7 @@ class MechanicInspectVehicleView extends StatefulWidget {
   final List<MechanicRepairLineItem> preselectedItems;
   /// true = thợ đang ở bước sửa xe, quay lại để bổ sung hạng mục.
   final bool editingDuringRepair;
+  final bool isLoadingServices;
 
   @override
   State<MechanicInspectVehicleView> createState() => _MechanicInspectVehicleViewState();
@@ -102,7 +104,9 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                       ),
                     ),
                     Expanded(
-                      child: ListView.separated(
+                      child: widget.isLoadingServices && _items.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                         itemCount: _items.length + 1,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -131,11 +135,11 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: sheetMaxH),
               child: MechanicOrderFlowSheetBody(
-                title: widget.editingDuringRepair ? 'Bổ sung hạng mục.' : 'Kiểm tra xe.',
+                title: widget.editingDuringRepair ? 'Bổ sung dịch vụ.' : 'Kiểm tra xe.',
                 activeStep: widget.editingDuringRepair ? 2 : 1,
                 subtitle: widget.editingDuringRepair
-                    ? 'Phát hiện thêm vấn đề? Chọn thêm hạng mục rồi nhấn "Cập nhật" để quay lại sửa xe.'
-                    : 'Sau khi đã xác định được tình trạng của xe, hãy nhấn "Bắt đầu" để sửa xe.',
+                    ? 'Chọn thêm dịch vụ sửa chữa. Phụ tùng sẽ nhập ở bước xác nhận.'
+                    : 'Chọn dịch vụ sửa chữa (phí công). Phụ tùng nhập riêng sau khi bắt đầu sửa.',
                 action: Material(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(16),
@@ -146,7 +150,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                       height: 46,
                       child: Center(
                         child: Text(
-                          widget.editingDuringRepair ? 'Cập nhật hạng mục' : 'Bắt đầu sửa',
+                          widget.editingDuringRepair ? 'Cập nhật hạng mục' : 'Bắt đầu sửa → nhập phụ tùng',
                           style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
                         ),
                       ),
@@ -187,15 +191,24 @@ class _RepairLineTile extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  item.label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: selected ? const Color(0xFF166534) : const Color(0xFF374151),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: selected ? const Color(0xFF166534) : const Color(0xFF374151),
+                      ),
+                    ),
+                    Text(
+                      'Phí dịch vụ',
+                      style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
               ),
               Text(

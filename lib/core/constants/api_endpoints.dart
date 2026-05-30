@@ -29,4 +29,9 @@ class ApiEndpoints {
   static const String mechanicSubscription = '/mechanics/me/subscription';
   static const String mechanicWalletDeposit = '/mechanics/me/wallet/deposit';
   static const String mechanicWalletWithdraw = '/mechanics/me/wallet/withdraw';
+  static const String mechanicRepairServices = '/mechanics/me/repair/services';
+  static const String mechanicSpareParts = '/mechanics/me/spare-parts';
+  static const String mechanicActiveOrder = '/mechanics/me/orders/active';
+  static String mechanicOrderQuote(String orderId) => '/mechanics/me/orders/$orderId/quote';
+  static String mechanicCompleteRepair(String orderId) => '/mechanics/me/orders/$orderId/complete-repair';
 }
