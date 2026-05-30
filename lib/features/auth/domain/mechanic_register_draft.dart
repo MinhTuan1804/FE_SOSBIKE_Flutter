@@ -12,10 +12,10 @@ class MechanicRegisterDraft {
     required this.vehicleModel,
     required this.vehicleGeneration,
     required this.driverLicenseNumber,
-    required this.bankAccountNumber,
     this.email,
     this.bankCode,
     this.bankName,
+    this.bankAccountNumber,
     this.bankAccountHolder,
     this.portraitFile,
     this.vehicleRegistrationFile,
@@ -34,7 +34,7 @@ class MechanicRegisterDraft {
   final String driverLicenseNumber;
   final String? bankCode;
   final String? bankName;
-  final String bankAccountNumber;
+  final String? bankAccountNumber;
   final String? bankAccountHolder;
   final XFile? portraitFile;
   final XFile? vehicleRegistrationFile;

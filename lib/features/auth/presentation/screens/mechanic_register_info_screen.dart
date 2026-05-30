@@ -10,12 +10,12 @@ import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.d
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
-import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_document_upload_tile.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_layout.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
-/// Đăng ký thợ — form thông tin theo yêu cầu nghiệp vụ.
+/// Đăng ký thợ — chỉ thu thập thông tin cơ bản.
+/// Ảnh giấy tờ, thông tin ví cập nhật sau trong hồ sơ.
 class MechanicRegisterInfoScreen extends StatefulWidget {
   const MechanicRegisterInfoScreen({
     super.key,
@@ -27,20 +27,21 @@ class MechanicRegisterInfoScreen extends StatefulWidget {
   final String? otpToken;
 
   static const _vehicleSuggestions = [
-    'Honda SH125i',
-    'Honda SH150i',
-    'Honda Vision',
-    'Yamaha Exciter',
-    'Yamaha Sirius',
+    'Honda SH125i', 'Honda SH150i', 'Honda Vision',
+    'Yamaha Exciter', 'Yamaha Sirius',
   ];
 
-  static const _generationSuggestions = ['2018', '2019', '2020', '2022', '2024', '2025'];
+  static const _generationSuggestions = [
+    '2018', '2019', '2020', '2022', '2024', '2025'
+  ];
 
   @override
-  State<MechanicRegisterInfoScreen> createState() => _MechanicRegisterInfoScreenState();
+  State<MechanicRegisterInfoScreen> createState() =>
+      _MechanicRegisterInfoScreenState();
 }
 
-class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen> {
+class _MechanicRegisterInfoScreenState
+    extends State<MechanicRegisterInfoScreen> {
   final _nameController = TextEditingController();
   final _identityController = TextEditingController();
   final _addressController = TextEditingController();
@@ -49,14 +50,9 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
   final _vehicleController = TextEditingController();
   final _generationController = TextEditingController();
   final _driverLicenseNoController = TextEditingController();
-  final _bankAccountController = TextEditingController();
-  final _bankNameController = TextEditingController();
-  final _bankHolderController = TextEditingController();
 
   DateTime? _dob;
   XFile? _portraitFile;
-  XFile? _registrationFile;
-  XFile? _insuranceFile;
 
   @override
   void dispose() {
@@ -68,17 +64,12 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
     _vehicleController.dispose();
     _generationController.dispose();
     _driverLicenseNoController.dispose();
-    _bankAccountController.dispose();
-    _bankNameController.dispose();
-    _bankHolderController.dispose();
     super.dispose();
   }
 
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
-    );
-  }
+  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+      );
 
   Future<void> _pickPortrait() async {
     final picked = await pickImageFromCameraOrGallery(
@@ -108,7 +99,6 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
     final vehicle = _vehicleController.text.trim();
     final generation = _generationController.text.trim();
     final licenseNo = _driverLicenseNoController.text.trim();
-    final bankAcc = _bankAccountController.text.trim();
 
     if (name.length < 2) return _snack('Vui lòng nhập họ và tên');
     if (identity.length < 6) return _snack('CCCD/CMND không hợp lệ');
@@ -118,10 +108,6 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
     if (vehicle.length < 2) return _snack('Vui lòng nhập loại xe');
     if (generation.length < 2) return _snack('Vui lòng nhập đời xe');
     if (licenseNo.length < 5) return _snack('Vui lòng nhập số bằng lái xe');
-    if (bankAcc.length < 6) return _snack('Vui lòng nhập số tài khoản ngân hàng');
-    if (_portraitFile == null) return _snack('Vui lòng tải ảnh chân dung');
-    if (_registrationFile == null) return _snack('Vui lòng tải ảnh cà vẹt xe');
-    if (_insuranceFile == null) return _snack('Vui lòng tải ảnh bảo hiểm xe');
 
     final draft = MechanicRegisterDraft(
       phoneNumber: widget.phoneNumber,
@@ -129,17 +115,14 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
       identityCard: identity,
       dateOfBirth: _dob!,
       currentAddress: address,
-      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+      email: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
       licensePlate: plate,
       vehicleModel: vehicle,
       vehicleGeneration: generation,
       driverLicenseNumber: licenseNo,
-      bankName: _bankNameController.text.trim().isEmpty ? null : _bankNameController.text.trim(),
-      bankAccountNumber: bankAcc,
-      bankAccountHolder: _bankHolderController.text.trim().isEmpty ? name : _bankHolderController.text.trim(),
       portraitFile: _portraitFile,
-      vehicleRegistrationFile: _registrationFile,
-      vehicleInsuranceFile: _insuranceFile,
     );
 
     Navigator.of(context).push(
@@ -165,14 +148,40 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
         const SizedBox(height: 12),
         const Text(
           'Thông tin thợ',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Điền đầy đủ thông tin để hoàn tất đăng ký',
+          'Điền thông tin cơ bản để hoàn tất đăng ký',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
+        const SizedBox(height: 4),
+        // Note nhỏ
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F4FF),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: const [
+              Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF3B82F6)),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Thông tin ngân hàng & giấy tờ xe có thể cập nhật sau trong hồ sơ.',
+                  style: TextStyle(fontSize: 11.5, color: Color(0xFF3B82F6)),
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
+
+        // ── Ảnh chân dung (tùy chọn) ──
         Center(
           child: GestureDetector(
             onTap: _pickPortrait,
@@ -187,7 +196,8 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
                           child: FutureBuilder(
                             future: _portraitFile!.readAsBytes(),
                             builder: (c, s) => s.hasData
-                                ? Image.memory(s.data!, width: 88, height: 88, fit: BoxFit.cover)
+                                ? Image.memory(s.data!,
+                                    width: 88, height: 88, fit: BoxFit.cover)
                                 : const Icon(Icons.person),
                           ),
                         ),
@@ -199,7 +209,7 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50),
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
@@ -210,83 +220,84 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         const Center(
-          child: Text('Ảnh chân dung *', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          child: Text('Ảnh chân dung (tuỳ chọn)',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         ),
         const SizedBox(height: 20),
-        _field('Họ và tên', _nameController, hint: 'Nguyễn Văn A', required: true),
+
+        // ── Thông tin cá nhân ──
+        _sectionTitle('Thông tin cá nhân'),
+        _field('Họ và tên', _nameController,
+            hint: 'Nguyễn Văn A', required: true),
         _readOnly('Số điện thoại', phoneDisplay),
-        _field('CCCD / CMND', _identityController, hint: '001234567890', digitsOnly: true, required: true),
+        _field('CCCD / CMND', _identityController,
+            hint: '001234567890', digitsOnly: true, required: true),
         _label('Ngày tháng năm sinh *'),
         GestureDetector(
           onTap: _pickDob,
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              _dob != null ? DateFormat('dd/MM/yyyy').format(_dob!) : 'Chọn ngày sinh',
+              _dob != null
+                  ? DateFormat('dd/MM/yyyy').format(_dob!)
+                  : 'Chọn ngày sinh',
               style: TextStyle(
-                color: _dob != null ? AppColors.textPrimary : Colors.grey.shade400,
+                color: _dob != null
+                    ? AppColors.textPrimary
+                    : Colors.grey.shade400,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ),
         const SizedBox(height: 16),
-        _field('Địa chỉ hiện tại', _addressController, hint: 'Số nhà, phường, quận, tỉnh...', required: true),
-        _field('Email (nếu có)', _emailController, hint: 'example@email.com', email: true),
-        _field('Biển số xe', _plateController, hint: '59A1-12345', upperCase: true, required: true),
-        _field('Loại xe', _vehicleController, hint: 'Honda SH125i', required: true),
+        _field('Địa chỉ hiện tại', _addressController,
+            hint: 'Số nhà, phường, quận, tỉnh...', required: true),
+        _field('Email (tuỳ chọn)', _emailController,
+            hint: 'example@email.com', email: true),
+
+        // ── Thông tin xe ──
+        _sectionTitle('Thông tin phương tiện'),
+        _field('Biển số xe', _plateController,
+            hint: '59A1-12345', upperCase: true, required: true),
+        _field('Loại xe', _vehicleController,
+            hint: 'Honda SH125i', required: true),
         Wrap(
           spacing: 6,
           runSpacing: 4,
           children: MechanicRegisterInfoScreen._vehicleSuggestions
               .map((s) => ActionChip(
                     label: Text(s, style: const TextStyle(fontSize: 11)),
-                    onPressed: () => _vehicleController.text = s,
+                    onPressed: () =>
+                        setState(() => _vehicleController.text = s),
                   ))
               .toList(),
         ),
         const SizedBox(height: 12),
-        _field('Đời xe', _generationController, hint: '2020, 2024...', required: true),
+        _field('Đời xe', _generationController,
+            hint: '2020, 2024...', required: true),
         Wrap(
           spacing: 6,
           children: MechanicRegisterInfoScreen._generationSuggestions
               .map((s) => ActionChip(
                     label: Text(s, style: const TextStyle(fontSize: 11)),
-                    onPressed: () => _generationController.text = s,
+                    onPressed: () =>
+                        setState(() => _generationController.text = s),
                   ))
               .toList(),
         ),
         const SizedBox(height: 12),
-        _field('Số bằng lái xe', _driverLicenseNoController, hint: '1234567890', required: true),
-        const SizedBox(height: 8),
-        const Text('Tài khoản ngân hàng nhận tiền', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        _field('Tên ngân hàng', _bankNameController, hint: 'Vietcombank, Techcombank...'),
-        _field('Số tài khoản', _bankAccountController, hint: '1234567890', digitsOnly: true, required: true),
-        _field('Chủ tài khoản', _bankHolderController, hint: 'Trùng họ tên hoặc để trống'),
-        const SizedBox(height: 16),
-        AuthDocumentUploadTile(
-          label: 'Ảnh cà vẹt xe',
-          required: true,
-          file: _registrationFile,
-          hint: 'Chụp rõ toàn bộ giấy đăng ký xe.',
-          onChanged: (f) => setState(() => _registrationFile = f),
-        ),
-        const SizedBox(height: 16),
-        AuthDocumentUploadTile(
-          label: 'Ảnh bảo hiểm xe',
-          required: true,
-          file: _insuranceFile,
-          hint: 'Chụp rõ giấy bảo hiểm còn hiệu lực.',
-          onChanged: (f) => setState(() => _insuranceFile = f),
-        ),
+        _field('Số bằng lái xe', _driverLicenseNoController,
+            hint: '1234567890', required: true),
+
         const SizedBox(height: 28),
         SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 16),
@@ -296,9 +307,31 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
     );
   }
 
+  Widget _sectionTitle(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 3,
+              height: 14,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(text,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w800)),
+          ],
+        ),
+      );
+
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600)),
       );
 
   Widget _readOnly(String label, String value) => Padding(
@@ -306,16 +339,20 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: const Color(0xFFEEEEEE),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(value,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -337,29 +374,45 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
         children: [
           RichText(
             text: TextSpan(
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary),
               children: [
                 TextSpan(text: label),
-                if (required) const TextSpan(text: ' *', style: TextStyle(color: AppColors.primary)),
+                if (required)
+                  const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: AppColors.primary)),
               ],
             ),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: controller,
-            keyboardType: digitsOnly ? TextInputType.number : (email ? TextInputType.emailAddress : TextInputType.text),
-            textCapitalization: upperCase ? TextCapitalization.characters : TextCapitalization.none,
-            inputFormatters: digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
+            keyboardType: digitsOnly
+                ? TextInputType.number
+                : (email
+                    ? TextInputType.emailAddress
+                    : TextInputType.text),
+            textCapitalization:
+                upperCase ? TextCapitalization.characters : TextCapitalization.none,
+            inputFormatters:
+                digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
             decoration: InputDecoration(
               hintText: hint,
               filled: true,
               fillColor: const Color(0xFFF5F5F5),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.primary),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
           ),
         ],
