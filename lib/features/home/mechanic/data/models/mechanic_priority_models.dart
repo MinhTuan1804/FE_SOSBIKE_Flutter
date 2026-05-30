@@ -81,6 +81,7 @@ class MechanicPriorityPlan {
     required this.benefits,
     required this.style,
     required this.showUpgradeButton,
+    this.priceValue = 0,
   });
 
   final MechanicPriorityTier tier;
@@ -91,6 +92,8 @@ class MechanicPriorityPlan {
   final List<String> benefits;
   final MechanicPriorityPlanStyle style;
   final bool showUpgradeButton;
+  /// Giá trị số (VND) dùng để kiểm tra số dư ví.
+  final int priceValue;
 
   static const tierLabels = ['MIỄN PHÍ', 'PHỔ THÔNG', 'CAO CẤP'];
 
@@ -101,6 +104,7 @@ class MechanicPriorityPlan {
           headerTitle: 'Thành viên',
           priceLabel: 'Free 0 VND',
           periodLabel: '/ Tháng',
+          priceValue: 0,
           benefits: [
             'Nhận đơn (Tốc độ tiêu chuẩn)',
             'Phí sàn 10% áp dụng cho tất cả đơn',
@@ -114,6 +118,7 @@ class MechanicPriorityPlan {
           headerTitle: 'Thợ ưu tiên',
           priceLabel: '99,000 VND',
           periodLabel: '/ Tháng',
+          priceValue: 99000,
           benefits: [
             'Mọi quyền lợi của gói cơ bản',
             'Nhận được yêu cầu sửa xe sớm hơn 10-15s',
@@ -129,6 +134,7 @@ class MechanicPriorityPlan {
           headerTitle: 'Thợ ưu tiên',
           priceLabel: '899,000 VND',
           periodLabel: '/ Năm',
+          priceValue: 899000,
           benefits: [
             'Mọi quyền lợi của gói cơ bản và gói phổ thông',
             'Phí sàn giảm còn 5%',

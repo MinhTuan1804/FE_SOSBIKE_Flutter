@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_priority_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_subscription_checkout_screen.dart';
 
 /// Màn **Gói Ưu Tiên / Gói Cơ Bản** cho thợ.
 class MechanicPriorityPackageScreen extends StatefulWidget {
@@ -121,37 +122,17 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
     );
   }
 
-  void _showUpgradeDialog(BuildContext context, MechanicPriorityPlan plan) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Đăng ký ${plan.title}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Giá: ${plan.priceLabel}${plan.periodLabel}'),
-            const SizedBox(height: 8),
-            const Text('Tính năng thanh toán đang được hoàn thiện.\nVui lòng quay lại sau.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Chức năng đăng ký ${plan.title} sắp ra mắt!')),
-              );
-            },
-            child: const Text('Xác nhận'),
-          ),
-        ],
+  void _showUpgradeDialog(BuildContext context, MechanicPriorityPlan plan) async {
+    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => MechanicSubscriptionCheckoutScreen(plan: plan),
+        fullscreenDialog: true,
       ),
     );
+    // Nếu đăng ký thành công, reload card gói đang dùng
+    if (result == true && mounted) {
+      context.read<MechanicSubscriptionProvider>().refresh();
+    }
   }
 }
 
