@@ -250,7 +250,6 @@ class _MechanicSetupProfileScreenState
   // ── Bottom bar ────────────────────────────────────────────────────────────
 
   Widget _buildBottomBar() {
-    final isLast = _tabCtrl.index == 3;
     return AnimatedBuilder(
       animation: _tabCtrl,
       builder: (_, __) {
@@ -354,7 +353,7 @@ class _MechanicSetupProfileScreenState
           _sectionLabel('Số năm kinh nghiệm'),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
-            value: _yearsExp,
+            initialValue: _yearsExp,
             decoration: _dropDeco('Chọn số năm'),
             items: [
               const DropdownMenuItem(value: null, child: Text('Chưa rõ')),
@@ -412,7 +411,7 @@ class _MechanicSetupProfileScreenState
             Switch.adaptive(
               value: _availableNow,
               onChanged: (v) => setState(() => _availableNow = v),
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
             ),
           ],
         ),
@@ -429,7 +428,7 @@ class _MechanicSetupProfileScreenState
           _sectionLabel('Tỉnh / Thành phố *'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _province,
+            initialValue: _province,
             isExpanded: true,
             decoration: _dropDeco('Chọn tỉnh/thành'),
             items: _kProvinces
@@ -500,7 +499,7 @@ class _MechanicSetupProfileScreenState
                 Switch.adaptive(
                   value: _homeService,
                   onChanged: (v) => setState(() => _homeService = v),
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ],
             ),
@@ -697,7 +696,7 @@ class _MechanicSetupProfileScreenState
           _sectionLabel('Ngân hàng'),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _bankName,
+            initialValue: _bankName,
             isExpanded: true,
             decoration: _dropDeco('Chọn ngân hàng'),
             items: [
