@@ -426,13 +426,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Upload giấy tờ thợ sau khi đã có JWT (đăng ký xong).
+  /// Upload ảnh xác thực thợ sau khi đã có JWT.
   Future<bool> uploadMechanicDocuments(MechanicRegisterDraft draft) async {
-    if (draft.portraitFile == null ||
-        draft.vehicleRegistrationFile == null ||
-        draft.vehicleInsuranceFile == null) {
-      _errorMessage = 'Thiếu ảnh chân dung, cà vẹt hoặc bảo hiểm xe';
-      return false;
+    if (draft.portraitFile == null &&
+        draft.cccdFrontFile == null &&
+        draft.cccdBackFile == null) {
+      return true; // Không có ảnh nào — bỏ qua
     }
 
     _isLoading = true;
@@ -441,9 +440,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await _repository.uploadMechanicDocuments(
-        portrait: draft.portraitFile!,
-        vehicleRegistration: draft.vehicleRegistrationFile!,
-        vehicleInsurance: draft.vehicleInsuranceFile!,
+        portrait: draft.portraitFile,
+        vehicleRegistration: null,
+        vehicleInsurance: null,
       );
       return true;
     } catch (e, st) {

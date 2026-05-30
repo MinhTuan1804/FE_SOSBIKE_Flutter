@@ -114,24 +114,10 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
       return;
     }
 
+    // Upload ảnh xác thực thợ nếu có
     final draft = widget.mechanicDraft;
-    if (draft != null &&
-        draft.portraitFile != null &&
-        draft.vehicleRegistrationFile != null &&
-        draft.vehicleInsuranceFile != null) {
-      final uploaded = await auth.uploadMechanicDocuments(draft);
-      if (!mounted) return;
-      if (!uploaded) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              auth.errorMessage ?? 'Đăng ký OK nhưng upload giấy tờ thất bại',
-            ),
-            duration: const Duration(seconds: 5),
-            backgroundColor: Colors.orange.shade800,
-          ),
-        );
-      }
+    if (draft != null && draft.portraitFile != null) {
+      await auth.uploadMechanicDocuments(draft);
     }
 
     if (!mounted) return;
