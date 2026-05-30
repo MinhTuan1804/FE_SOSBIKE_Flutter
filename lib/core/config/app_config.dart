@@ -65,6 +65,11 @@ class AppConfig {
         'ui': ui.toJson(),
       };
 
+  double get defaultPlatformFeeRate => platform.defaultPlatformFeeRate;
+  double get mechanicCommissionDefault => platform.mechanicCommissionDefault;
+  String get homeBackgroundUrl => ui.homeBackgroundUrl;
+  String get brandName => ui.brandName;
+
   AppConfig copyWith({
     AppPlatformConfig? platform,
     AppUiConfig? ui,
@@ -86,4 +91,3 @@ const AppConfig defaultAppConfig = AppConfig(
     brandName: 'SOSBIKE',
   ),
 );
-
