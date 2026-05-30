@@ -197,6 +197,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final appConfig = context.watch<AppConfigProvider>().config;
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
     final contentBottomPad = inOrderFlow ? navH : navH * 0.35;
+    final maintenanceMode = appConfig.featureFlags.maintenanceMode;
+    final sosEnabled = appConfig.featureFlags.sosEnabled;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -204,6 +206,24 @@ class _MainShellScreenState extends State<MainShellScreen> {
         if (auth.userType == 'CUSTOMER')
           Positioned.fill(
             child: _CustomerHomeBackground(backgroundUrl: appConfig.ui.homeBackgroundUrl),
+          ),
+        if (maintenanceMode)
+          Positioned(
+            left: 12,
+            right: 12,
+            top: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7E6),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFFD699)),
+              ),
+              child: const Text(
+                'Hệ thống đang bảo trì. Một số chức năng có thể tạm thời bị giới hạn.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+              ),
+            ),
           ),
         Positioned.fill(
           child: Padding(
@@ -233,7 +253,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
         ],
-        if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none)
+        if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none && sosEnabled)
           Positioned(
             right: 12,
             bottom: navH + 8,
