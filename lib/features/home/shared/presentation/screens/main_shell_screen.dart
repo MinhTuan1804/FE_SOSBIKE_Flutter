@@ -541,7 +541,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
           Positioned(
             right: 12,
             bottom: navH + 8,
-            child: _SosFab(onPressed: _openIncomingRequest),
+            child: _SosFab(
+              isActive: rescueProvider.incomingRequest != null,
+              onPressed: _openIncomingRequest,
+            ),
           ),
       ],
     );
@@ -627,9 +630,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
 }
 
 class _SosFab extends StatefulWidget {
-  const _SosFab({required this.onPressed});
+  const _SosFab({required this.onPressed, required this.isActive});
 
   final VoidCallback onPressed;
+  final bool isActive;
 
   @override
   State<_SosFab> createState() => _SosFabState();
@@ -655,6 +659,10 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final activeColor = const Color(0xFF22C55E); // Green
+    final inactiveColor = const Color(0xFF9CA3AF); // Gray
+    final dotColor = widget.isActive ? activeColor : inactiveColor;
+
     return SizedBox(
       width: 76,
       height: 76,
@@ -662,24 +670,33 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
-          AnimatedBuilder(
-            animation: _pulse,
-            builder: (context, child) {
-              final t = _pulse.value;
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  _GlowRing(size: 64 + t * 18, opacity: 0.22 * (1 - t)),
-                  _GlowRing(size: 52 + t * 10, opacity: 0.32 * (1 - t)),
-                ],
-              );
-            },
-          ),
+          if (widget.isActive)
+            AnimatedBuilder(
+              animation: _pulse,
+              builder: (context, child) {
+                final t = _pulse.value;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _GlowRing(
+                      size: 64 + t * 18,
+                      opacity: 0.22 * (1 - t),
+                      color: AppColors.primary,
+                    ),
+                    _GlowRing(
+                      size: 52 + t * 10,
+                      opacity: 0.32 * (1 - t),
+                      color: AppColors.primary,
+                    ),
+                  ],
+                );
+              },
+            ),
           GestureDetector(
-            onTap: widget.onPressed,
+            onTap: widget.isActive ? widget.onPressed : null,
             child: Container(
-              width: 58,
-              height: 58,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
@@ -698,14 +715,34 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
               child: ClipOval(
                 child: Image.asset(
                   'assets/images/main/fab_sos.png',
-                  width: 58,
-                  height: 58,
+                  width: 70,
+                  height: 70,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: AppColors.primary,
-                    child: const Icon(Icons.notifications_active, color: Colors.white, size: 28),
+                    child: const Icon(Icons.notifications_active, color: Colors.white, size: 40),
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 14,
+            top: 14,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: dotColor,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
             ),
           ),
@@ -716,10 +753,11 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
 }
 
 class _GlowRing extends StatelessWidget {
-  const _GlowRing({required this.size, required this.opacity});
+  const _GlowRing({required this.size, required this.opacity, required this.color});
 
   final double size;
   final double opacity;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -728,7 +766,7 @@ class _GlowRing extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.primary.withValues(alpha: opacity),
+        color: color.withValues(alpha: opacity),
       ),
     );
   }
