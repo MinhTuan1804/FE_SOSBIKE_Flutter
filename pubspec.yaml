@@ -108,6 +108,9 @@ flutter:
 
     - assets/images/found_mechanic/tim_tho.png
     - assets/images/found_mechanic/tim_tiem.png
+    - assets/images/screen/HoanThanh.png
+    - assets/images/screen/Tìm thợ.png
+    - assets/images/screen/Tìm thợ-1.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -66,4 +66,50 @@ class RescueRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<Map<String, dynamic>> getRescueOrderQuote(String orderId) async {
+    try {
+      final response = await _dioClient.dio.get('/RescueOrders/$orderId/quote');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> createRescueOrderPaymentIntent({
+    required String orderId,
+    required String method,
+  }) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/payments/intents',
+        data: {
+          'purpose': 'RESCUE_ORDER',
+          'orderId': orderId,
+          'method': method,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmRescueOrderPayment({
+    required String paymentId,
+    required String gatewayTransactionId,
+  }) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/payments/$paymentId/confirm',
+        data: {
+          'gatewayTransactionId': gatewayTransactionId,
+          'autoRenew': false,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

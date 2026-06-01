@@ -45,6 +45,12 @@ class RescueProvider extends ChangeNotifier {
   String? _activeOrderStatus;
   String? get activeOrderStatus => _activeOrderStatus;
 
+  Map<String, dynamic>? _activeQuote;
+  Map<String, dynamic>? get activeQuote => _activeQuote;
+
+  Map<String, dynamic>? _paymentIntent;
+  Map<String, dynamic>? get paymentIntent => _paymentIntent;
+
   // Customer Matching State
   bool _isSearching = false;
   String? _currentOrderId;
@@ -135,6 +141,13 @@ class RescueProvider extends ChangeNotifier {
       if (_matchedMechanic != null) {
         _matchedMechanic!['status'] = status;
       }
+      if (status == 'QUOTING' || status == 'COMPLETED' || status == 'REPAIRING' || status == 'PAID') {
+        if (_currentOrderId != null) {
+          fetchOrderQuote(_currentOrderId!).catchError((e) {
+            debugPrint('Failed to auto-fetch quote: $e');
+          });
+        }
+      }
       notifyListeners();
     });
 
@@ -206,6 +219,64 @@ class RescueProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchOrderQuote(String orderId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final res = await _repository.getRescueOrderQuote(orderId);
+      _activeQuote = res;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> createRescueOrderPayment(String orderId, String method) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final res = await _repository.createRescueOrderPaymentIntent(
+        orderId: orderId,
+        method: method,
+      );
+      _paymentIntent = res;
+      _isLoading = false;
+      notifyListeners();
+      return res;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> confirmRescueOrderPayment(String paymentId, String gatewayTxId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final res = await _repository.confirmRescueOrderPayment(
+        paymentId: paymentId,
+        gatewayTransactionId: gatewayTxId,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return res;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   Future<void> cancelSearch() async {
     if (_currentOrderId != null) {
       try {
@@ -219,6 +290,8 @@ class RescueProvider extends ChangeNotifier {
     _matchedMechanic = null;
     _customerLatitude = null;
     _customerLongitude = null;
+    _activeQuote = null;
+    _paymentIntent = null;
     await _realtimeService.disconnect();
     notifyListeners();
   }
@@ -306,6 +379,8 @@ class RescueProvider extends ChangeNotifier {
 
   void clearActiveOrderStatus() {
     _activeOrderStatus = null;
+    _activeQuote = null;
+    _paymentIntent = null;
     notifyListeners();
   }
 
