@@ -68,6 +68,14 @@ class MechanicDashboardData {
   bool get isEmptyStats =>
       todayRevenue == 0 && todayOrderCount == 0 && recentTrips.isEmpty;
 
+  static MechanicDashboardData get empty => const MechanicDashboardData(
+        todayRevenue: 0.0,
+        todayOrderCount: 0,
+        todayRating: 0.0,
+        overallRating: 0.0,
+        recentTrips: [],
+      );
+
   MechanicDashboardData withSampleIfEmpty() {
     if (!isEmptyStats) return this;
     return sample;

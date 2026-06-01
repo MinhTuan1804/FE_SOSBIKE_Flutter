@@ -25,7 +25,7 @@ class MechanicDashboardProvider extends ChangeNotifier {
 
     try {
       final data = await _repository.getDashboard();
-      _dashboard = kDebugMode ? data.withSampleIfEmpty() : data;
+      _dashboard = data;
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

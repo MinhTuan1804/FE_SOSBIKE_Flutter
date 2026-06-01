@@ -102,6 +102,81 @@ class MechanicAcceptOrderView extends StatelessWidget {
 
               ],
 
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const MechanicFlowTitleBar(title: 'Nhận Đơn'),
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  MechanicOrderMapBackground(
+                    customerLatitude: request.latitude,
+                    customerLongitude: request.longitude,
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: sheetMaxH),
+                      child: MechanicOrderBottomSheet(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              MechanicOrderCustomerHeader(request: request),
+                            const SizedBox(height: 10),
+                            MechanicOrderAddressBox(
+                              fullAddress: request.fullAddress,
+                              distanceLabel: request.distanceLabel,
+                            ),
+                            const SizedBox(height: 10),
+                            MechanicOrderContactRow(
+                              phoneNumber: request.phoneNumber,
+                              onCall: () {},
+                              onChat: () {},
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Đang chờ khách hàng xác nhận...',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  ),
+                ],
+              ),
             ),
 
             pinnedFooter: Row(

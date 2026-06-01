@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:intl/intl.dart';
 
 class TrackingView extends StatelessWidget {
   const TrackingView({
@@ -14,7 +16,19 @@ class TrackingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
+    final rescue = context.watch<RescueProvider>();
+    final match = rescue.matchedMechanic ?? {};
+
+    final mechanicName = match['mechanicName'] as String? ?? 'Thợ sửa xe';
+    final vehicleModel = match['vehicleModel'] as String? ?? 'N/A';
+    final licensePlate = match['licensePlate'] as String? ?? 'N/A';
+    final rating = match['mechanicRating']?.toString() ?? '5.0';
+    final distanceKm = rescue.goongDistanceKm ?? (match['distanceKm'] != null ? (match['distanceKm'] as num).toDouble() : 2.5);
+    final travelFee = match['travelFee'] as num? ?? 15000;
     
+    final formattedFee = NumberFormat('#,##0', 'vi_VN').format(travelFee);
+    final etaMins = rescue.goongDurationMins ?? (distanceKm * 4).toInt().clamp(2, 60);
+
     return Column(
       children: [
         // Empty space so header overlays top
@@ -64,15 +78,25 @@ class TrackingView extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/main/avatar_placeholder.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.person,
-                            color: AppColors.primary,
-                            size: 40,
-                          ),
-                        ),
+                        child: match['mechanicAvatarUrl'] != null && (match['mechanicAvatarUrl'] as String).isNotEmpty
+                            ? Image.network(
+                                match['mechanicAvatarUrl'] as String,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.person,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                ),
+                              )
+                            : Image.asset(
+                                'assets/images/main/avatar_placeholder.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.person,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -82,9 +106,9 @@ class TrackingView extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Text(
-                                'Nguyen Van A',
-                                style: TextStyle(
+                              Text(
+                                mechanicName,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -111,9 +135,9 @@ class TrackingView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
-                            'Honda Wave - 29A1-123.45',
-                            style: TextStyle(
+                          Text(
+                            '$vehicleModel - $licensePlate',
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
                             ),
@@ -127,9 +151,9 @@ class TrackingView extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      child: const Text(
-                        'Cách 15 phút',
-                        style: TextStyle(
+                      child: Text(
+                        'Cách $etaMins phút',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -147,7 +171,7 @@ class TrackingView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Cửa Hàng Sửa Chữa Xe Máy Thành Thiện',
+                      'Thợ đang trên đường đến chỗ bạn',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -157,9 +181,9 @@ class TrackingView extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Text(
-                          'Đánh giá 4.9',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                        Text(
+                          'Đánh giá $rating',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                         ),
                         const SizedBox(width: 6),
                         ...List.generate(
@@ -178,12 +202,12 @@ class TrackingView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Phí di chuyển (2.5km)',
-                    style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
+                  Text(
+                    'Phí di chuyển (${distanceKm.toStringAsFixed(1)}km)',
+                    style: const TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    '15,000 VND',
+                    '$formattedFeeđ',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 16,

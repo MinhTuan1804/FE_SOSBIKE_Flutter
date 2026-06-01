@@ -16,7 +16,9 @@ class LocationSelectView extends StatefulWidget {
   }) : super(key: key);
 
   final VoidCallback onBack;
-  final VoidCallback onConfirmLocation;
+  final VoidCallback onAddNote;
+  final void Function(double latitude, double longitude, String address) onConfirmLocation;
+  final ValueChanged<String>? onNoteChanged;
 
   @override
   State<LocationSelectView> createState() => _LocationSelectViewState();
@@ -596,30 +598,43 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         ),
         
         // 3. Bảng thông tin địa điểm kéo thả (Draggable Bottom Sheet Panel)
-        Positioned.fill(
-          child: DraggableScrollableSheet(
-            initialChildSize: 0.38,
-            minChildSize: 0.22,
-            maxChildSize: 0.75,
-            snap: true,
-            builder: (context, scrollController) {
-              return LocationDetailsPanel(
-                scrollController: scrollController,
-                items: _incidentLocations,
-                deviceLocation: _deviceLocation,
-                initialPosition: _initialPosition,
-                selectedItemIndex: _selectedItemIndex,
-                onItemTap: (index, itemLatLng, itemTitle) {
-                  setState(() {
-                    _selectedItemIndex = index;
-                    _selectedAddress = itemTitle; // Gán trực tiếp tiêu đề địa chỉ đã chọn để tránh trỏ sai
-                  });
-                  _highlightLocation(itemLatLng);
-                },
-                onConfirmLocation: widget.onConfirmLocation,
-                calculateDistance: _calculateDistance,
-              );
-            },
+        if (!_showNoteInput)
+          Positioned.fill(
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.38,
+              minChildSize: 0.22,
+              maxChildSize: 0.75,
+              snap: true,
+              builder: (context, scrollController) {
+                return LocationDetailsPanel(
+                  scrollController: scrollController,
+                  items: _incidentLocations,
+                  deviceLocation: _deviceLocation,
+                  initialPosition: _initialPosition,
+                  selectedItemIndex: _selectedItemIndex,
+                  mechanicNote: _currentNote,
+                  onItemTap: (index, itemLatLng, itemTitle) {
+                    setState(() {
+                      _selectedItemIndex = index;
+                      _selectedAddress = itemTitle; // Gán trực tiếp tiêu đề địa chỉ đã chọn để tránh trỏ sai
+                    });
+                    _highlightLocation(itemLatLng);
+                  },
+                  onAddNote: () {
+                    setState(() {
+                      _showNoteInput = true;
+                    });
+                  },
+                  onConfirmLocation: () {
+                    final selectedItem = _incidentLocations[_selectedItemIndex];
+                    final latLng = selectedItem['latLng'] as LatLng;
+                    final address = selectedItem['title'] as String;
+                    widget.onConfirmLocation(latLng.latitude, latLng.longitude, address);
+                  },
+                  calculateDistance: _calculateDistance,
+                );
+              },
+            ),
           ),
         ),
 
