@@ -18,10 +18,14 @@ class TrackingView extends StatefulWidget {
   State<TrackingView> createState() => _TrackingViewState();
 }
 
-class _TrackingViewState extends State<TrackingView> {
+class _TrackingViewState extends State<TrackingView> with SingleTickerProviderStateMixin {
   String _selectedPaymentMethod = 'CASH'; // 'CASH' or 'BANK_TRANSFER'
   bool _paymentIntentCreated = false;
   bool _isProcessing = false;
+  
+  // Dynamic rotation for repairing wrench icon
+  double _wrenchRotation = 0.0;
+  Timer? _wrenchTimer;
 
   @override
   void initState() {
@@ -29,6 +33,20 @@ class _TrackingViewState extends State<TrackingView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchQuoteIfNeeded();
     });
+    // Wrench rotation loop for repairing state animation
+    _wrenchTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+      if (mounted) {
+        setState(() {
+          _wrenchRotation += 0.2;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _wrenchTimer?.cancel();
+    super.dispose();
   }
 
   void _fetchQuoteIfNeeded() {
@@ -51,14 +69,6 @@ class _TrackingViewState extends State<TrackingView> {
     final rescue = context.watch<RescueProvider>();
     final status = rescue.activeOrderStatus ?? 'ACCEPTED';
 
-    // Auto-fetch if status updates in UI
-    if (rescue.activeQuote == null &&
-        (status == 'QUOTING' ||
-            status == 'REPAIRING' ||
-            status == 'COMPLETED' ||
-            status == 'PAID')) {
-      _fetchQuoteIfNeeded();
-    }
 
     return Column(
       children: [
@@ -172,7 +182,7 @@ class _TrackingViewState extends State<TrackingView> {
     );
   }
 
-  // 2. ARRIVED (Thợ đã đến nơi)
+  // 2. ARRIVED (Thợ đã đến nơi - Đang kiểm tra xe)
   Widget _buildArrivedView(BuildContext context, RescueProvider rescue) {
     final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
     final match = rescue.matchedMechanic ?? {};
@@ -196,21 +206,6 @@ class _TrackingViewState extends State<TrackingView> {
         Center(
           child: Column(
             children: [
-              Image.asset(
-                'assets/images/screen/Tìm thợ.png',
-                height: 140,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 140,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 16),
               const Text(
                 'Đang kiểm tra tình trạng xe',
                 style: TextStyle(
@@ -223,17 +218,54 @@ class _TrackingViewState extends State<TrackingView> {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Thợ đang kiểm tra kỹ thuật xe máy của bạn để lên danh sách dịch vụ và báo giá chi tiết.',
+                  'Thợ đang thực hiện kiểm tra kỹ thuật để lập danh sách lỗi và báo giá chi tiết cho bạn.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 13),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
+              
+              // Diagnostic UI Code representing physical checks
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.15)),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.analytics_outlined, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'HỆ THỐNG CHẨN ĐOÁN SOSBIKE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.blue[900],
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDiagnosticItem('Kiểm tra tổng quan động cơ', true),
+                    _buildDiagnosticItem('Kiểm tra áp suất lốp & săm xe', true),
+                    _buildDiagnosticItem('Kiểm tra hệ thống phanh trước/sau', true),
+                    _buildDiagnosticItem('Đo điện áp bình ắc-quy', false, isPulsing: true),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               const SizedBox(
-                width: 20,
-                height: 20,
+                width: 18,
+                height: 18,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
+                  strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
@@ -250,7 +282,39 @@ class _TrackingViewState extends State<TrackingView> {
     );
   }
 
-  // 3. QUOTING (Thợ gửi báo giá)
+  Widget _buildDiagnosticItem(String text, bool isCompleted, {bool isPulsing = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(
+            isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            color: isCompleted ? Colors.green : (isPulsing ? Colors.blue : Colors.grey),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isPulsing ? FontWeight.bold : FontWeight.normal,
+                color: isCompleted ? Colors.black87 : (isPulsing ? Colors.blue[900] : Colors.grey[600]),
+              ),
+            ),
+          ),
+          if (isPulsing)
+            const SizedBox(
+              width: 10,
+              height: 10,
+              child: CircularProgressIndicator(strokeWidth: 1.5, valueColor: AlwaysStoppedAnimation(Colors.blue)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // 3. QUOTING (Thợ gửi báo giá -> Khách hàng chọn đồng ý)
   Widget _buildQuotingView(BuildContext context, RescueProvider rescue) {
     if (rescue.isLoading && rescue.activeQuote == null) {
       return const SizedBox(
@@ -268,6 +332,7 @@ class _TrackingViewState extends State<TrackingView> {
     final nightSurcharge = quote?['nightSurcharge'] as num? ?? 0;
     final totalAmount = quote?['totalAmount'] as num? ?? 0;
     final lines = (quote?['lines'] as List?) ?? [];
+    final orderId = rescue.currentOrderId ?? '';
 
     final formattedTotal = NumberFormat('#,##0', 'vi_VN').format(totalAmount);
 
@@ -275,7 +340,7 @@ class _TrackingViewState extends State<TrackingView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Báo giá từ thợ sửa xe',
+          'Báo giá chi tiết từ thợ',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -284,7 +349,7 @@ class _TrackingViewState extends State<TrackingView> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Vui lòng thảo luận trực tiếp với thợ trước khi thợ tiến hành sửa chữa.',
+          'Vui lòng xác nhận đồng ý các dịch vụ và linh kiện bên dưới để thợ tiến hành sửa chữa.',
           style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 16),
@@ -297,7 +362,7 @@ class _TrackingViewState extends State<TrackingView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Tổng chi phí ước tính',
+              'Tổng chi phí sửa chữa',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             Text(
@@ -311,30 +376,11 @@ class _TrackingViewState extends State<TrackingView> {
           ],
         ),
         const SizedBox(height: 24),
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.amber[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.amber[200]!),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(Icons.hourglass_empty, color: Colors.amber[800], size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Đợi thợ bấm bắt đầu sửa sau khi bạn đồng ý.',
-                  style: TextStyle(
-                    color: Colors.amber[900],
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        _buildPrimaryButton(
+          text: _isProcessing ? 'Đang gửi xác nhận...' : 'Xác nhận & Đồng ý sửa chữa',
+          onPressed: _isProcessing ? null : () => _handleApproveQuote(rescue, orderId),
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
         ),
       ],
     );
@@ -345,6 +391,7 @@ class _TrackingViewState extends State<TrackingView> {
     final quote = rescue.activeQuote;
     final totalAmount = quote?['totalAmount'] as num? ?? 0;
     final formattedTotal = NumberFormat('#,##0', 'vi_VN').format(totalAmount);
+    final lines = (quote?['lines'] as List?) ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,50 +406,73 @@ class _TrackingViewState extends State<TrackingView> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Thợ đang tiến hành sửa chữa theo các hạng mục đã thỏa thuận.',
+          'Thợ đang thực hiện sửa chữa xe máy của bạn theo báo giá đã duyệt.',
           style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 16),
-        Center(
+        
+        // Repair Progress UI Card
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.15)),
+          ),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Image.asset(
-                'assets/images/screen/Tìm thợ-1.png',
-                height: 130,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 130,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.build, size: 64, color: Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
+                  Transform.rotate(
+                    angle: _wrenchRotation,
+                    child: const Icon(Icons.build_circle_outlined, color: Colors.green, size: 24),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Text(
-                    'Đang sửa chữa...',
+                    'TIẾN TRÌNH SỬA CHỮA',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      fontSize: 14,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.green[900],
+                      letterSpacing: 1.1,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              ...lines.map((l) {
+                final name = l['itemName'] as String? ?? 'Sửa chữa';
+                final isPart = l['itemType'] == 'PART';
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isPart ? Icons.settings : Icons.build,
+                        color: Colors.green[700],
+                        size: 16,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                        height: 10,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ],
           ),
         ),
@@ -627,22 +697,39 @@ class _TrackingViewState extends State<TrackingView> {
     );
   }
 
-  // 6. PAID (Đã thanh toán -> Hoàn thành)
+  // 6. PAID (Đã thanh toán -> Thành công - Code UI hoàn chỉnh)
   Widget _buildPaidView(BuildContext context, RescueProvider rescue) {
+    final quote = rescue.activeQuote ?? {};
+    final totalAmount = quote['totalAmount'] as num? ?? 0;
+    final formattedTotal = NumberFormat('#,##0', 'vi_VN').format(totalAmount);
+    final match = rescue.matchedMechanic ?? {};
+    final mechanicName = match['mechanicName'] as String? ?? 'Thợ cứu hộ';
+    
+    final intent = rescue.paymentIntent ?? {};
+    final txCode = intent['paymentCode'] as String? ?? 'ORD-COMPLETED';
+    final methodLabel = _selectedPaymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản';
+    final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+
     return Column(
       children: [
-        Image.asset(
-          'assets/images/screen/HoanThanh.png',
-          height: 180,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Container(
-            height: 180,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.green[50],
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.check_circle_outline, size: 90, color: Colors.green),
+        // Glowing Success Badge (Replacing PNG mockup)
+        Container(
+          height: 80,
+          width: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.green.withValues(alpha: 0.1),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3), width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withValues(alpha: 0.2),
+                blurRadius: 16,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: const Center(
+            child: Icon(Icons.check_circle, size: 52, color: Colors.green),
           ),
         ),
         const SizedBox(height: 20),
@@ -654,13 +741,47 @@ class _TrackingViewState extends State<TrackingView> {
             color: Colors.green,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.0),
           child: Text(
-            'Đơn cứu hộ của bạn đã được thanh toán và hoàn tất thành công. An tâm tiếp tục hành trình!',
+            'Đơn cứu hộ của bạn đã được thanh toán và hoàn tất thành công. Cảm ơn bạn đã sử dụng dịch vụ của SOSBike!',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+          ),
+        ),
+        const SizedBox(height: 18),
+        
+        // Transaction Summary Card
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'CHI TIẾT HÓA ĐƠN',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
+              ),
+              const SizedBox(height: 10),
+              _buildSummaryField('Mã giao dịch', txCode),
+              _buildSummaryField('Thợ sửa chữa', mechanicName),
+              _buildSummaryField('Phương thức', methodLabel),
+              _buildSummaryField('Thời gian', dateStr),
+              const Divider(height: 20, color: Color(0xFFEBEBEB)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Tổng thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text('$formattedTotalđ', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 24),
@@ -677,7 +798,20 @@ class _TrackingViewState extends State<TrackingView> {
     );
   }
 
-  // Helper Widget Creators
+  Widget _buildSummaryField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  // Common Header/Card Helper Widgets
   Widget _buildMechanicProfileCard({
     required String? avatarUrl,
     required String name,
@@ -985,7 +1119,33 @@ class _TrackingViewState extends State<TrackingView> {
     );
   }
 
-  // Core Payment Actions
+  // Core Actions
+  Future<void> _handleApproveQuote(RescueProvider rescue, String orderId) async {
+    setState(() {
+      _isProcessing = true;
+    });
+    try {
+      await rescue.approveOrderQuote(orderId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xác nhận đồng ý báo giá. Thợ đang tiến hành sửa xe.'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xác nhận báo giá: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
   Future<void> _handlePaymentStart(RescueProvider rescue, String orderId) async {
     setState(() {
       _isProcessing = true;
@@ -1027,8 +1187,6 @@ class _TrackingViewState extends State<TrackingView> {
     try {
       final txId = _selectedPaymentMethod == 'CASH' ? 'CASH_MOCK_TX' : 'BANK_TRANSFER_MOCK_TX';
       await rescue.confirmRescueOrderPayment(paymentId, txId);
-      // Wait for SignalR to update the status to PAID automatically, 
-      // but just in case, we can manually check if it was marked as paid.
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

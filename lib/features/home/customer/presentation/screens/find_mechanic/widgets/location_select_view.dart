@@ -136,19 +136,18 @@ class _LocationSelectViewState extends State<LocationSelectView> {
       }
     });
 
-    // Giải mã địa chỉ bất đồng bộ cho từng sự cố để khớp tọa độ với tiêu đề hiển thị
-    _reverseGeocode(incident1LatLng).then((address) {
-      _updateIncidentTitle('incident_1', 'Sự cố hỏng xích - $address');
-    });
-    _reverseGeocode(incident2LatLng).then((address) {
-      _updateIncidentTitle('incident_2', 'Bể bánh xe - $address');
-    });
-    _reverseGeocode(incident3LatLng).then((address) {
-      _updateIncidentTitle('incident_3', 'Chết máy đột ngột - $address');
-    });
-    _reverseGeocode(incident4LatLng).then((address) {
-      _updateIncidentTitle('incident_4', 'Thủng lốp xe - $address');
-    });
+    // Dùng Smart Mock Geocoder trực tiếp cho các sự cố giả lập để tiết kiệm số lượng request Goong API
+    final address1 = _getSmartMockAddress(incident1LatLng);
+    _updateIncidentTitle('incident_1', 'Sự cố hỏng xích - $address1');
+
+    final address2 = _getSmartMockAddress(incident2LatLng);
+    _updateIncidentTitle('incident_2', 'Bể bánh xe - $address2');
+
+    final address3 = _getSmartMockAddress(incident3LatLng);
+    _updateIncidentTitle('incident_3', 'Chết máy đột ngột - $address3');
+
+    final address4 = _getSmartMockAddress(incident4LatLng);
+    _updateIncidentTitle('incident_4', 'Thủng lốp xe - $address4');
   }
 
   void _updateIncidentTitle(String type, String newTitle) {
