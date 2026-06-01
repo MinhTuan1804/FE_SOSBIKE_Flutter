@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:intl/intl.dart';
+
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.dart';
@@ -14,7 +15,8 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_l
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
-/// Đăng ký thợ — form thông tin theo yêu cầu nghiệp vụ.
+/// Đăng ký thợ — chỉ thu thập thông tin cơ bản tối thiểu.
+/// Chuyên môn, khu vực, ảnh xác thực, ngân hàng → hoàn thiện sau trong app.
 class MechanicRegisterInfoScreen extends StatefulWidget {
   const MechanicRegisterInfoScreen({
     super.key,
@@ -26,88 +28,67 @@ class MechanicRegisterInfoScreen extends StatefulWidget {
   final String? otpToken;
 
   @override
-  State<MechanicRegisterInfoScreen> createState() => _MechanicRegisterInfoScreenState();
+  State<MechanicRegisterInfoScreen> createState() =>
+      _MechanicRegisterInfoScreenState();
 }
 
-class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen> {
-  final _nameController = TextEditingController();
-  final _identityController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _bankAccountController = TextEditingController();
-  final _bankNameController = TextEditingController();
-  final _bankHolderController = TextEditingController();
-
+class _MechanicRegisterInfoScreenState
+    extends State<MechanicRegisterInfoScreen> {
+  final _nameCtrl = TextEditingController();
+  final _cccdCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   DateTime? _dob;
-  XFile? _portraitFile;
+  XFile? _portrait;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _identityController.dispose();
-    _addressController.dispose();
-    _emailController.dispose();
-    _bankAccountController.dispose();
-    _bankNameController.dispose();
-    _bankHolderController.dispose();
+    _nameCtrl.dispose();
+    _cccdCtrl.dispose();
+    _addressCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
-    );
-  }
+  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+      );
 
   Future<void> _pickPortrait() async {
-    final picked = await pickImageFromCameraOrGallery(
-      context,
-      maxWidth: 512,
-      imageQuality: 85,
-    );
-    if (picked != null && mounted) setState(() => _portraitFile = picked);
+    final f = await pickImageFromCameraOrGallery(context,
+        maxWidth: 512, imageQuality: 85);
+    if (f != null && mounted) setState(() => _portrait = f);
   }
 
   Future<void> _pickDob() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dob ?? DateTime(2000, 1, 1),
+      initialDate: _dob ?? DateTime(1990, 1, 1),
       firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 16)),
       locale: const Locale('vi', 'VN'),
     );
-    if (picked != null) setState(() => _dob = picked);
+    if (picked != null && mounted) setState(() => _dob = picked);
   }
 
   void _onContinue() {
-    final name = _nameController.text.trim();
-    final identity = _identityController.text.trim();
-    final address = _addressController.text.trim();
-    final bankAcc = _bankAccountController.text.trim();
+    final name = _nameCtrl.text.trim();
+    final cccd = _cccdCtrl.text.trim();
+    final address = _addressCtrl.text.trim();
 
     if (name.length < 2) return _snack('Vui lòng nhập họ và tên');
-    if (identity.length < 6) return _snack('CCCD/CMND không hợp lệ');
-    if (_dob == null) return _snack('Vui lòng chọn ngày tháng năm sinh');
+    if (cccd.length < 9) return _snack('CCCD/CMND không hợp lệ');
+    if (_dob == null) return _snack('Vui lòng chọn ngày sinh');
     if (address.length < 5) return _snack('Vui lòng nhập địa chỉ hiện tại');
-    if (bankAcc.length < 6) return _snack('Vui lòng nhập số tài khoản ngân hàng');
-    if (_portraitFile == null) return _snack('Vui lòng tải ảnh chân dung');
 
     final draft = MechanicRegisterDraft(
       phoneNumber: widget.phoneNumber,
       fullName: name,
-      identityCard: identity,
+      identityCard: cccd,
       dateOfBirth: _dob!,
       currentAddress: address,
-      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-      bankName: _bankNameController.text.trim().isEmpty ? null : _bankNameController.text.trim(),
-      bankAccountNumber: bankAcc,
-      bankAccountHolder: _bankHolderController.text.trim().isEmpty ? name : _bankHolderController.text.trim(),
-      portraitFile: _portraitFile,
-      // Những thông tin xe tạm thời bỏ trống hoặc gán giá trị mặc định theo yêu cầu
-      licensePlate: 'N/A',
-      vehicleModel: 'N/A',
-      vehicleGeneration: 'N/A',
-      driverLicenseNumber: 'N/A',
+      email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+      portraitFile: _portrait,
     );
 
     Navigator.of(context).push(
@@ -133,14 +114,45 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
         const SizedBox(height: 12),
         const Text(
           'Thông tin thợ',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Điền đầy đủ thông tin để hoàn tất đăng ký',
+          'Điền thông tin để tạo tài khoản thợ',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 6),
+        // Ghi chú các bước sau
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F4FF),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Icon(Icons.info_outline_rounded,
+                  size: 15, color: Color(0xFF3B82F6)),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Sau khi đăng ký, bạn phải hoàn thiện hồ sơ thợ '
+                  '(chuyên môn + tài khoản ngân hàng bắt buộc) trong app '
+                  'và chờ admin duyệt trước khi có thể nhận việc.',
+                  style:
+                      TextStyle(fontSize: 12, color: Color(0xFF3B82F6)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Ảnh chân dung (tuỳ chọn) ──────────────────────────────────
         Center(
           child: GestureDetector(
             onTap: _pickPortrait,
@@ -149,13 +161,14 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
                 CircleAvatar(
                   radius: 44,
                   backgroundColor: const Color(0xFFE8EAED),
-                  child: _portraitFile == null
+                  child: _portrait == null
                       ? const Icon(Icons.person, size: 44, color: Color(0xFF9E9E9E))
                       : ClipOval(
                           child: FutureBuilder(
-                            future: _portraitFile!.readAsBytes(),
+                            future: _portrait!.readAsBytes(),
                             builder: (c, s) => s.hasData
-                                ? Image.memory(s.data!, width: 88, height: 88, fit: BoxFit.cover)
+                                ? Image.memory(s.data!,
+                                    width: 88, height: 88, fit: BoxFit.cover)
                                 : const Icon(Icons.person),
                           ),
                         ),
@@ -167,7 +180,7 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50),
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
@@ -178,42 +191,50 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         const Center(
-          child: Text('Ảnh chân dung *', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          child: Text(
+            'Ảnh đại diện (tuỳ chọn)',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
         ),
-        const SizedBox(height: 20),
-        _field('Họ và tên', _nameController, hint: 'Nguyễn Văn A', required: true),
+        const SizedBox(height: 24),
+
+        // ── Các trường bắt buộc ────────────────────────────────────────
+        _field('Họ và tên', _nameCtrl, hint: 'Nguyễn Văn A', required: true),
         _readOnly('Số điện thoại', phoneDisplay),
-        _field('CCCD / CMND', _identityController, hint: '001234567890', digitsOnly: true, required: true),
-        _label('Ngày tháng năm sinh *'),
+        _field('CCCD / CMND', _cccdCtrl,
+            hint: '001234567890', digitsOnly: true, required: true),
+        _label('Ngày sinh *'),
         GestureDetector(
           onTap: _pickDob,
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              _dob != null ? DateFormat('dd/MM/yyyy').format(_dob!) : 'Chọn ngày sinh',
+              _dob != null
+                  ? DateFormat('dd/MM/yyyy').format(_dob!)
+                  : 'Chọn ngày sinh',
               style: TextStyle(
-                color: _dob != null ? AppColors.textPrimary : Colors.grey.shade400,
+                color: _dob != null
+                    ? AppColors.textPrimary
+                    : Colors.grey.shade400,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ),
         const SizedBox(height: 16),
-        _field('Địa chỉ hiện tại', _addressController, hint: 'Số nhà, phường, quận, tỉnh...', required: true),
-        _field('Email (nếu có)', _emailController, hint: 'example@email.com', email: true),
-        const SizedBox(height: 8),
-        const Text('Tài khoản ngân hàng nhận tiền', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        _field('Tên ngân hàng', _bankNameController, hint: 'Vietcombank, Techcombank...'),
-        _field('Số tài khoản', _bankAccountController, hint: '1234567890', digitsOnly: true, required: true),
-        _field('Chủ tài khoản', _bankHolderController, hint: 'Trùng họ tên hoặc để trống'),
+        _field('Địa chỉ hiện tại', _addressCtrl,
+            hint: 'Số nhà, phường, quận, tỉnh...', required: true),
+        _field('Email (tuỳ chọn)', _emailCtrl,
+            hint: 'example@gmail.com', email: true),
+
         const SizedBox(height: 28),
         SosPrimaryButton(label: 'Tiếp Tục', onPressed: _onContinue),
         const SizedBox(height: 16),
@@ -225,7 +246,9 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
 
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600)),
       );
 
   Widget _readOnly(String label, String value) => Padding(
@@ -233,16 +256,20 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: const Color(0xFFEEEEEE),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(value,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -250,47 +277,59 @@ class _MechanicRegisterInfoScreenState extends State<MechanicRegisterInfoScreen>
 
   Widget _field(
     String label,
-    TextEditingController controller, {
+    TextEditingController ctrl, {
     String? hint,
     bool required = false,
     bool digitsOnly = false,
     bool email = false,
-    bool upperCase = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              children: [
-                TextSpan(text: label),
-                if (required) const TextSpan(text: ' *', style: TextStyle(color: AppColors.primary)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: controller,
-            keyboardType: digitsOnly ? TextInputType.number : (email ? TextInputType.emailAddress : TextInputType.text),
-            textCapitalization: upperCase ? TextCapitalization.characters : TextCapitalization.none,
-            inputFormatters: digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
-            decoration: InputDecoration(
-              hintText: hint,
-              filled: true,
-              fillColor: const Color(0xFFF5F5F5),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary),
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary),
+                children: [
+                  TextSpan(text: label),
+                  if (required)
+                    const TextSpan(
+                        text: ' *',
+                        style: TextStyle(color: AppColors.primary)),
+                ],
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              keyboardType: digitsOnly
+                  ? TextInputType.number
+                  : (email
+                      ? TextInputType.emailAddress
+                      : TextInputType.text),
+              inputFormatters:
+                  digitsOnly ? [FilteringTextInputFormatter.digitsOnly] : null,
+              decoration: InputDecoration(
+                hintText: hint,
+                filled: true,
+                fillColor: const Color(0xFFF5F5F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+          ],
+        ),
+      );
 }

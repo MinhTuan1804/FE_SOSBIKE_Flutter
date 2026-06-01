@@ -232,29 +232,25 @@ class MechanicOrderBottomSheet extends StatelessWidget {
   const MechanicOrderBottomSheet({
     super.key,
     required this.child,
+    this.scrollController,
+    this.pinnedFooter,
+    this.onDoubleTapCollapse,
   });
 
   final Widget child;
+  final ScrollController? scrollController;
+  final Widget? pinnedFooter;
+  final VoidCallback? onDoubleTapCollapse;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 8),
-          Container(
+    final handle = GestureDetector(
+      onDoubleTap: onDoubleTapCollapse,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 10),
+        child: Center(
+          child: Container(
             width: 40,
             height: 4,
             decoration: BoxDecoration(
@@ -262,12 +258,121 @@ class MechanicOrderBottomSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(99),
             ),
           ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            child: child,
-          ),
-        ],
+        ),
+      ),
+    );
+
+    final decoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.12),
+          blurRadius: 16,
+          offset: const Offset(0, -4),
+        ),
+      ],
+    );
+
+    if (scrollController != null) {
+      return Container(
+        decoration: decoration,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (pinnedFooter == null) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  handle,
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                      children: [child],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final h = constraints.maxHeight;
+            const handleH = 32.0;
+            final bottomSafe = MediaQuery.paddingOf(context).bottom;
+            final footerBlockH = pinnedFooter != null ? 44.0 + 16.0 + bottomSafe : 0.0;
+            final showFooter = pinnedFooter != null && h >= handleH + footerBlockH;
+            final showBody = h >= handleH + footerBlockH + 48;
+
+            if (!showFooter) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [handle],
+              );
+            }
+
+            if (!showBody) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  handle,
+                  const Spacer(),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(14, 4, 14, 12 + bottomSafe),
+                    child: pinnedFooter!,
+                  ),
+                ],
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                handle,
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: EdgeInsets.fromLTRB(14, 0, 14, pinnedFooter != null ? 4 : 12),
+                    children: [child],
+                  ),
+                ),
+                if (pinnedFooter != null)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(14, 4, 14, 12 + bottomSafe),
+                    child: pinnedFooter!,
+                  ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    if (pinnedFooter != null) {
+      return Container(
+        decoration: decoration,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            handle,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+              child: child,
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(14, 4, 14, 12 + MediaQuery.paddingOf(context).bottom),
+              child: pinnedFooter!,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: decoration,
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [handle, child],
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,6 +8,8 @@ import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/local/mechanic_order_flow_store.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_customer_history_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_activity_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_wallet_tab.dart';
@@ -23,9 +27,11 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_re
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_accept_order_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_arrival_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_line_item.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_session_spare_part.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_inspect_vehicle_view.dart';
-import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_payment_complete_view.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_repair_confirm_view.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_payment_complete_view.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/mechanic_dev_flow.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_incoming_request_popup.dart';
 
 enum _MechanicOrderFlow { none, accept, arrival, inspect, repair, complete }
@@ -44,7 +50,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   bool _showIncomingRequest = false;
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
-  bool _editingRepairItems = false;
+  List<MechanicSessionSparePart> _sessionSpareParts = const [];
+  bool _quoteSent = false;
 
   static const _incomingRequest = IncomingRescueRequest.sample;
 
@@ -57,19 +64,154 @@ class _MainShellScreenState extends State<MainShellScreen> {
     setState(() => _showIncomingRequest = false);
   }
 
-  void _acceptIncomingRequest() {
+  void _acceptIncomingRequest() async {
     _closeIncomingRequest();
+    final repair = context.read<MechanicRepairProvider>();
+    final ok = await repair.acceptDevIncomingOrder();
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repair.errorMessage ?? 'Không nhận được đơn test')),
+      );
+      return;
+    }
     setState(() {
       _orderFlow = _MechanicOrderFlow.accept;
       _tab = MainNavTab.orders;
+      _quoteSent = false;
     });
   }
 
+  bool _isQuoteSentPhase(String? orderStatus) {
+    if (_quoteSent) return true;
+    final s = orderStatus?.toUpperCase();
+    return s == 'QUOTING' || s == 'REPAIRING';
+  }
+
+  bool _canStartRepairFromInspect(String? orderStatus) {
+    if (!kDevSkipCustomerQuoteConfirm) return false;
+    return _isQuoteSentPhase(orderStatus);
+  }
+
   void _cancelOrderFlow() {
+    unawaited(MechanicOrderFlowStore.clear());
     setState(() {
       _orderFlow = _MechanicOrderFlow.none;
       _selectedRepairItems = const [];
-      _editingRepairItems = false;
+      _sessionSpareParts = const [];
+      _quoteSent = false;
+    });
+  }
+
+  Future<void> _saveFlowSnapshot() async {
+    final orderId = context.read<MechanicRepairProvider>().activeOrderId;
+    if (orderId == null || _orderFlow == _MechanicOrderFlow.none) return;
+
+    await MechanicOrderFlowStore.save(
+      MechanicOrderFlowSnapshot(
+        orderId: orderId,
+        flowStep: _orderFlow.name,
+        selectedServiceIds: _selectedRepairItems.map((e) => e.id).toList(),
+        sparePartJson: _sessionSpareParts
+            .map(
+              (p) => {
+                'id': p.id,
+                'name': p.name,
+                'price': p.price,
+                if (p.catalogPartId != null) 'catalogPartId': p.catalogPartId,
+              },
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Future<void> _goHomeFromFlow() async {
+    await _saveFlowSnapshot();
+    if (!mounted) return;
+    setState(() {
+      _orderFlow = _MechanicOrderFlow.none;
+      _tab = MainNavTab.orders;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã lưu tiến độ. Vào Lịch sử để tiếp tục đơn.')),
+    );
+  }
+
+  _MechanicOrderFlow _flowFromOrderStatus(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'ACCEPTED':
+        return _MechanicOrderFlow.arrival;
+      case 'ARRIVED':
+      case 'QUOTING':
+        return _MechanicOrderFlow.inspect;
+      case 'REPAIRING':
+        return _MechanicOrderFlow.repair;
+      default:
+        return _MechanicOrderFlow.accept;
+    }
+  }
+
+  Future<void> _resumeOrderFlow() async {
+    final repair = context.read<MechanicRepairProvider>();
+    await repair.loadActiveOrder();
+    if (!mounted || !repair.hasActiveOrder) return;
+
+    final snapshot = await MechanicOrderFlowStore.load();
+    final orderId = repair.activeOrderId!;
+
+    _MechanicOrderFlow step;
+    if (snapshot != null && snapshot.orderId == orderId) {
+      step = _MechanicOrderFlow.values.firstWhere(
+        (e) => e.name == snapshot.flowStep,
+        orElse: () => _flowFromOrderStatus(repair.activeOrder?.status),
+      );
+    } else {
+      step = _flowFromOrderStatus(repair.activeOrder?.status);
+    }
+
+    if (step == _MechanicOrderFlow.inspect || step == _MechanicOrderFlow.repair || step == _MechanicOrderFlow.complete) {
+      await repair.loadServices(force: true);
+      await repair.loadSpareParts(force: true);
+    }
+
+    var selected = _selectedRepairItems;
+    var spareParts = _sessionSpareParts;
+
+    if (snapshot != null && snapshot.orderId == orderId && snapshot.selectedServiceIds.isNotEmpty) {
+      selected = repair.services
+          .where((s) => snapshot.selectedServiceIds.contains(s.id))
+          .map((s) => s.copyWith(selected: true))
+          .toList();
+      spareParts = snapshot.sparePartJson
+          .map(
+            (p) => p['catalogPartId'] != null
+                ? MechanicSessionSparePart.fromCatalog(
+                    partId: p['catalogPartId'].toString(),
+                    name: p['name']?.toString() ?? '',
+                    price: (p['price'] as num?)?.toInt() ?? 0,
+                  )
+                : MechanicSessionSparePart(
+                    id: p['id']?.toString() ?? DateTime.now().microsecondsSinceEpoch.toString(),
+                    name: p['name']?.toString() ?? '',
+                    price: (p['price'] as num?)?.toInt() ?? 0,
+                  ),
+          )
+          .toList();
+    } else if (step == _MechanicOrderFlow.repair || step == _MechanicOrderFlow.inspect) {
+      final restored = await repair.restoreQuoteState();
+      if (restored.services.isNotEmpty) selected = restored.services;
+      if (restored.parts.isNotEmpty) spareParts = restored.parts;
+    }
+
+    if (!mounted) return;
+    final quoteSent = _isQuoteSentPhase(repair.activeOrder?.status);
+    setState(() {
+      _selectedRepairItems = selected;
+      _sessionSpareParts = spareParts;
+      _orderFlow = step;
+      _tab = MainNavTab.orders;
+      _quoteSent = quoteSent;
     });
   }
 
@@ -77,32 +219,91 @@ class _MainShellScreenState extends State<MainShellScreen> {
     setState(() => _orderFlow = _MechanicOrderFlow.arrival);
   }
 
-  void _goToInspectFlow({bool editingDuringRepair = false}) {
-    setState(() {
-      _editingRepairItems = editingDuringRepair;
-      _orderFlow = _MechanicOrderFlow.inspect;
-    });
+  void _goToInspectFlow() {
+    unawaited(context.read<MechanicRepairProvider>().loadSpareParts(force: true));
+    setState(() => _orderFlow = _MechanicOrderFlow.inspect);
   }
 
-  void _goToRepairFlow(List<MechanicRepairLineItem> items) {
-    setState(() {
-      _selectedRepairItems = items.isEmpty
-          ? MechanicRepairLineItem.sampleItems.where((e) => e.id == '1').toList()
-          : items;
-      _editingRepairItems = false;
-      _orderFlow = _MechanicOrderFlow.repair;
-    });
+  Future<void> _submitQuoteForCustomer(List<MechanicRepairLineItem> items) async {
+    setState(() => _selectedRepairItems = items);
+    final repair = context.read<MechanicRepairProvider>();
+    final saved = await repair.saveQuote(
+      selectedServices: items,
+      spareParts: _sessionSpareParts,
+    );
+    if (!mounted) return;
+    if (!saved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repair.errorMessage ?? 'Không gửi được báo giá')),
+      );
+      return;
+    }
+    if (kDevSkipCustomerQuoteConfirm) {
+      setState(() => _quoteSent = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã gửi báo giá. Bấm Bắt đầu sửa để sang bước sửa chữa.')),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã gửi báo giá. Chờ khách xác nhận trước khi hoàn thành sửa chữa.')),
+    );
   }
 
-  void _goToCompleteFlow() {
+  void _addSessionSparePart(MechanicSessionSparePart part) {
+    setState(() => _sessionSpareParts = [..._sessionSpareParts, part]);
+  }
+
+  void _removeSessionSparePart(String partId) {
+    setState(() => _sessionSpareParts = _sessionSpareParts.where((p) => p.id != partId).toList());
+  }
+
+  Future<void> _startRepairAfterQuote() async {
+    final repair = context.read<MechanicRepairProvider>();
+    final ok = await repair.startRepair();
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repair.errorMessage ?? 'Không bắt đầu được sửa chữa')),
+      );
+      return;
+    }
+    setState(() => _orderFlow = _MechanicOrderFlow.repair);
+  }
+
+  Future<void> _completeRepairFlow() async {
+    final repair = context.read<MechanicRepairProvider>();
+    final ok = await repair.completeRepair(
+      selectedServices: _selectedRepairItems,
+      spareParts: _sessionSpareParts,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repair.errorMessage ?? 'Không thể hoàn thành sửa chữa')),
+      );
+      return;
+    }
     setState(() => _orderFlow = _MechanicOrderFlow.complete);
   }
 
-  void _confirmArrived() {
+  Future<void> _confirmArrived() async {
+    final repair = context.read<MechanicRepairProvider>();
+    final ok = await repair.confirmArrival();
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repair.errorMessage ?? 'Không xác nhận được đến nơi')),
+      );
+      return;
+    }
+    unawaited(repair.loadServices(force: true));
+    unawaited(repair.loadSpareParts(force: true));
     _goToInspectFlow();
   }
 
   void _finishOrderFlow() {
+    unawaited(context.read<MechanicRepairProvider>().clearActiveOrderState());
     _cancelOrderFlow();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -126,7 +327,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final auth = context.watch<AuthProvider>();
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
-    final showMainHeader = !((_tab == MainNavTab.maintenance || _tab == MainNavTab.wallet) && auth.userType == 'CUSTOMER');
+    final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
+    final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !inOrderFlow;
 
     final shellBody = Stack(
       clipBehavior: Clip.none,
@@ -158,28 +360,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ],
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Material(
-            color: AppColors.primary,
-            clipBehavior: Clip.none,
-            child: MainBottomNavBar(
-              current: _tab,
-              onChanged: (t) {
-                setState(() => _tab = t);
-                if (t == MainNavTab.history && auth.userType != 'CUSTOMER') {
-                  context.read<MechanicHistoryProvider>().load(force: true);
-                }
-                if (t == MainNavTab.wallet && auth.userType != 'CUSTOMER') {
-                  context.read<MechanicWalletProvider>().load(force: true);
-                }
-              },
-              userType: auth.userType,
+        if (!inOrderFlow)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Material(
+              color: AppColors.primary,
+              clipBehavior: Clip.none,
+              child: MainBottomNavBar(
+                current: _tab,
+                onChanged: (t) {
+                  setState(() => _tab = t);
+                  if (t == MainNavTab.history && auth.userType != 'CUSTOMER') {
+                    context.read<MechanicHistoryProvider>().load(force: true);
+                    unawaited(context.read<MechanicRepairProvider>().loadActiveOrder());
+                  }
+                  if (t == MainNavTab.wallet && auth.userType != 'CUSTOMER') {
+                    context.read<MechanicWalletProvider>().load(force: true);
+                  }
+                },
+                userType: auth.userType,
+              ),
             ),
           ),
-        ),
       ],
     );
 
@@ -196,9 +400,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final auth = context.watch<AuthProvider>();
     final appConfig = context.watch<AppConfigProvider>().config;
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
-    final contentBottomPad = inOrderFlow ? navH : navH * 0.35;
-    final maintenanceMode = appConfig.featureFlags.maintenanceMode;
-    final sosEnabled = appConfig.featureFlags.sosEnabled;
+    final contentBottomPad = inOrderFlow ? 0.0 : navH * 0.35;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -264,42 +466,59 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _buildBody(String? userType) {
+    final repairProvider = context.watch<MechanicRepairProvider>();
+
     if (userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none) {
       return switch (_orderFlow) {
         _MechanicOrderFlow.accept => MechanicAcceptOrderView(
             request: _incomingRequest,
             onCancel: _cancelOrderFlow,
             onGoNow: _goToArrivalFlow,
+            onGoHome: _goHomeFromFlow,
           ),
         _MechanicOrderFlow.arrival => MechanicArrivalView(
             request: _incomingRequest,
             onBack: () => setState(() => _orderFlow = _MechanicOrderFlow.accept),
             onArrived: _confirmArrived,
+            onGoHome: _goHomeFromFlow,
           ),
         _MechanicOrderFlow.inspect => MechanicInspectVehicleView(
             key: ValueKey(
-              'inspect-${_selectedRepairItems.map((e) => e.id).join('-')}-$_editingRepairItems',
+              'inspect-${_quoteSent}-${_selectedRepairItems.map((e) => e.id).join('-')}-${_sessionSpareParts.length}',
             ),
+            initialItems: repairProvider.services,
             preselectedItems: _selectedRepairItems,
-            editingDuringRepair: _editingRepairItems,
-            onBack: () => setState(() {
-              if (_editingRepairItems) {
-                _editingRepairItems = false;
-                _orderFlow = _MechanicOrderFlow.repair;
-              } else {
-                _orderFlow = _MechanicOrderFlow.arrival;
-              }
-            }),
-            onStartRepair: _goToRepairFlow,
+            spareParts: _sessionSpareParts,
+            catalogSpareParts: repairProvider.catalogSpareParts,
+            isLoadingServices: repairProvider.isLoadingServices,
+            isLoadingCatalog: repairProvider.isLoadingSpareParts,
+            isSubmitting: repairProvider.isSubmitting,
+            quoteSent: _isQuoteSentPhase(repairProvider.activeOrder?.status),
+            onBack: () => setState(() => _orderFlow = _MechanicOrderFlow.arrival),
+            onGoHome: _goHomeFromFlow,
+            onAddSparePart: _addSessionSparePart,
+            onRemoveSparePart: _removeSessionSparePart,
+            onComplete: _submitQuoteForCustomer,
+            onStartRepair: _canStartRepairFromInspect(repairProvider.activeOrder?.status)
+                ? _startRepairAfterQuote
+                : null,
           ),
         _MechanicOrderFlow.repair => MechanicRepairConfirmView(
-            selectedItems: _selectedRepairItems,
-            onBack: () => _goToInspectFlow(editingDuringRepair: true),
-            onAddMoreItems: () => _goToInspectFlow(editingDuringRepair: true),
-            onCompleteRepair: _goToCompleteFlow,
+            selectedServices: _selectedRepairItems,
+            spareParts: _sessionSpareParts,
+            catalogSpareParts: repairProvider.catalogSpareParts,
+            isSubmitting: repairProvider.isSubmitting,
+            isLoadingCatalog: repairProvider.isLoadingSpareParts,
+            onBack: () => setState(() => _orderFlow = _MechanicOrderFlow.inspect),
+            onGoHome: _goHomeFromFlow,
+            onAddMoreServices: () => setState(() => _orderFlow = _MechanicOrderFlow.inspect),
+            onAddSparePart: _addSessionSparePart,
+            onRemoveSparePart: _removeSessionSparePart,
+            onCompleteRepair: _completeRepairFlow,
           ),
         _MechanicOrderFlow.complete => MechanicPaymentCompleteView(
             onFinish: _finishOrderFlow,
+            onGoHome: _goHomeFromFlow,
           ),
         _MechanicOrderFlow.none => const SizedBox.shrink(),
       };
@@ -314,7 +533,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
               title: 'Lịch sử',
               iconAsset: 'assets/images/main/nav_history.png',
             )
-          : const MechanicCustomerHistoryTab(),
+          : MechanicCustomerHistoryTab(onContinueOrder: _resumeOrderFlow),
       MainNavTab.wallet => userType == 'CUSTOMER'
           ? const CustomerWalletTab()
           : const MechanicWalletTab(),

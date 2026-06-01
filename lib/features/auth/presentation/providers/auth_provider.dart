@@ -48,6 +48,22 @@ class AuthProvider extends ChangeNotifier {
   bool get isPhoneVerified => (_user?.isPhoneVerified == true) || (_profile?.isPhoneVerified == true);
   bool get isActive => (_user?.isActive == true);
 
+  // ── Convenience getters from UserProfileDto ─────────────────────────────
+  String? get phoneNumber => _profile?.phoneNumber ?? _user?.phoneNumber;
+  String? get email => _profile?.email;
+  String? get currentAddress => _profile?.currentAddress;
+  String? get gender => _profile?.gender;
+  /// Ngày sinh dạng 'dd/MM/yyyy', hoặc null nếu chưa có.
+  String? get dateOfBirth {
+    final dob = _profile?.dateOfBirth;
+    if (dob == null) return null;
+    return '${dob.day.toString().padLeft(2, '0')}/'
+        '${dob.month.toString().padLeft(2, '0')}/'
+        '${dob.year}';
+  }
+  /// Xác thực SĐT — hiện chưa theo dõi từ BE, mặc định true khi đã đăng nhập.
+  bool get isPhoneVerified => _isAuthenticated;
+
   /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {
     if (_authReady) return;
@@ -394,6 +410,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> saveMyProfile({
     required String fullName,
     DateTime? dateOfBirth,
+    String? gender,
     String? email,
     String? currentAddress,
     String? licensePlate,
@@ -414,6 +431,7 @@ class AuthProvider extends ChangeNotifier {
       final newAvatar = await _repository.updateMyProfile(
         fullName: fullName,
         dateOfBirth: dateOfBirth,
+        gender: gender,
         email: email,
         currentAddress: currentAddress,
         licensePlate: licensePlate,
@@ -452,12 +470,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Upload giấy tờ thợ sau khi đã có JWT (đăng ký xong).
+  /// Upload ảnh xác thực thợ sau khi đã có JWT.
   Future<bool> uploadMechanicDocuments(MechanicRegisterDraft draft) async {
     if (draft.portraitFile == null &&
-        draft.vehicleRegistrationFile == null &&
-        draft.vehicleInsuranceFile == null) {
-      return true; // Không có gì để upload
+        draft.cccdFrontFile == null &&
+        draft.cccdBackFile == null) {
+      return true; // Không có ảnh nào — bỏ qua
     }
 
     _isLoading = true;
@@ -467,8 +485,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _repository.uploadMechanicDocuments(
         portrait: draft.portraitFile,
-        vehicleRegistration: draft.vehicleRegistrationFile,
-        vehicleInsurance: draft.vehicleInsuranceFile,
+        vehicleRegistration: null,
+        vehicleInsurance: null,
       );
       return true;
     } catch (e, st) {

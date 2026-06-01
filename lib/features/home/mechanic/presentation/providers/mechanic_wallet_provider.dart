@@ -15,6 +15,7 @@ class MechanicWalletProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<MechanicWalletTransaction> get transactions => _data?.transactions ?? const [];
+  List<MechanicWithdrawRequest> get withdrawRequests => _data?.withdrawRequests ?? const [];
 
   Future<void> load({bool force = false}) async {
     if (_isLoading) return;
@@ -41,4 +42,42 @@ class MechanicWalletProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() => load(force: true);
+
+  /// Nạp tiền (trả về true nếu thành công)
+  Future<bool> deposit(int amount, {String? description}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.deposit(amount, description: description);
+      await load(force: true);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Rút tiền (trả về true nếu tạo request thành công)
+  Future<bool> withdraw(int amount, {String? description}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.withdraw(amount, description: description);
+      await load(force: true);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_dashboard_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 
 /// Tab Đơn hàng — dashboard theo Figma, dữ liệu từ API.
 class MechanicDashboardTab extends StatefulWidget {
@@ -119,7 +120,7 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
             children: [
               const Text(
                 'Không tải được dashboard.',
-                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               ElevatedButton(
@@ -143,10 +144,13 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
         builder: (context, constraints) {
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ── Banner hoàn thiện hồ sơ (hiển thị nếu chưa được duyệt) ──
+                _SetupProfileBanner(),
+                const SizedBox(height: 4),
                 _MapCard(onViewTrips: () => _showTripsSheet(trips)),
                 const SizedBox(height: 12),
                 IntrinsicHeight(
@@ -244,8 +248,8 @@ class _MapCard extends StatelessWidget {
                       'Xem chuyến đi',
                       style: TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
                       ),
                     ),
                   ),
@@ -259,6 +263,15 @@ class _MapCard extends StatelessWidget {
   }
 }
 
+class _DashboardStyles {
+  static const label = TextStyle(
+    fontSize: 15,
+    color: Color(0xFF111827),
+    fontWeight: FontWeight.w800,
+    height: 1.15,
+  );
+}
+
 class _RevenueCard extends StatelessWidget {
   const _RevenueCard({required this.amount});
 
@@ -267,38 +280,16 @@ class _RevenueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _WhiteCard(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      minHeight: 132,
+      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Image.asset(
-                'assets/images/main/stat_revenue_icon.png',
-                width: 20,
-                height: 20,
-                errorBuilder: (_, __, ___) => const Icon(Icons.show_chart, color: AppColors.primary, size: 20),
-              ),
-              const Spacer(),
-              Image.asset(
-                'assets/images/main/stat_revenue_chart.png',
-                width: 18,
-                height: 18,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
           const Text(
             'Doanh thu hôm nay',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11,
-              color: Color(0xFF374151),
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-            ),
+            style: _DashboardStyles.label,
           ),
           const Spacer(),
           FittedBox(
@@ -308,10 +299,10 @@ class _RevenueCard extends StatelessWidget {
               amount,
               maxLines: 1,
               style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontSize: 30,
+                fontWeight: FontWeight.w900,
                 color: Color(0xFF16A34A),
-                height: 1.1,
+                height: 1.05,
               ),
             ),
           ),
@@ -332,43 +323,21 @@ class _RatingCard extends StatelessWidget {
     final progress = (ratingValue / 5).clamp(0.0, 1.0);
 
     return _WhiteCard(
+      minHeight: 132,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              const Spacer(),
-              Image.asset(
-                'assets/images/main/stat_rating_icon.png',
-                width: 20,
-                height: 20,
-                errorBuilder: (_, __, ___) => const Icon(Icons.star_border, color: AppColors.primary, size: 20),
-              ),
-            ],
-          ),
-          const Text(
-            'Đánh giá hôm nay',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11,
-              color: Color(0xFF374151),
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-            ),
-          ),
-          const Spacer(),
           Center(
             child: SizedBox(
-              width: 68,
-              height: 68,
+              width: 76,
+              height: 76,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 68,
-                    height: 68,
+                    width: 76,
+                    height: 76,
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 7,
@@ -382,8 +351,8 @@ class _RatingCard extends StatelessWidget {
                     child: Text(
                       '$rating★',
                       style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
                         color: Color(0xFFEAB308),
                         height: 1,
                       ),
@@ -392,6 +361,14 @@ class _RatingCard extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Đánh giá hôm nay',
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: _DashboardStyles.label,
           ),
         ],
       ),
@@ -407,61 +384,61 @@ class _OrdersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _WhiteCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(16, 14, 72, 14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
             'Số đơn hàng hôm nay',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF374151),
-              fontWeight: FontWeight.w700,
-            ),
+            style: _DashboardStyles.label,
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    count,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
                     ),
-                  ],
-                ),
-                child: Text(
-                  count,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
                   ),
                 ),
-              ),
-              const Spacer(),
-              Image.asset(
-                'assets/images/main/stat_orders_icon.png',
-                width: 28,
-                height: 28,
-                color: AppColors.primary.withValues(alpha: 0.75),
-                colorBlendMode: BlendMode.srcIn,
-                errorBuilder: (_, __, ___) => Icon(
-                  Icons.list_alt,
+                const SizedBox(width: 10),
+                Image.asset(
+                  'assets/images/main/stat_orders_icon.png',
+                  width: 30,
+                  height: 30,
                   color: AppColors.primary.withValues(alpha: 0.75),
-                  size: 28,
+                  colorBlendMode: BlendMode.srcIn,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.list_alt,
+                    color: AppColors.primary.withValues(alpha: 0.75),
+                    size: 30,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -473,28 +450,102 @@ class _WhiteCard extends StatelessWidget {
   const _WhiteCard({
     required this.child,
     this.padding = const EdgeInsets.all(14),
+    this.minHeight,
   });
 
   final Widget child;
   final EdgeInsets padding;
+  final double? minHeight;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minHeight ?? 0),
+      child: Container(
+        width: double.infinity,
+        padding: padding,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFFFF),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: child,
       ),
-      child: child,
+    );
+  }
+}
+
+// ── Banner hoàn thiện hồ sơ ───────────────────────────────────────────────────
+
+class _SetupProfileBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: ẩn banner sau khi admin đã duyệt (kiểm tra status từ AuthProvider)
+    return GestureDetector(
+      onTap: () => Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => const MechanicSetupProfileScreen(),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.92),
+              AppColors.primary.withValues(alpha: 0.75),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.assignment_ind_outlined,
+                  color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hoàn thiện hồ sơ thợ',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Thêm chuyên môn, khu vực & ảnh để được duyệt nhanh hơn',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: Colors.white70, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

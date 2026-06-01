@@ -1,27 +1,45 @@
 import 'package:flutter/material.dart';
 
-/// Map nền + tuỳ chọn vẽ tuyến đường (Figma).
+/// Map nền full màn — zoom out bằng canvas lớn hơn, không thu nhỏ khung.
 class MechanicOrderMapBackground extends StatelessWidget {
   const MechanicOrderMapBackground({
     super.key,
     this.showRoute = false,
     this.showUserPulse = true,
+    this.zoomOutFactor = 1.35,
   });
 
   final bool showRoute;
   final bool showUserPulse;
+  /// >1 = hiển thị nhiều vùng bản đồ hơn (zoom out), vẫn phủ kín khung.
+  final double zoomOutFactor;
+
+  static const _mapAsset = 'assets/images/main/map_card.png';
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+
     return Stack(
       fit: StackFit.expand,
+      clipBehavior: Clip.hardEdge,
       children: [
-        Image.asset(
-          'assets/images/main/map_card.png',
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            color: const Color(0xFFE8EAED),
-            child: const Center(child: Icon(Icons.map_outlined, size: 64, color: Colors.grey)),
+        ClipRect(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: size.width * zoomOutFactor,
+              height: size.height * zoomOutFactor,
+              child: Image.asset(
+                _mapAsset,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: const Color(0xFFE8EAED),
+                  child: const Center(child: Icon(Icons.map_outlined, size: 64, color: Colors.grey)),
+                ),
+              ),
+            ),
           ),
         ),
         if (showRoute)

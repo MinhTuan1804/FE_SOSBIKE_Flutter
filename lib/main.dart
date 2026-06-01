@@ -27,9 +27,13 @@ import 'features/notifications/presentation/providers/chat_provider.dart';
 import 'features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
 import 'features/home/mechanic/data/repositories/mechanic_history_repository.dart';
 import 'features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
+import 'features/home/mechanic/data/repositories/mechanic_subscription_repository.dart';
+import 'features/home/mechanic/data/repositories/mechanic_repair_repository.dart';
 import 'features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
 import 'features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
+import 'features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
+import 'features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 import 'features/profile/data/repositories/vehicle_repository.dart';
 import 'features/profile/presentation/providers/vehicle_provider.dart';
 import 'firebase_options.dart';
@@ -73,6 +77,8 @@ void main() async {
   final mechanicDashboardRepository = MechanicDashboardRepository(dioClient);
   final mechanicHistoryRepository = MechanicHistoryRepository(dioClient);
   final mechanicWalletRepository = MechanicWalletRepository(dioClient);
+  final mechanicSubscriptionRepository = MechanicSubscriptionRepository(dioClient);
+  final mechanicRepairRepository = MechanicRepairRepository(dioClient);
   final vehicleRepository = VehicleRepository(dioClient);
   final backendOtpService = BackendOtpService(dioClient);
   final chatRepository = ChatRepository(dioClient);
@@ -105,6 +111,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
         ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),
         ChangeNotifierProvider(create: (_) => MechanicWalletProvider(mechanicWalletRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicSubscriptionProvider(mechanicSubscriptionRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicRepairProvider(mechanicRepairRepository)),
         ChangeNotifierProvider(create: (_) => VehicleProvider(vehicleRepository)),
       ],
       child: const MyApp(),

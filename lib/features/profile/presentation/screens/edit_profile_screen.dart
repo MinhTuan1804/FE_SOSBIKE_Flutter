@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -23,7 +24,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   
   DateTime? _dateOfBirth;
   String? _gender;
-  File? _avatarFile;
+  XFile? _avatarFile;
 
   Future<void> _pickImage() async {
     final picked = await pickImageFromCameraOrGallery(
@@ -33,7 +34,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       imageQuality: 80,
     );
     if (picked != null) {
-      setState(() => _avatarFile = File(picked.path));
+      setState(() => _avatarFile = picked);
     }
   }
 
@@ -43,12 +44,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final auth = context.read<AuthProvider>();
     
     _nameController = TextEditingController(text: auth.displayName);
-    _emailController = TextEditingController(text: auth.email);
-    _addressController = TextEditingController(text: auth.currentAddress);
-    
-    if (auth.dateOfBirth != null && auth.dateOfBirth!.isNotEmpty) {
+    _emailController = TextEditingController(text: auth.email ?? '');
+    _addressController = TextEditingController(text: auth.currentAddress ?? '');
+
+    // dateOfBirth getter returns 'dd/MM/yyyy'; parse it back to DateTime
+    final dobStr = auth.dateOfBirth;
+    if (dobStr != null && dobStr.isNotEmpty) {
       try {
-        _dateOfBirth = DateTime.parse(auth.dateOfBirth!);
+        _dateOfBirth = DateFormat('dd/MM/yyyy').parse(dobStr);
       } catch (_) {}
     }
     
@@ -96,18 +99,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_dateOfBirth == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày sinh')),
-      );
-      return;
-    }
 
     final auth = context.read<AuthProvider>();
     
-    final success = await auth.updateProfile(
+    final success = await auth.saveMyProfile(
       fullName: _nameController.text.trim(),
-      dateOfBirth: _dateOfBirth!,
+      dateOfBirth: _dateOfBirth,
       gender: _gender ?? 'OTHER',
       email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
       currentAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
@@ -167,7 +164,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                               child: ClipOval(
                                 child: _avatarFile != null
-                                    ? Image.file(_avatarFile!, fit: BoxFit.cover)
+                                    ? Image.file(
+                                        File(_avatarFile!.path),
+                                        fit: BoxFit.cover,
+                                      )
                                     : _buildAvatarImage(auth.avatarUrl),
                               ),
                             ),

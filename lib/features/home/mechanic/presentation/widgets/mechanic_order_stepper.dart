@@ -49,44 +49,48 @@ class MechanicOrderFlowSheetBody extends StatelessWidget {
     required this.activeStep,
     required this.action,
     this.subtitle,
+    this.wrapSheet = true,
   });
 
   final String title;
   final String? subtitle;
   final int activeStep;
   final Widget action;
+  final bool wrapSheet;
 
   @override
   Widget build(BuildContext context) {
-    return MechanicOrderBottomSheet(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
-            ),
-            const SizedBox(height: 10),
-            MechanicOrderStepper(activeIndex: activeStep),
-            if (subtitle != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                subtitle!,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.3,
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            action,
-          ],
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
         ),
-      ),
+        const SizedBox(height: 10),
+        MechanicOrderStepper(activeIndex: activeStep),
+        if (subtitle != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            subtitle!,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.3,
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        action,
+      ],
+    );
+
+    if (!wrapSheet) return body;
+
+    return MechanicOrderBottomSheet(
+      child: SingleChildScrollView(child: body),
     );
   }
 }
