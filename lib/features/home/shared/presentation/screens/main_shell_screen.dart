@@ -370,6 +370,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
             });
             rescue.clearActiveOrderStatus();
           }
+        } else if (rescue.activeOrderStatus == 'REPAIRING') {
+          if (_orderFlow == _MechanicOrderFlow.inspect) {
+            setState(() {
+              _orderFlow = _MechanicOrderFlow.repair;
+            });
+            rescue.clearActiveOrderStatus();
+          }
         } else if (rescue.activeOrderStatus == 'CANCELLED') {
           setState(() {
             _orderFlow = _MechanicOrderFlow.none;

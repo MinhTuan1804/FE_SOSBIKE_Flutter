@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -22,6 +23,7 @@ class RescueProvider extends ChangeNotifier {
   int? get goongDurationMins => _goongDurationMins;
 
   final GoongService _goongService = GoongService();
+  DateTime? _lastGoongRouteFetchTime;
 
   // Active Mechanic Order Coords for dynamic routing on mechanic side
   double? _activeCustomerLatitude;
@@ -86,7 +88,20 @@ class RescueProvider extends ChangeNotifier {
     required double custLng,
     required double mechLat,
     required double mechLng,
+    bool force = false,
   }) async {
+    // Nếu không force và chưa đủ 2 phút (120s) kể từ lần gọi cuối, dùng ước tính Haversine cục bộ
+    if (!force && _lastGoongRouteFetchTime != null) {
+      final diff = DateTime.now().difference(_lastGoongRouteFetchTime!);
+      if (diff < const Duration(minutes: 2)) {
+        final distance = _calculateHaversineDistance(custLat, custLng, mechLat, mechLng);
+        _goongDistanceKm = distance * 1.25;
+        _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
+        notifyListeners();
+        return;
+      }
+    }
+
     final routeData = await _goongService.getRouteData(
       originLat: mechLat,
       originLng: mechLng,
@@ -98,6 +113,7 @@ class RescueProvider extends ChangeNotifier {
       _activeRoutePoints = routeData.points;
       _goongDistanceKm = routeData.distanceKm;
       _goongDurationMins = routeData.durationMins;
+      _lastGoongRouteFetchTime = DateTime.now();
       notifyListeners();
     }
   }
@@ -130,6 +146,7 @@ class RescueProvider extends ChangeNotifier {
             custLng: _customerLongitude!,
             mechLat: mLat,
             mechLng: mLng,
+            force: true, // Lần đầu tiên luôn force để vẽ tuyến đường ban đầu
           );
         }
       }
@@ -162,12 +179,17 @@ class RescueProvider extends ChangeNotifier {
           notifyListeners();
         }
         if (_customerLatitude != null && _customerLongitude != null) {
-          fetchGoongRoute(
-            custLat: _customerLatitude!,
-            custLng: _customerLongitude!,
-            mechLat: lat,
-            mechLng: lng,
+          // Thay vì gọi fetchGoongRoute liên tục gây tốn phí API Direction,
+          // chúng ta tính khoảng cách đường bộ ước lượng thông qua đường chim bay chim bay (x1.25)
+          final distance = _calculateHaversineDistance(
+            _customerLatitude!,
+            _customerLongitude!,
+            lat,
+            lng,
           );
+          _goongDistanceKm = distance * 1.25; // Nhân hệ số uốn khúc đường bộ
+          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60); // Ước tính 3 phút/km
+          notifyListeners();
         }
       }
     });
@@ -277,6 +299,26 @@ class RescueProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> approveOrderQuote(String orderId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _repository.approveRescueOrderQuote(orderId);
+      _activeOrderStatus = 'REPAIRING';
+      if (_matchedMechanic != null) {
+        _matchedMechanic!['status'] = 'REPAIRING';
+      }
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   Future<void> cancelSearch() async {
     if (_currentOrderId != null) {
       try {
@@ -292,6 +334,7 @@ class RescueProvider extends ChangeNotifier {
     _customerLongitude = null;
     _activeQuote = null;
     _paymentIntent = null;
+    _lastGoongRouteFetchTime = null; // Reset bộ đệm thời gian tải Goong
     await _realtimeService.disconnect();
     notifyListeners();
   }
@@ -358,6 +401,19 @@ class RescueProvider extends ChangeNotifier {
       _incomingRequest = null;
       _isLoading = false;
       _activeOrderStatus = 'ACCEPTED';
+
+      // Tải tuyến đường Goong ban đầu một lần duy nhất khi thợ chấp nhận đơn
+      if (_activeCustomerLatitude != null && _activeCustomerLongitude != null && _mechanicLatitude != null && _mechanicLongitude != null) {
+        fetchGoongRoute(
+          custLat: _activeCustomerLatitude!,
+          custLng: _activeCustomerLongitude!,
+          mechLat: _mechanicLatitude!,
+          mechLng: _mechanicLongitude!,
+          force: true, // Force tải tuyến đường ban đầu
+        ).catchError((e) {
+          debugPrint('Failed to fetch initial Goong route: $e');
+        });
+      }
 
       notifyListeners();
       return res;
@@ -436,12 +492,16 @@ class RescueProvider extends ChangeNotifier {
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, position.latitude, position.longitude);
         if (_activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          fetchGoongRoute(
-            custLat: _activeCustomerLatitude!,
-            custLng: _activeCustomerLongitude!,
-            mechLat: position.latitude,
-            mechLng: position.longitude,
+          // Ước tính khoảng cách/thời gian cục bộ
+          final distance = _calculateHaversineDistance(
+            _activeCustomerLatitude!,
+            _activeCustomerLongitude!,
+            position.latitude,
+            position.longitude,
           );
+          _goongDistanceKm = distance * 1.25;
+          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
+          notifyListeners();
         }
       }
     } catch (e) {
@@ -454,12 +514,15 @@ class RescueProvider extends ChangeNotifier {
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, 10.762622, 106.660172);
         if (_activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          fetchGoongRoute(
-            custLat: _activeCustomerLatitude!,
-            custLng: _activeCustomerLongitude!,
-            mechLat: 10.762622,
-            mechLng: 106.660172,
+          final distance = _calculateHaversineDistance(
+            _activeCustomerLatitude!,
+            _activeCustomerLongitude!,
+            10.762622,
+            106.660172,
           );
+          _goongDistanceKm = distance * 1.25;
+          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
+          notifyListeners();
         }
       }
     }
@@ -488,5 +551,13 @@ class RescueProvider extends ChangeNotifier {
     _locationSub?.cancel();
     _locationTimer?.cancel();
     super.dispose();
+  }
+
+  double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+    const p = 0.017453292519943295; // pi / 180
+    final a = 0.5 - cos((lat2 - lat1) * p)/2 + 
+          cos(lat1 * p) * cos(lat2 * p) * 
+          (1 - cos((lon2 - lon1) * p))/2;
+    return 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
   }
 }

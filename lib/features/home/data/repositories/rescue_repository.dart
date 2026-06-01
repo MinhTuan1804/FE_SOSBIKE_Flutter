@@ -112,4 +112,15 @@ class RescueRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<Map<String, dynamic>> approveRescueOrderQuote(String orderId) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/RescueOrders/$orderId/approve-quote',
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
