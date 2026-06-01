@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_customer_history_tab.dart';
@@ -40,29 +41,62 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   MainNavTab _tab = MainNavTab.orders;
-  bool _isOnline = false;
-  bool _showIncomingRequest = false;
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
   bool _editingRepairItems = false;
-
-  static const _incomingRequest = IncomingRescueRequest.sample;
+  IncomingRescueRequest? _activeIncomingRequest;
 
   void _openIncomingRequest() {
-    setState(() => _showIncomingRequest = true);
+    context.read<RescueProvider>().simulateIncomingRequest({
+      'orderId': '123e4567-e89b-12d3-a456-426614174000',
+      'customerName': 'Khánh Linh',
+      'requestAddress': 'Chung cư Petroland, đường 62, phường Bình Trưng, Thành phố Thủ Đức.',
+      'distance': 0.4003,
+      'customerPhone': '0123456789',
+      'latitude': 10.765622,
+      'longitude': 106.663172,
+    });
   }
 
   void _closeIncomingRequest() {
-    if (!_showIncomingRequest) return;
-    setState(() => _showIncomingRequest = false);
+    context.read<RescueProvider>().dismissIncomingRequest();
   }
 
-  void _acceptIncomingRequest() {
-    _closeIncomingRequest();
-    setState(() {
-      _orderFlow = _MechanicOrderFlow.accept;
-      _tab = MainNavTab.orders;
-    });
+  Future<void> _acceptIncomingRequest() async {
+    final rescue = context.read<RescueProvider>();
+    final req = rescue.incomingRequest;
+    if (req == null) return;
+
+    final incomingReq = IncomingRescueRequest(
+      customerName: req['customerName'] ?? 'Khách hàng',
+      address: req['requestAddress'] ?? '',
+      fullAddress: req['requestAddress'] ?? '',
+      distanceMeters: (req['distance'] as num? ?? 2.5) * 1000.0,
+      serviceTypeLabel: 'LƯU ĐỘNG',
+      phoneNumber: req['customerPhone'] ?? '0987654321',
+      avatarUrl: req['customerAvatarUrl'],
+      latitude: req['latitude'] != null ? (req['latitude'] as num).toDouble() : null,
+      longitude: req['longitude'] != null ? (req['longitude'] as num).toDouble() : null,
+    );
+
+    final res = await rescue.acceptRescueOrder(req['orderId']);
+    if (res != null) {
+      setState(() {
+        _activeIncomingRequest = incomingReq;
+        _orderFlow = _MechanicOrderFlow.accept;
+        _tab = MainNavTab.orders;
+      });
+      rescue.dismissIncomingRequest();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(rescue.errorMessage ?? 'Không thể nhận đơn.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _cancelOrderFlow() {
@@ -119,6 +153,46 @@ class _MainShellScreenState extends State<MainShellScreen> {
       if (!mounted) return;
       await context.read<AuthProvider>().fetchMyProfile(silent: true);
     });
+    context.read<RescueProvider>().addListener(_onRescueStatusChanged);
+  }
+
+  @override
+  void dispose() {
+    try {
+      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  void _onRescueStatusChanged() {
+    final rescue = context.read<RescueProvider>();
+    final auth = context.read<AuthProvider>();
+    if (auth.userType != 'CUSTOMER') {
+      if (_orderFlow != _MechanicOrderFlow.none) {
+        if (rescue.activeOrderStatus == 'CONFIRMED') {
+          if (_orderFlow == _MechanicOrderFlow.accept) {
+            setState(() {
+              _orderFlow = _MechanicOrderFlow.arrival;
+            });
+            rescue.clearActiveOrderStatus();
+          }
+        } else if (rescue.activeOrderStatus == 'CANCELLED') {
+          setState(() {
+            _orderFlow = _MechanicOrderFlow.none;
+            _activeIncomingRequest = null;
+          });
+          rescue.clearActiveOrderStatus();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Khách hàng đã hủy đơn cứu hộ.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    }
   }
 
   @override
@@ -127,6 +201,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
     final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER');
+
+    final rescueProvider = context.watch<RescueProvider>();
 
     final shellBody = Stack(
       clipBehavior: Clip.none,
@@ -137,8 +213,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
               MainAppHeader(
                 userName: auth.displayName,
                 avatarUrl: auth.avatarUrl,
-                isOnline: _isOnline,
-                onOnlineChanged: (v) => setState(() => _isOnline = v),
+                isOnline: rescueProvider.isOnline,
+                onOnlineChanged: (v) => context.read<RescueProvider>().toggleOnlineStatus(v),
                 userType: auth.userType,
                 onAvatarTap: () {
                   Navigator.of(context, rootNavigator: true).push(
@@ -198,6 +274,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
     final contentBottomPad = inOrderFlow ? navH : navH * 0.35;
 
+    final rescueProvider = context.watch<RescueProvider>();
+    final reqMap = rescueProvider.incomingRequest;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -213,7 +292,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         if (auth.userType != 'CUSTOMER' &&
             _orderFlow == _MechanicOrderFlow.none &&
-            _showIncomingRequest) ...[
+            reqMap != null) ...[
           Positioned.fill(
             child: GestureDetector(
               onTap: _closeIncomingRequest,
@@ -226,7 +305,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
             right: 14,
             bottom: navH + 76,
             child: MechanicIncomingRequestPopup(
-              request: _incomingRequest,
+              request: IncomingRescueRequest(
+                customerName: reqMap['customerName'] ?? 'Khách hàng',
+                address: reqMap['requestAddress'] ?? '',
+                fullAddress: reqMap['requestAddress'] ?? '',
+                distanceMeters: (reqMap['distance'] as num? ?? 2.5) * 1000.0,
+                serviceTypeLabel: 'LƯU ĐỘNG',
+                phoneNumber: reqMap['customerPhone'] ?? '0987654321',
+                avatarUrl: reqMap['customerAvatarUrl'],
+                latitude: reqMap['latitude'] != null ? (reqMap['latitude'] as num).toDouble() : null,
+                longitude: reqMap['longitude'] != null ? (reqMap['longitude'] as num).toDouble() : null,
+              ),
               onCancel: _closeIncomingRequest,
               onAccept: _acceptIncomingRequest,
               onViewMore: _closeIncomingRequest,
@@ -247,13 +336,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
     if (userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none) {
       return switch (_orderFlow) {
         _MechanicOrderFlow.accept => MechanicAcceptOrderView(
-            request: _incomingRequest,
+            request: _activeIncomingRequest ?? IncomingRescueRequest.sample,
             onCancel: _cancelOrderFlow,
             onGoNow: _goToArrivalFlow,
           ),
         _MechanicOrderFlow.arrival => MechanicArrivalView(
-            request: _incomingRequest,
-            onBack: () => setState(() => _orderFlow = _MechanicOrderFlow.accept),
+            request: _activeIncomingRequest ?? IncomingRescueRequest.sample,
+            onBack: () {},
             onArrived: _confirmArrived,
           ),
         _MechanicOrderFlow.inspect => MechanicInspectVehicleView(

@@ -21,7 +21,7 @@ class LocationSelectView extends StatefulWidget {
   final String mechanicNote;
   final VoidCallback onBack;
   final VoidCallback onAddNote;
-  final VoidCallback onConfirmLocation;
+  final void Function(double latitude, double longitude, String address) onConfirmLocation;
   final ValueChanged<String>? onNoteChanged;
 
   @override
@@ -638,7 +638,12 @@ class _LocationSelectViewState extends State<LocationSelectView> {
                       _showNoteInput = true;
                     });
                   },
-                  onConfirmLocation: widget.onConfirmLocation,
+                  onConfirmLocation: () {
+                    final selectedItem = _incidentLocations[_selectedItemIndex];
+                    final latLng = selectedItem['latLng'] as LatLng;
+                    final address = selectedItem['title'] as String;
+                    widget.onConfirmLocation(latLng.latitude, latLng.longitude, address);
+                  },
                   calculateDistance: _calculateDistance,
                 );
               },

@@ -7,6 +7,8 @@ class IncomingRescueRequest {
     required this.serviceTypeLabel,
     required this.phoneNumber,
     this.avatarUrl,
+    this.latitude,
+    this.longitude,
   });
 
   final String customerName;
@@ -16,6 +18,8 @@ class IncomingRescueRequest {
   final String serviceTypeLabel;
   final String phoneNumber;
   final String? avatarUrl;
+  final double? latitude;
+  final double? longitude;
 
   String get distanceLabel {
     if (distanceMeters >= 1000) {

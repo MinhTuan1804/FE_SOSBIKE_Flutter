@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:intl/intl.dart';
 
 class MechanicFoundView extends StatelessWidget {
   const MechanicFoundView({
@@ -16,7 +18,16 @@ class MechanicFoundView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
-    
+    final rescue = context.watch<RescueProvider>();
+    final match = rescue.matchedMechanic ?? {};
+
+    final mechanicName = match['mechanicName'] as String? ?? 'Nguyen Van A';
+    final vehicleModel = match['vehicleModel'] as String? ?? 'Honda Vision';
+    final rating = match['mechanicRating']?.toString() ?? '5.0';
+    final distanceKm = match['distanceKm']?.toString() ?? '2.5';
+    final travelFee = match['travelFee'] as num? ?? 15000;
+    final formattedFee = NumberFormat('#,##0', 'vi_VN').format(travelFee);
+
     return Column(
       children: [
         _buildFlowHeader(context, onBack: onCancel),
@@ -56,15 +67,25 @@ class MechanicFoundView extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/main/avatar_placeholder.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.person,
-                            color: AppColors.primary,
-                            size: 40,
-                          ),
-                        ),
+                        child: match['mechanicAvatarUrl'] != null && (match['mechanicAvatarUrl'] as String).isNotEmpty
+                            ? Image.network(
+                                match['mechanicAvatarUrl'] as String,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.person,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                ),
+                              )
+                            : Image.asset(
+                                'assets/images/main/avatar_placeholder.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.person,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -74,9 +95,9 @@ class MechanicFoundView extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Text(
-                                'Nguyen Van A',
-                                style: TextStyle(
+                              Text(
+                                mechanicName,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -111,7 +132,7 @@ class MechanicFoundView extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       child: const Text(
-                        'Cách 15 phút',
+                        'Đã khớp!',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -129,9 +150,9 @@ class MechanicFoundView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Cửa Hàng Sửa Chữa Xe Máy Thành Thiện',
-                      style: TextStyle(
+                    Text(
+                      'Thợ đang di chuyển (${vehicleModel})',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: Colors.black,
@@ -140,9 +161,9 @@ class MechanicFoundView extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Text(
-                          'Đánh giá 4.9',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                        Text(
+                          'Đánh giá $rating',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                         ),
                         const SizedBox(width: 6),
                         ...List.generate(
@@ -161,12 +182,12 @@ class MechanicFoundView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Phí di chuyển (2.5km)',
-                    style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
+                  Text(
+                    'Phí di chuyển (${distanceKm}km)',
+                    style: const TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    '15,000 VND',
+                    '${formattedFee}đ',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 16,
@@ -211,7 +232,7 @@ class MechanicFoundView extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: Colors.grey,
                       shape: BoxShape.circle,
                     ),
                   ),

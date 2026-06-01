@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/location_select_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/add_note_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/searching_view.dart';
@@ -29,14 +32,57 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
   double _searchProgress = 0.0;
   Timer? _progressTimer;
 
+  GoogleMapController? _flowMapController;
+  BitmapDescriptor? _mechanicIcon;
+  BitmapDescriptor? _customerIcon;
+
+  Future<void> _loadCustomMarkerIcons() async {
+    try {
+      _mechanicIcon = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(38, 38)),
+        'assets/images/onboarding/logo.png',
+      );
+      _customerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    } catch (e) {
+      debugPrint('Error loading custom markers: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomMarkerIcons();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<RescueProvider>().addListener(_onRescueProviderChanged);
+      }
+    });
+  }
+
   @override
   void dispose() {
+    try {
+      context.read<RescueProvider>().removeListener(_onRescueProviderChanged);
+    } catch (_) {}
     _searchTimer?.cancel();
     _progressTimer?.cancel();
+    _flowMapController?.dispose();
     super.dispose();
   }
 
-  void _startSearchingFlow() {
+  void _onRescueProviderChanged() {
+    if (!mounted) return;
+    final rescue = context.read<RescueProvider>();
+    if (rescue.matchedMechanic != null && _step == FindMechanicStep.searching) {
+      _searchTimer?.cancel();
+      _progressTimer?.cancel();
+      setState(() {
+        _step = FindMechanicStep.mechanicFound;
+      });
+    }
+  }
+
+  Future<void> _confirmLocation(double lat, double lng, String address) async {
     setState(() {
       _step = FindMechanicStep.searching;
       _searchProgress = 0.0;
@@ -45,35 +91,43 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     _searchTimer?.cancel();
     _progressTimer?.cancel();
 
-    // Progress bar animation simulation (3 seconds total)
-    const duration = Duration(milliseconds: 100);
-    const totalSteps = 30; // 30 * 100ms = 3s
-    int currentStep = 0;
-
+    // Slowly progress search bar visually to mimic wait
+    const duration = Duration(milliseconds: 500);
+    int ticks = 0;
     _progressTimer = Timer.periodic(duration, (timer) {
-      currentStep++;
+      ticks++;
       if (mounted) {
         setState(() {
-          _searchProgress = currentStep / totalSteps;
+          _searchProgress = (ticks / 30).clamp(0.0, 0.92);
         });
-      }
-      if (currentStep >= totalSteps) {
-        timer.cancel();
       }
     });
 
-    _searchTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _step = FindMechanicStep.mechanicFound;
-        });
-      }
-    });
+    final success = await context.read<RescueProvider>().createRescueOrder(
+      latitude: lat,
+      longitude: lng,
+      requestAddress: address,
+      locationNote: _mechanicNote,
+    );
+
+    if (!success && mounted) {
+      _progressTimer?.cancel();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.read<RescueProvider>().errorMessage ?? 'Không thể gửi yêu cầu cứu hộ.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        _step = FindMechanicStep.locationSelect;
+      });
+    }
   }
 
   void _cancelSearch() {
     _searchTimer?.cancel();
     _progressTimer?.cancel();
+    context.read<RescueProvider>().cancelSearch();
     setState(() {
       _step = FindMechanicStep.locationSelect;
     });
@@ -102,6 +156,25 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     );
   }
 
+  void _fitBounds(double custLat, double custLng, double mechLat, double mechLng) {
+    if (_flowMapController == null) return;
+    
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        custLat < mechLat ? custLat : mechLat,
+        custLng < mechLng ? custLng : mechLng,
+      ),
+      northeast: LatLng(
+        custLat > mechLat ? custLat : mechLat,
+        custLng > mechLng ? custLng : mechLng,
+      ),
+    );
+    
+    _flowMapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 70),
+    );
+  }
+
   Widget _buildMapBackground() {
     if (_step == FindMechanicStep.locationSelect) {
       return Container(
@@ -112,6 +185,67 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
             strokeWidth: 3,
           ),
         ),
+      );
+    }
+
+    final rescue = context.watch<RescueProvider>();
+    final match = rescue.matchedMechanic;
+    
+    final double custLat = rescue.customerLatitude ?? 10.762622;
+    final double custLng = rescue.customerLongitude ?? 106.660172;
+    
+    double? mechLat;
+    double? mechLng;
+    if (match != null) {
+      mechLat = match['mechanicLatitude'] != null ? (match['mechanicLatitude'] as num).toDouble() : null;
+      mechLng = match['mechanicLongitude'] != null ? (match['mechanicLongitude'] as num).toDouble() : null;
+    }
+
+    if (mechLat != null && mechLng != null) {
+      final customerLatLng = LatLng(custLat, custLng);
+      final mechanicLatLng = LatLng(mechLat, mechLng);
+
+      final markers = {
+        Marker(
+          markerId: const MarkerId('customer'),
+          position: customerLatLng,
+          icon: _customerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'Vị trí của bạn'),
+        ),
+        Marker(
+          markerId: const MarkerId('mechanic'),
+          position: mechanicLatLng,
+          icon: _mechanicIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          infoWindow: InfoWindow(title: match?['mechanicName'] ?? 'Thợ sửa xe'),
+        ),
+      };
+
+      final polylines = {
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: rescue.activeRoutePoints.isNotEmpty
+              ? rescue.activeRoutePoints
+              : [customerLatLng, mechanicLatLng],
+          color: const Color(0xFFC02020),
+          width: 5,
+        ),
+      };
+
+      return GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: customerLatLng,
+          zoom: 14.0,
+        ),
+        markers: markers,
+        polylines: polylines,
+        zoomControlsEnabled: false,
+        myLocationButtonEnabled: false,
+        onMapCreated: (controller) {
+          _flowMapController = controller;
+          Future.delayed(const Duration(milliseconds: 200), () {
+            _fitBounds(custLat, custLng, mechanicLatLng.latitude, mechanicLatLng.longitude);
+          });
+        },
       );
     }
 
@@ -129,13 +263,6 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
             ),
           ),
         ),
-        // Draw the red route line on tracking step
-        if (_step == FindMechanicStep.tracking)
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _RoutePainter(),
-            ),
-          ),
       ],
     );
   }
@@ -146,7 +273,7 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
           mechanicNote: _mechanicNote,
           onBack: () => Navigator.of(context).pop(),
           onAddNote: () {},
-          onConfirmLocation: _startSearchingFlow,
+          onConfirmLocation: _confirmLocation,
           onNoteChanged: (note) {
             setState(() {
               _mechanicNote = note;
@@ -173,59 +300,24 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
         ),
       FindMechanicStep.mechanicFound => MechanicFoundView(
           onCancel: _cancelSearch,
-          onConfirm: () {
+          onConfirm: () async {
+            final orderId = context.read<RescueProvider>().currentOrderId;
+            if (orderId != null) {
+              await context.read<RescueProvider>().confirmOrder(orderId);
+            }
             setState(() {
               _step = FindMechanicStep.tracking;
             });
           },
         ),
       FindMechanicStep.tracking => TrackingView(
-          onCancel: () => Navigator.of(context).pop(),
+          onCancel: () {
+            _cancelSearch();
+            Navigator.of(context).pop();
+          },
         ),
     };
   }
 }
 
-// Custom Painter to draw active tracking line in Step 6
-class _RoutePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.red[800]!
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
 
-    final path = Path();
-    // Simulate route coordinates over the image background
-    path.moveTo(size.width * 0.52, size.height * 0.09); // Start point (mechanic)
-    path.lineTo(size.width * 0.44, size.height * 0.08);
-    path.lineTo(size.width * 0.38, size.height * 0.28);
-    path.lineTo(size.width * 0.52, size.height * 0.38);
-    path.lineTo(size.width * 0.64, size.height * 0.52);
-    path.lineTo(size.width * 0.78, size.height * 0.70);
-    path.lineTo(size.width * 0.94, size.height * 0.82); // End point (user)
-
-    canvas.drawPath(path, paint);
-
-    // Draw user location pulse point
-    final pointPaint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.fill;
-    final pulsePaint = Paint()
-      ..color = Colors.blue.withValues(alpha: 0.3)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(size.width * 0.52, size.height * 0.09), 16.0, pulsePaint);
-    canvas.drawCircle(Offset(size.width * 0.52, size.height * 0.09), 8.0, pointPaint);
-    canvas.drawCircle(Offset(size.width * 0.52, size.height * 0.09), 6.0, Paint()..color = Colors.white);
-
-    // Draw mechanic destination point
-    canvas.drawCircle(Offset(size.width * 0.94, size.height * 0.82), 20.0, Paint()..color = Colors.red.withValues(alpha: 0.3));
-    canvas.drawCircle(Offset(size.width * 0.94, size.height * 0.82), 10.0, Paint()..color = Colors.red);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

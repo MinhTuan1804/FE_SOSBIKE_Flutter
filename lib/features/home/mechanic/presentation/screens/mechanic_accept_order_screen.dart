@@ -32,7 +32,10 @@ class MechanicAcceptOrderView extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  const MechanicOrderMapBackground(),
+                  MechanicOrderMapBackground(
+                    customerLatitude: request.latitude,
+                    customerLongitude: request.longitude,
+                  ),
                   Positioned(
                     left: 0,
                     right: 0,
@@ -58,44 +61,35 @@ class MechanicAcceptOrderView extends StatelessWidget {
                               onChat: () {},
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 4,
-                                  child: OutlinedButton(
-                                    onPressed: onCancel,
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppColors.primary,
-                                      side: const BorderSide(color: AppColors.primary, width: 1.5),
-                                      minimumSize: const Size(0, 44),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    ),
-                                    child: const Text(
-                                      'Hủy chuyến',
-                                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  flex: 6,
-                                  child: ElevatedButton(
-                                    onPressed: onGoNow,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                      elevation: 4,
-                                      shadowColor: AppColors.primary.withValues(alpha: 0.45),
-                                      minimumSize: const Size(0, 44),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    ),
-                                    child: const Text(
-                                      'Đi ngay!',
-                                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Đang chờ khách hàng xác nhận...',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),

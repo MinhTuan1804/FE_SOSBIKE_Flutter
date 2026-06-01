@@ -1,136 +1,145 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
-/// Map nền + tuỳ chọn vẽ tuyến đường (Figma).
-class MechanicOrderMapBackground extends StatelessWidget {
+/// Map nền live Google Map + tuỳ chọn vẽ tuyến đường và hiển thị marker thợ & khách.
+class MechanicOrderMapBackground extends StatefulWidget {
   const MechanicOrderMapBackground({
     super.key,
+    this.customerLatitude,
+    this.customerLongitude,
     this.showRoute = false,
     this.showUserPulse = true,
   });
 
+  final double? customerLatitude;
+  final double? customerLongitude;
   final bool showRoute;
   final bool showUserPulse;
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          'assets/images/main/map_card.png',
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            color: const Color(0xFFE8EAED),
-            child: const Center(child: Icon(Icons.map_outlined, size: 64, color: Colors.grey)),
-          ),
-        ),
-        if (showRoute)
-          const Positioned.fill(
-            child: CustomPaint(painter: MechanicRoutePainter()),
-          ),
-        if (showUserPulse && !showRoute)
-          const Align(
-            alignment: Alignment(0, -0.35),
-            child: _MapUserPulse(),
-          ),
-      ],
-    );
-  }
+  State<MechanicOrderMapBackground> createState() => _MechanicOrderMapBackgroundState();
 }
 
-class MechanicRoutePainter extends CustomPainter {
-  const MechanicRoutePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final routePaint = Paint()
-      ..color = const Color(0xFFC02020)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final path = Path()
-      ..moveTo(size.width * 0.52, size.height * 0.12)
-      ..lineTo(size.width * 0.44, size.height * 0.14)
-      ..lineTo(size.width * 0.38, size.height * 0.32)
-      ..lineTo(size.width * 0.52, size.height * 0.42)
-      ..lineTo(size.width * 0.64, size.height * 0.55)
-      ..lineTo(size.width * 0.78, size.height * 0.72)
-      ..lineTo(size.width * 0.9, size.height * 0.84);
-
-    canvas.drawPath(path, routePaint);
-
-    _drawPulse(canvas, Offset(size.width * 0.52, size.height * 0.12), const Color(0xFF2563EB));
-    _drawDot(canvas, Offset(size.width * 0.9, size.height * 0.84), const Color(0xFFC02020));
-  }
-
-  void _drawPulse(Canvas canvas, Offset center, Color color) {
-    canvas.drawCircle(center, 16, Paint()..color = color.withValues(alpha: 0.25));
-    canvas.drawCircle(center, 8, Paint()..color = color);
-    canvas.drawCircle(center, 5, Paint()..color = Colors.white);
-  }
-
-  void _drawDot(Canvas canvas, Offset center, Color color) {
-    canvas.drawCircle(center, 18, Paint()..color = color.withValues(alpha: 0.25));
-    canvas.drawCircle(center, 9, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _MapUserPulse extends StatefulWidget {
-  const _MapUserPulse();
-
-  @override
-  State<_MapUserPulse> createState() => _MapUserPulseState();
-}
-
-class _MapUserPulseState extends State<_MapUserPulse> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+class _MechanicOrderMapBackgroundState extends State<MechanicOrderMapBackground> {
+  GoogleMapController? _mapController;
+  BitmapDescriptor? _mechanicIcon;
+  BitmapDescriptor? _customerIcon;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
+    _loadCustomMarkerIcons();
+  }
+
+  Future<void> _loadCustomMarkerIcons() async {
+    try {
+      _mechanicIcon = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(38, 38)),
+        'assets/images/onboarding/logo.png',
+      );
+      _customerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error loading custom markers in mechanic map: $e');
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  void _fitBounds(double custLat, double custLng, double mechLat, double mechLng) {
+    if (_mapController == null) return;
+    try {
+      final bounds = LatLngBounds(
+        southwest: LatLng(
+          custLat < mechLat ? custLat : mechLat,
+          custLng < mechLng ? custLng : mechLng,
+        ),
+        northeast: LatLng(
+          custLat > mechLat ? custLat : mechLat,
+          custLng > mechLng ? custLng : mechLng,
+        ),
+      );
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngBounds(bounds, 70),
+      );
+    } catch (e) {
+      debugPrint('Error fitting map bounds in mechanic: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final t = _controller.value;
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 34 + t * 24,
-              height: 34 + t * 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF2563EB).withValues(alpha: 0.22 * (1 - t)),
-              ),
+    final rescue = context.watch<RescueProvider>();
+
+    // Fallbacks to center of HCMC if coordinates are null
+    final double custLat = widget.customerLatitude ?? 10.765622;
+    final double custLng = widget.customerLongitude ?? 106.663172;
+
+    final double mechLat = rescue.mechanicLatitude ?? 10.762622;
+    final double mechLng = rescue.mechanicLongitude ?? 106.660172;
+
+    final customerLatLng = LatLng(custLat, custLng);
+    final mechanicLatLng = LatLng(mechLat, mechLng);
+
+    final markers = {
+      Marker(
+        markerId: const MarkerId('customer'),
+        position: customerLatLng,
+        icon: _customerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: const InfoWindow(title: 'Khách hàng'),
+      ),
+      Marker(
+        markerId: const MarkerId('mechanic'),
+        position: mechanicLatLng,
+        icon: _mechanicIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        infoWindow: const InfoWindow(title: 'Vị trí của bạn'),
+      ),
+    };
+
+    final polylines = widget.showRoute
+        ? {
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: rescue.activeRoutePoints.isNotEmpty
+                  ? rescue.activeRoutePoints
+                  : [customerLatLng, mechanicLatLng],
+              color: const Color(0xFFC02020),
+              width: 5,
             ),
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF2563EB),
-                border: Border.all(color: Colors.white, width: 2.5),
-              ),
-            ),
-          ],
-        );
+          }
+        : <Polyline>{};
+
+    if (_mapController != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fitBounds(custLat, custLng, mechLat, mechLng);
+      });
+    }
+
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: mechanicLatLng,
+        zoom: 14.0,
+      ),
+      markers: markers,
+      polylines: polylines,
+      zoomControlsEnabled: false,
+      myLocationButtonEnabled: false,
+      onMapCreated: (controller) {
+        _mapController = controller;
+        Future.delayed(const Duration(milliseconds: 200), () {
+          _fitBounds(custLat, custLng, mechLat, mechLng);
+        });
       },
     );
   }
 }
+

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_map_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_stepper.dart';
@@ -19,6 +21,10 @@ class MechanicArrivalView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rescue = context.watch<RescueProvider>();
+    final double distanceKm = rescue.goongDistanceKm ?? (request.distanceMeters / 1000.0);
+    final int durationMins = rescue.goongDurationMins ?? (distanceKm * 4).toInt().clamp(2, 60);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final sheetMaxH = constraints.maxHeight * 0.52;
@@ -26,25 +32,13 @@ class MechanicArrivalView extends StatelessWidget {
         return Stack(
           fit: StackFit.expand,
           children: [
-            const MechanicOrderMapBackground(showRoute: true, showUserPulse: false),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Material(
-                color: Colors.white,
-                shape: const CircleBorder(),
-                elevation: 4,
-                child: InkWell(
-                  onTap: onBack,
-                  customBorder: const CircleBorder(),
-                  child: const SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Color(0xFF374151)),
-                  ),
-                ),
-              ),
+            MechanicOrderMapBackground(
+              customerLatitude: request.latitude,
+              customerLongitude: request.longitude,
+              showRoute: true,
+              showUserPulse: false,
             ),
+
             Positioned(
               left: 0,
               right: 0,
@@ -53,6 +47,7 @@ class MechanicArrivalView extends StatelessWidget {
                 constraints: BoxConstraints(maxHeight: sheetMaxH),
                 child: MechanicOrderFlowSheetBody(
                   title: 'Đến điểm sửa chữa.',
+                  subtitle: 'Khoảng cách: ${distanceKm.toStringAsFixed(1)} km • Thời gian di chuyển ước tính: $durationMins phút',
                   activeStep: 0,
                   action: Material(
                     color: AppColors.primary,

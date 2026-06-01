@@ -133,7 +133,7 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
       );
     }
 
-    final data = dashboard ?? MechanicDashboardData.sample;
+    final data = dashboard ?? MechanicDashboardData.empty;
     final trips = data.recentTrips;
 
     return RefreshIndicator(

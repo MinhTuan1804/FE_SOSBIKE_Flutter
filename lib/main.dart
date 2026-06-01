@@ -6,33 +6,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'core/config/app_config_provider.dart';
-import 'core/config/app_config_repository.dart';
-import 'core/navigation/app_navigator.dart';
-import 'core/navigation/auth_gate.dart';
-import 'core/navigation/auth_navigation.dart';
-import 'core/network/dio_client.dart';
-import 'core/services/auth_service.dart';
-import 'core/services/backend_otp_service.dart';
-import 'features/auth/data/repositories/auth_repository.dart';
-import 'features/auth/presentation/providers/auth_provider.dart';
-import 'core/theme/app_colors.dart';
-import 'features/home/data/repositories/home_repository.dart';
-import 'features/home/presentation/providers/home_provider.dart';
-import 'features/membership/data/repositories/membership_repository.dart';
-import 'features/membership/presentation/providers/membership_provider.dart';
-import 'features/notifications/data/repositories/chat_repository.dart';
-import 'features/notifications/data/services/chat_realtime_service.dart';
-import 'features/notifications/presentation/providers/chat_provider.dart';
-import 'features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
-import 'features/home/mechanic/data/repositories/mechanic_history_repository.dart';
-import 'features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
-import 'features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
-import 'features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
-import 'features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
-import 'features/profile/data/repositories/vehicle_repository.dart';
-import 'features/profile/presentation/providers/vehicle_provider.dart';
-import 'firebase_options.dart';
+import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
+import 'package:fe_moblie_flutter/core/config/app_config_repository.dart';
+import 'package:fe_moblie_flutter/core/navigation/app_navigator.dart';
+import 'package:fe_moblie_flutter/core/navigation/auth_gate.dart';
+import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/core/network/dio_client.dart';
+import 'package:fe_moblie_flutter/core/services/auth_service.dart';
+import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
+import 'package:fe_moblie_flutter/features/auth/data/repositories/auth_repository.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/home/data/repositories/home_repository.dart';
+import 'package:fe_moblie_flutter/features/home/presentation/providers/home_provider.dart';
+import 'package:fe_moblie_flutter/features/membership/data/repositories/membership_repository.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/repositories/chat_repository.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/services/chat_realtime_service.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/services/rescue_realtime_service.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/services/location_realtime_service.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/chat_provider.dart';
+import 'package:fe_moblie_flutter/features/home/data/repositories/rescue_repository.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_history_repository.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
+import 'package:fe_moblie_flutter/features/profile/data/repositories/vehicle_repository.dart';
+import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
+import 'package:fe_moblie_flutter/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +81,9 @@ void main() async {
   final backendOtpService = BackendOtpService(dioClient);
   final chatRepository = ChatRepository(dioClient);
   final chatRealtimeService = ChatRealtimeService(authService);
+  final rescueRepository = RescueRepository(dioClient);
+  final rescueRealtimeService = RescueRealtimeService(authService);
+  final locationRealtimeService = LocationRealtimeService(authService);
 
   final authProvider = AuthProvider(authRepository, authService);
   unawaited(authProvider.checkAuthStatus());
@@ -102,6 +109,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
         ChangeNotifierProvider(create: (_) => ChatProvider(chatRepository, chatRealtimeService)),
+        ChangeNotifierProvider(create: (_) => RescueProvider(rescueRepository, rescueRealtimeService, locationRealtimeService)),
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
         ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),
         ChangeNotifierProvider(create: (_) => MechanicWalletProvider(mechanicWalletRepository)),
