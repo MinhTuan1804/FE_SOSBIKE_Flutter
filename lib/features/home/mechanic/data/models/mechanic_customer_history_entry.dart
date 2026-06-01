@@ -9,7 +9,6 @@ class MechanicCustomerHistoryEntry {
     required this.totalAmount,
     required this.paymentMethod,
     this.avatarUrl,
-    this.mechanicNote,
   });
 
   final String id;
@@ -21,9 +20,6 @@ class MechanicCustomerHistoryEntry {
   final int totalAmount;
   final String paymentMethod;
   final String? avatarUrl;
-  final String? mechanicNote;
-
-  bool get hasMechanicNote => mechanicNote != null && mechanicNote!.trim().isNotEmpty;
 
   factory MechanicCustomerHistoryEntry.fromJson(Map<String, dynamic> json) {
     return MechanicCustomerHistoryEntry(
@@ -36,7 +32,6 @@ class MechanicCustomerHistoryEntry {
       totalAmount: _toInt(json['totalAmount']),
       paymentMethod: json['paymentMethod']?.toString() ?? 'Tiền mặt',
       avatarUrl: json['customerAvatarUrl']?.toString(),
-      mechanicNote: json['mechanicNote']?.toString(),
     );
   }
 
@@ -63,7 +58,6 @@ class MechanicCustomerHistoryEntry {
       address: 'Chung cư petroland, đường 62, phường Bình Trưng, Thành phố Thủ Đức.',
       totalAmount: 250000,
       paymentMethod: 'Tiền mặt',
-      mechanicNote: 'Đã vá săm và bơm hơi lốp trước.',
     ),
     MechanicCustomerHistoryEntry(
       id: '2',
@@ -84,7 +78,6 @@ class MechanicCustomerHistoryEntry {
       address: 'Chung cư petroland, đường 62, phường Bình Trưng, Thành phố Thủ Đức.',
       totalAmount: 250000,
       paymentMethod: 'Tiền mặt',
-      mechanicNote: 'Khách hài lòng, xe chạy ổn.',
     ),
   ];
 }

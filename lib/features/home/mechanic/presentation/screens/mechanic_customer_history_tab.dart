@@ -412,10 +412,6 @@ class _HistoryCard extends StatelessWidget {
                 ],
               ),
               _PaymentBadge(label: entry.paymentMethod),
-              if (entry.hasMechanicNote)
-                _MechanicNoteBadge(
-                  onTap: () => _showMechanicNote(context, entry.mechanicNote!),
-                ),
             ],
           ),
         ],
@@ -423,35 +419,7 @@ class _HistoryCard extends StatelessWidget {
     );
   }
 
-  void _showMechanicNote(BuildContext context, String note) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Ghi chú của thợ',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                note,
-                style: const TextStyle(fontSize: 14, height: 1.45, color: Color(0xFF374151)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 }
 
 class _CustomerAvatar extends StatelessWidget {
@@ -523,39 +491,6 @@ class _PaymentBadge extends StatelessWidget {
           color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _MechanicNoteBadge extends StatelessWidget {
-  const _MechanicNoteBadge({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.75), width: 1),
-          ),
-          child: const Text(
-            'Ghi chú của thợ',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
         ),
       ),
     );

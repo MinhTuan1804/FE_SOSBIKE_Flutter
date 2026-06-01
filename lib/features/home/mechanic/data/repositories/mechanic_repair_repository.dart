@@ -106,14 +106,12 @@ class MechanicRepairRepository {
   Future<Map<String, dynamic>> saveQuote(
     String orderId, {
     required List<OrderQuoteLinePayload> lines,
-    String? mechanicNote,
   }) async {
     try {
       final response = await _dioClient.dio.put(
         ApiEndpoints.mechanicOrderQuote(orderId),
         data: {
           'lines': lines.map((e) => e.toJson()).toList(),
-          if (mechanicNote != null && mechanicNote.isNotEmpty) 'mechanicNote': mechanicNote,
         },
       );
       return Map<String, dynamic>.from(response.data);
@@ -125,14 +123,12 @@ class MechanicRepairRepository {
   Future<Map<String, dynamic>> completeRepair(
     String orderId, {
     required List<OrderQuoteLinePayload> lines,
-    String? mechanicNote,
   }) async {
     try {
       final response = await _dioClient.dio.post(
         ApiEndpoints.mechanicCompleteRepair(orderId),
         data: {
           if (lines.isNotEmpty) 'lines': lines.map((e) => e.toJson()).toList(),
-          if (mechanicNote != null && mechanicNote.isNotEmpty) 'mechanicNote': mechanicNote,
         },
       );
       return Map<String, dynamic>.from(response.data);

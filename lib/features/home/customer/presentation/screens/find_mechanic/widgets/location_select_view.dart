@@ -11,18 +11,12 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 class LocationSelectView extends StatefulWidget {
   const LocationSelectView({
     key,
-    required this.mechanicNote,
     required this.onBack,
-    required this.onAddNote,
     required this.onConfirmLocation,
-    this.onNoteChanged,
   }) : super(key: key);
 
-  final String mechanicNote;
   final VoidCallback onBack;
-  final VoidCallback onAddNote;
   final VoidCallback onConfirmLocation;
-  final ValueChanged<String>? onNoteChanged;
 
   @override
   State<LocationSelectView> createState() => _LocationSelectViewState();
@@ -52,9 +46,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   final Set<Marker> _markers = {};
   List<Map<String, dynamic>> _incidentLocations = [];
 
-  late String _currentNote;
-  late final TextEditingController _noteTextController;
-  bool _showNoteInput = false;
+
 
   void _addToHistory(String query) {
     if (query.trim().isEmpty) return;
@@ -70,8 +62,6 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   @override
   void initState() {
     super.initState();
-    _currentNote = widget.mechanicNote;
-    _noteTextController = TextEditingController(text: widget.mechanicNote);
     _updateLocations(_initialPosition);
     _markers.add(
       Marker(
@@ -85,15 +75,10 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   @override
   void didUpdateWidget(LocationSelectView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.mechanicNote != oldWidget.mechanicNote) {
-      _currentNote = widget.mechanicNote;
-      _noteTextController.text = widget.mechanicNote;
-    }
   }
 
   @override
   void dispose() {
-    _noteTextController.dispose();
     super.dispose();
   }
 
@@ -611,62 +596,32 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         ),
         
         // 3. Bảng thông tin địa điểm kéo thả (Draggable Bottom Sheet Panel)
-        if (!_showNoteInput)
-          Positioned.fill(
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.38,
-              minChildSize: 0.22,
-              maxChildSize: 0.75,
-              snap: true,
-              builder: (context, scrollController) {
-                return LocationDetailsPanel(
-                  scrollController: scrollController,
-                  items: _incidentLocations,
-                  deviceLocation: _deviceLocation,
-                  initialPosition: _initialPosition,
-                  selectedItemIndex: _selectedItemIndex,
-                  mechanicNote: _currentNote,
-                  onItemTap: (index, itemLatLng, itemTitle) {
-                    setState(() {
-                      _selectedItemIndex = index;
-                      _selectedAddress = itemTitle; // Gán trực tiếp tiêu đề địa chỉ đã chọn để tránh trỏ sai
-                    });
-                    _highlightLocation(itemLatLng);
-                  },
-                  onAddNote: () {
-                    setState(() {
-                      _showNoteInput = true;
-                    });
-                  },
-                  onConfirmLocation: widget.onConfirmLocation,
-                  calculateDistance: _calculateDistance,
-                );
-              },
-            ),
+        Positioned.fill(
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.38,
+            minChildSize: 0.22,
+            maxChildSize: 0.75,
+            snap: true,
+            builder: (context, scrollController) {
+              return LocationDetailsPanel(
+                scrollController: scrollController,
+                items: _incidentLocations,
+                deviceLocation: _deviceLocation,
+                initialPosition: _initialPosition,
+                selectedItemIndex: _selectedItemIndex,
+                onItemTap: (index, itemLatLng, itemTitle) {
+                  setState(() {
+                    _selectedItemIndex = index;
+                    _selectedAddress = itemTitle; // Gán trực tiếp tiêu đề địa chỉ đã chọn để tránh trỏ sai
+                  });
+                  _highlightLocation(itemLatLng);
+                },
+                onConfirmLocation: widget.onConfirmLocation,
+                calculateDistance: _calculateDistance,
+              );
+            },
           ),
-
-        // Khung ghi chú và lớp phủ làm mờ bản đồ
-        if (_showNoteInput) ...[
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showNoteInput = false;
-                  _noteTextController.text = _currentNote; // Khôi phục lại ghi chú cũ
-                });
-              },
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.3),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildNoteInputPanel(),
-          ),
-        ],
+        ),
 
         // 5. Màn hình tìm kiếm địa chỉ phủ lên toàn bộ
         if (_showSearchOverlay)
@@ -697,122 +652,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
     );
   }
 
-  Widget _buildNoteInputPanel() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 8),
-          const Text(
-            'Ghi chú cho Thợ',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Note TextField
-          TextField(
-            controller: _noteTextController,
-            maxLines: 4,
-            maxLength: 200,
-            decoration: InputDecoration(
-              hintText: 'Thêm chi tiết vị trí bị nạn (vd: gần tạp hóa A)',
-              hintStyle: TextStyle(color: Colors.grey[400]),
-              counterText: '', // Hide default counter
-              contentPadding: const EdgeInsets.all(16),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 2),
-              ),
-            ),
-            onChanged: (text) {
-              setState(() {});
-            },
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${_noteTextController.text.length}/200 kí tự',
-              style: TextStyle(color: Colors.red[300], fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showNoteInput = false;
-                      _noteTextController.text = _currentNote; // Khôi phục ghi chú cũ
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text(
-                    'Hủy',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentNote = _noteTextController.text;
-                      _showNoteInput = false;
-                    });
-                    widget.onNoteChanged?.call(_currentNote);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 2,
-                  ),
-                  child: const Text(
-                    'Lưu',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildFlowHeader(BuildContext context, {required VoidCallback onBack}) {
     final top = MediaQuery.paddingOf(context).top;
@@ -1128,9 +968,7 @@ class LocationDetailsPanel extends StatelessWidget {
     required this.deviceLocation,
     required this.initialPosition,
     required this.selectedItemIndex,
-    required this.mechanicNote,
     required this.onItemTap,
-    required this.onAddNote,
     required this.onConfirmLocation,
     required this.calculateDistance,
   });
@@ -1140,9 +978,7 @@ class LocationDetailsPanel extends StatelessWidget {
   final LatLng? deviceLocation;
   final LatLng initialPosition;
   final int selectedItemIndex;
-  final String mechanicNote;
   final void Function(int index, LatLng latLng, String title) onItemTap;
-  final VoidCallback onAddNote;
   final VoidCallback onConfirmLocation;
   final double Function(double lat1, double lon1, double lat2, double lon2) calculateDistance;
 
@@ -1236,34 +1072,11 @@ class LocationDetailsPanel extends StatelessWidget {
                 }),
               ),
 
-            const SizedBox(height: 16),
-            // Các nút hành động
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Row(
                 children: [
                   Expanded(
-                    flex: 4,
-                    child: OutlinedButton(
-                      onPressed: onAddNote,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red[800],
-                        side: BorderSide(color: Colors.red[200]!, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        backgroundColor: Colors.red[50],
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: Text(
-                        mechanicNote.isEmpty ? 'Chi tiết' : 'Đã có ghi chú',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 6,
                     child: ElevatedButton(
                       onPressed: onConfirmLocation,
                       style: ElevatedButton.styleFrom(
@@ -1282,15 +1095,6 @@ class LocationDetailsPanel extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-            
-            // Dòng chữ hướng dẫn phụ
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Vào "chi tiết" để gợi ý thêm cho Thợ Lưu Động',
-                style: TextStyle(color: Colors.red[300], fontSize: 12, fontWeight: FontWeight.w500),
               ),
             ),
           ],

@@ -2,14 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/location_select_view.dart';
-import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/add_note_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/searching_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/mechanic_found_view.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/widgets/tracking_view.dart';
 
 enum FindMechanicStep {
   locationSelect,
-  addNote,
   searching,
   mechanicFound,
   tracking,
@@ -24,7 +22,6 @@ class FindMechanicFlowPage extends StatefulWidget {
 
 class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
   FindMechanicStep _step = FindMechanicStep.locationSelect;
-  String _mechanicNote = '';
   Timer? _searchTimer;
   double _searchProgress = 0.0;
   Timer? _progressTimer;
@@ -143,29 +140,8 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
   Widget _buildStepContent() {
     return switch (_step) {
       FindMechanicStep.locationSelect => LocationSelectView(
-          mechanicNote: _mechanicNote,
           onBack: () => Navigator.of(context).pop(),
-          onAddNote: () {},
           onConfirmLocation: _startSearchingFlow,
-          onNoteChanged: (note) {
-            setState(() {
-              _mechanicNote = note;
-            });
-          },
-        ),
-      FindMechanicStep.addNote => AddNoteView(
-          initialNote: _mechanicNote,
-          onSave: (note) {
-            setState(() {
-              _mechanicNote = note;
-              _step = FindMechanicStep.locationSelect;
-            });
-          },
-          onCancel: () {
-            setState(() {
-              _step = FindMechanicStep.locationSelect;
-            });
-          },
         ),
       FindMechanicStep.searching => SearchingView(
           progress: _searchProgress,

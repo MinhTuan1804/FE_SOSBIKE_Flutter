@@ -255,7 +255,6 @@ class MechanicRepairProvider extends ChangeNotifier {
   Future<bool> saveQuote({
     required List<MechanicRepairLineItem> selectedServices,
     List<MechanicSessionSparePart> spareParts = const [],
-    String? mechanicNote,
   }) async {
     await loadActiveOrder();
     final orderId = _orderIdOrError;
@@ -269,7 +268,6 @@ class MechanicRepairProvider extends ChangeNotifier {
       await _repository.saveQuote(
         orderId,
         lines: _buildLines(selectedServices, spareParts),
-        mechanicNote: mechanicNote,
       );
       return true;
     } catch (e) {
@@ -284,7 +282,6 @@ class MechanicRepairProvider extends ChangeNotifier {
   Future<bool> completeRepair({
     required List<MechanicRepairLineItem> selectedServices,
     required List<MechanicSessionSparePart> spareParts,
-    String? mechanicNote,
   }) async {
     await loadActiveOrder();
     final orderId = _orderIdOrError;
@@ -298,7 +295,6 @@ class MechanicRepairProvider extends ChangeNotifier {
       await _repository.completeRepair(
         orderId,
         lines: _buildLines(selectedServices, spareParts),
-        mechanicNote: mechanicNote,
       );
       _activeOrderId = null;
       _activeOrder = null;
