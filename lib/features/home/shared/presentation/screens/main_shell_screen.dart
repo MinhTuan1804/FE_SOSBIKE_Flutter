@@ -47,9 +47,13 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   MainNavTab _tab = MainNavTab.orders;
+  bool _isOnline = false;
+  bool _showIncomingRequest = false;
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
+  List<MechanicSessionSparePart> _sessionSpareParts = const [];
   bool _editingRepairItems = false;
+  bool _quoteSent = false;
   IncomingRescueRequest? _activeIncomingRequest;
 
   void _openIncomingRequest() {

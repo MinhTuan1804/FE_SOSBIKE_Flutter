@@ -104,7 +104,7 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
       latitude: lat,
       longitude: lng,
       requestAddress: address,
-      locationNote: _mechanicNote,
+      locationNote: null,
     );
 
     if (!success && mounted) {
@@ -268,27 +268,7 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     return switch (_step) {
       FindMechanicStep.locationSelect => LocationSelectView(
           onBack: () => Navigator.of(context).pop(),
-          onAddNote: () {},
           onConfirmLocation: _confirmLocation,
-          onNoteChanged: (note) {
-            setState(() {
-              _mechanicNote = note;
-            });
-          },
-        ),
-      FindMechanicStep.addNote => AddNoteView(
-          initialNote: _mechanicNote,
-          onSave: (note) {
-            setState(() {
-              _mechanicNote = note;
-              _step = FindMechanicStep.locationSelect;
-            });
-          },
-          onCancel: () {
-            setState(() {
-              _step = FindMechanicStep.locationSelect;
-            });
-          },
         ),
       FindMechanicStep.searching => SearchingView(
           progress: _searchProgress,
