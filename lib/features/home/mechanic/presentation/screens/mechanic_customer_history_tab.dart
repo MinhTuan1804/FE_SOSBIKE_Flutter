@@ -5,10 +5,13 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_customer_history_entry.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 
 /// Tab **Lịch sử** — lịch sử khách hàng của thợ (Figma + API).
 class MechanicCustomerHistoryTab extends StatefulWidget {
-  const MechanicCustomerHistoryTab({super.key});
+  const MechanicCustomerHistoryTab({super.key, this.onContinueOrder});
+
+  final Future<void> Function()? onContinueOrder;
 
   @override
   State<MechanicCustomerHistoryTab> createState() => _MechanicCustomerHistoryTabState();
@@ -23,16 +26,19 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<MechanicHistoryProvider>().load();
+      context.read<MechanicRepairProvider>().loadActiveOrder();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<MechanicHistoryProvider>();
+    final repairProvider = context.watch<MechanicRepairProvider>();
     final items = provider.items;
+    final activeOrder = repairProvider.activeOrder;
 
     if (provider.isLoading && items.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (provider.errorMessage != null && items.isEmpty) {
@@ -44,7 +50,7 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
             children: [
               Text(
                 'Không tải được lịch sử.',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w600),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               ElevatedButton(
@@ -88,12 +94,24 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
             ],
           ),
         ),
+        if (activeOrder != null) ...[
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _InProgressOrderCard(
+              customerName: activeOrder.customerName ?? 'Khách hàng',
+              address: activeOrder.requestAddress,
+              status: activeOrder.status,
+              onContinue: widget.onContinueOrder,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Expanded(
           child: RefreshIndicator(
             color: AppColors.primary,
             onRefresh: provider.refresh,
-            child: items.isEmpty
+            child: items.isEmpty && activeOrder == null
               ? Center(
                   child: Text(
                     'Chưa có lịch sử khách hàng.',
@@ -105,7 +123,7 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
                 )
               : ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                  padding: EdgeInsets.fromLTRB(14, activeOrder != null ? 12 : 0, 14, 16),
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
@@ -118,6 +136,124 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InProgressOrderCard extends StatelessWidget {
+  const _InProgressOrderCard({
+    required this.customerName,
+    required this.address,
+    required this.status,
+    this.onContinue,
+  });
+
+  final String customerName;
+  final String address;
+  final String status;
+  final Future<void> Function()? onContinue;
+
+  String get _statusLabel {
+    switch (status.toUpperCase()) {
+      case 'ACCEPTED':
+        return 'Đang di chuyển';
+      case 'ARRIVED':
+      case 'QUOTING':
+        return 'Đang kiểm tra xe';
+      case 'REPAIRING':
+        return 'Đang sửa xe';
+      default:
+        return 'Chưa hoàn thành';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'ĐANG DỞ',
+                  style: TextStyle(
+                    color: Color(0xFFB45309),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _statusLabel,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            customerName,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            address,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF6B7280),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: onContinue == null ? null : () => onContinue!(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.play_arrow_rounded, size: 20),
+              label: const Text(
+                'Tiếp tục đơn',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

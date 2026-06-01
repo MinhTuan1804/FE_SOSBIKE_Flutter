@@ -1,11 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:fe_moblie_flutter/core/network/error_message.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/local/mechanic_order_flow_store.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_line_item.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_session_spare_part.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_repair_repository.dart';
-
-/// Dev fallback khi chưa có đơn active từ API.
-const kDevActiveOrderId = 'd1111111-1111-1111-1111-111111111199';
 
 class MechanicRepairProvider extends ChangeNotifier {
   MechanicRepairProvider(this._repository);
@@ -15,6 +14,7 @@ class MechanicRepairProvider extends ChangeNotifier {
   List<MechanicRepairLineItem> _services = MechanicRepairLineItem.sampleServices;
   List<MechanicSparePartDto> _catalogSpareParts = const [];
   String? _activeOrderId;
+  ActiveMechanicOrderDto? _activeOrder;
   bool _isLoadingServices = false;
   bool _isLoadingSpareParts = false;
   bool _isSubmitting = false;
@@ -23,6 +23,8 @@ class MechanicRepairProvider extends ChangeNotifier {
   List<MechanicRepairLineItem> get services => _services;
   List<MechanicSparePartDto> get catalogSpareParts => _catalogSpareParts;
   String? get activeOrderId => _activeOrderId;
+  ActiveMechanicOrderDto? get activeOrder => _activeOrder;
+  bool get hasActiveOrder => _activeOrderId != null;
   bool get isLoadingServices => _isLoadingServices;
   bool get isLoadingSpareParts => _isLoadingSpareParts;
   bool get isSubmitting => _isSubmitting;
@@ -51,7 +53,7 @@ class MechanicRepairProvider extends ChangeNotifier {
             .toList();
       }
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = errorMessageFrom(e);
       if (kDebugMode) {
         _services = MechanicRepairLineItem.sampleServices;
       }
@@ -72,7 +74,7 @@ class MechanicRepairProvider extends ChangeNotifier {
     try {
       _catalogSpareParts = await _repository.getSpareParts();
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = errorMessageFrom(e);
     } finally {
       _isLoadingSpareParts = false;
       notifyListeners();
@@ -83,16 +85,91 @@ class MechanicRepairProvider extends ChangeNotifier {
     _errorMessage = null;
     try {
       final order = await _repository.getActiveOrder();
+      _activeOrder = order;
       _activeOrderId = order?.orderId;
-      if (_activeOrderId == null && kDebugMode) {
-        _activeOrderId = kDevActiveOrderId;
-      }
     } catch (e) {
-      _errorMessage = e.toString();
-      if (kDebugMode) {
-        _activeOrderId = kDevActiveOrderId;
-      }
+      _errorMessage = errorMessageFrom(e);
     }
+    notifyListeners();
+  }
+
+  /// Dev: nhận đơn popup → gán đơn test trên BE cho đúng thợ đang đăng nhập.
+  Future<bool> acceptDevIncomingOrder() async {
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final order = await _repository.simulateDevAcceptOrder();
+      _activeOrderId = order.orderId;
+      _activeOrder = order;
+      return true;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
+  /// Khôi phục dịch vụ + phụ tùng đã lưu trên đơn.
+  Future<({List<MechanicRepairLineItem> services, List<MechanicSessionSparePart> parts})> restoreQuoteState() async {
+    final orderId = _activeOrderId;
+    if (orderId == null) {
+      return (services: const <MechanicRepairLineItem>[], parts: const <MechanicSessionSparePart>[]);
+    }
+
+    try {
+      final quote = await _repository.getQuote(orderId);
+      _activeOrder = ActiveMechanicOrderDto(
+        orderId: orderId,
+        status: quote.status,
+        requestAddress: _activeOrder?.requestAddress ?? '',
+        customerName: _activeOrder?.customerName,
+      );
+
+      final serviceLines = quote.lines.where((l) => l.itemType.toUpperCase() == 'SERVICE').toList();
+      final partLines = quote.lines.where((l) => l.itemType.toUpperCase() == 'PART').toList();
+
+      final selectedServices = serviceLines
+          .map(
+            (l) => MechanicRepairLineItem(
+              id: (l.serviceId ?? l.itemName.hashCode).toString(),
+              serviceId: l.serviceId,
+              label: l.itemName,
+              laborFee: l.unitPrice,
+              selected: true,
+            ),
+          )
+          .toList();
+
+      final spareParts = partLines
+          .map(
+            (l) => l.partId != null
+                ? MechanicSessionSparePart.fromCatalog(
+                    partId: l.partId!,
+                    name: l.itemName,
+                    price: l.unitPrice,
+                  )
+                : MechanicSessionSparePart(
+                    id: l.itemName.hashCode.toString(),
+                    name: l.itemName,
+                    price: l.unitPrice,
+                  ),
+          )
+          .toList();
+
+      return (services: selectedServices, parts: spareParts);
+    } catch (_) {
+      return (services: const <MechanicRepairLineItem>[], parts: const <MechanicSessionSparePart>[]);
+    }
+  }
+
+  Future<void> clearActiveOrderState() async {
+    _activeOrderId = null;
+    _activeOrder = null;
+    await MechanicOrderFlowStore.clear();
     notifyListeners();
   }
 
@@ -120,17 +197,69 @@ class MechanicRepairProvider extends ChangeNotifier {
     ];
   }
 
+  String? get _orderIdOrError {
+    final orderId = _activeOrderId;
+    if (orderId == null) {
+      _errorMessage = 'Chưa có đơn active. Hãy nhận đơn từ popup hoặc Lịch sử → Tiếp tục đơn.';
+      notifyListeners();
+    }
+    return orderId;
+  }
+
+  Future<bool> confirmArrival() async {
+    await loadActiveOrder();
+    final orderId = _orderIdOrError;
+    if (orderId == null) return false;
+
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final order = await _repository.confirmArrival(orderId);
+      _activeOrderId = order.orderId;
+      _activeOrder = order;
+      return true;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> startRepair() async {
+    await loadActiveOrder();
+    final orderId = _orderIdOrError;
+    if (orderId == null) return false;
+
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final order = await _repository.startRepair(orderId);
+      _activeOrderId = order.orderId;
+      _activeOrder = order;
+      return true;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> saveQuote({
     required List<MechanicRepairLineItem> selectedServices,
     List<MechanicSessionSparePart> spareParts = const [],
     String? mechanicNote,
   }) async {
-    final orderId = _activeOrderId ?? (kDebugMode ? kDevActiveOrderId : null);
-    if (orderId == null) {
-      _errorMessage = 'Không có đơn đang xử lý.';
-      notifyListeners();
-      return false;
-    }
+    await loadActiveOrder();
+    final orderId = _orderIdOrError;
+    if (orderId == null) return false;
 
     _isSubmitting = true;
     _errorMessage = null;
@@ -144,7 +273,7 @@ class MechanicRepairProvider extends ChangeNotifier {
       );
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = errorMessageFrom(e);
       return false;
     } finally {
       _isSubmitting = false;
@@ -157,12 +286,9 @@ class MechanicRepairProvider extends ChangeNotifier {
     required List<MechanicSessionSparePart> spareParts,
     String? mechanicNote,
   }) async {
-    final orderId = _activeOrderId ?? (kDebugMode ? kDevActiveOrderId : null);
-    if (orderId == null) {
-      _errorMessage = 'Không có đơn đang xử lý.';
-      notifyListeners();
-      return false;
-    }
+    await loadActiveOrder();
+    final orderId = _orderIdOrError;
+    if (orderId == null) return false;
 
     _isSubmitting = true;
     _errorMessage = null;
@@ -175,9 +301,11 @@ class MechanicRepairProvider extends ChangeNotifier {
         mechanicNote: mechanicNote,
       );
       _activeOrderId = null;
+      _activeOrder = null;
+      await MechanicOrderFlowStore.clear();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = errorMessageFrom(e);
       return false;
     } finally {
       _isSubmitting = false;

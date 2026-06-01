@@ -6,16 +6,22 @@ class MechanicFlowTitleBar extends StatelessWidget {
     super.key,
     required this.title,
     this.leading,
+    this.onGoHome,
+    this.includeTopSafeArea = false,
   });
 
   final String title;
   final Widget? leading;
+  final VoidCallback? onGoHome;
+  final bool includeTopSafeArea;
 
   @override
   Widget build(BuildContext context) {
+    final top = includeTopSafeArea ? MediaQuery.paddingOf(context).top : 0.0;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.only(top: top + 10, left: 12, right: 12, bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
@@ -41,7 +47,16 @@ class MechanicFlowTitleBar extends StatelessWidget {
               ),
             ),
           ),
-          if (leading != null) const SizedBox(width: 40),
+          if (onGoHome != null)
+            IconButton(
+              onPressed: onGoHome,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              icon: const Icon(Icons.home_rounded, color: Colors.white, size: 22),
+              tooltip: 'Về trang chủ',
+            )
+          else if (leading != null)
+            const SizedBox(width: 40),
         ],
       ),
     );

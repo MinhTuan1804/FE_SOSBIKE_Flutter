@@ -64,6 +64,60 @@ class MechanicSparePartDto {
   }
 }
 
+class OrderQuoteDto {
+  const OrderQuoteDto({
+    required this.orderId,
+    required this.status,
+    required this.lines,
+  });
+
+  final String orderId;
+  final String status;
+  final List<OrderQuoteLineDto> lines;
+
+  factory OrderQuoteDto.fromJson(Map<String, dynamic> json) {
+    final rawLines = json['lines'];
+    return OrderQuoteDto(
+      orderId: json['orderId']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      lines: rawLines is List
+          ? rawLines
+              .map((e) => OrderQuoteLineDto.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList()
+          : const [],
+    );
+  }
+}
+
+class OrderQuoteLineDto {
+  const OrderQuoteLineDto({
+    required this.itemType,
+    required this.itemName,
+    required this.unitPrice,
+    this.serviceId,
+    this.partId,
+    this.quantity = 1,
+  });
+
+  final String itemType;
+  final int? serviceId;
+  final String? partId;
+  final String itemName;
+  final int quantity;
+  final int unitPrice;
+
+  factory OrderQuoteLineDto.fromJson(Map<String, dynamic> json) {
+    return OrderQuoteLineDto(
+      itemType: json['itemType']?.toString() ?? '',
+      serviceId: json['serviceId'] is num ? (json['serviceId'] as num).toInt() : null,
+      partId: json['partId']?.toString(),
+      itemName: json['itemName']?.toString() ?? '',
+      quantity: json['quantity'] is num ? (json['quantity'] as num).toInt() : 1,
+      unitPrice: json['unitPrice'] is num ? (json['unitPrice'] as num).round() : 0,
+    );
+  }
+}
+
 class OrderQuoteLinePayload {
   const OrderQuoteLinePayload({
     required this.itemType,

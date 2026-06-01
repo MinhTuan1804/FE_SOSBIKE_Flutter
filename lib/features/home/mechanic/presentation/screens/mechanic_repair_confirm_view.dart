@@ -4,6 +4,7 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_repair_line_item.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_session_spare_part.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_home_button.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_title_bar.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_stepper.dart';
 
@@ -15,6 +16,7 @@ class MechanicRepairConfirmView extends StatefulWidget {
     required this.spareParts,
     required this.catalogSpareParts,
     required this.onBack,
+    required this.onGoHome,
     required this.onAddMoreServices,
     required this.onAddSparePart,
     required this.onRemoveSparePart,
@@ -27,6 +29,7 @@ class MechanicRepairConfirmView extends StatefulWidget {
   final List<MechanicSessionSparePart> spareParts;
   final List<MechanicSparePartDto> catalogSpareParts;
   final VoidCallback onBack;
+  final VoidCallback onGoHome;
   final VoidCallback onAddMoreServices;
   final ValueChanged<MechanicSessionSparePart> onAddSparePart;
   final ValueChanged<String> onRemoveSparePart;
@@ -105,13 +108,15 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final sheetMaxH = constraints.maxHeight * 0.52;
+        final sheetMaxH = constraints.maxHeight * kMechanicFlowSheetRatio;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             MechanicFlowTitleBar(
-              title: 'Sửa xe',
+              title: 'Xác nhận',
+              includeTopSafeArea: true,
+              onGoHome: widget.onGoHome,
               leading: IconButton(
                 onPressed: widget.onBack,
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
@@ -130,8 +135,8 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                     ),
                     const SizedBox(height: 14),
                     _SectionHeader(
-                      title: 'Phụ tùng',
-                      subtitle: 'Chọn từ danh mục hoặc cộng thêm bên dưới',
+                      title: 'Báo giá phụ tùng',
+                      subtitle: 'Nhấn + để nhập tên và giá phụ tùng (sau khi khách xác minh)',
                       trailing: _formatVnd(_partsTotal),
                     ),
                     const SizedBox(height: 8),
@@ -336,9 +341,10 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: sheetMaxH),
               child: MechanicOrderFlowSheetBody(
-                title: 'Sửa xe',
+                title: 'Kiểm tra xe.',
                 activeStep: 2,
-                subtitle: 'Nhập phụ tùng (nếu có) rồi nhấn Hoàn thành.',
+                subtitle:
+                    'Sau khi đã sửa xe thành công và chọn các khoản mục thanh toán, hãy nhấn nút Hoàn thành.',
                 action: Material(
                   color: widget.isSubmitting ? const Color(0xFF9CA3AF) : const Color(0xFF16A34A),
                   borderRadius: BorderRadius.circular(16),

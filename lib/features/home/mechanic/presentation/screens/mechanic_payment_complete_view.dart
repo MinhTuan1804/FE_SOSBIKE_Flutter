@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_home_button.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_title_bar.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_stepper.dart';
 
@@ -8,10 +9,12 @@ class MechanicPaymentCompleteView extends StatelessWidget {
   const MechanicPaymentCompleteView({
     super.key,
     required this.onFinish,
+    required this.onGoHome,
     this.paymentMethod = 'Tiền mặt',
   });
 
   final VoidCallback onFinish;
+  final VoidCallback onGoHome;
   final String paymentMethod;
 
   static const _illustrationAsset = 'assets/images/main/mechanic_payment_success.png';
@@ -20,12 +23,12 @@ class MechanicPaymentCompleteView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final sheetMaxH = constraints.maxHeight * 0.52;
+        final sheetMaxH = constraints.maxHeight * kMechanicFlowSheetRatio;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const MechanicFlowTitleBar(title: 'Nhận Đơn'),
+            MechanicFlowTitleBar(title: 'Hoàn thành', includeTopSafeArea: true, onGoHome: onGoHome),
             Expanded(
               child: ColoredBox(
                 color: Colors.white,
