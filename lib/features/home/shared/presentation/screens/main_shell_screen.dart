@@ -409,7 +409,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           Positioned.fill(
             child: _CustomerHomeBackground(backgroundUrl: appConfig.ui.homeBackgroundUrl),
           ),
-        if (maintenanceMode)
+        if (appConfig.flags.maintenanceMode)
           Positioned(
             left: 12,
             right: 12,
@@ -455,7 +455,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
         ],
-        if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none && sosEnabled)
+        if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none && appConfig.flags.sosEnabled)
           Positioned(
             right: 12,
             bottom: navH + 8,

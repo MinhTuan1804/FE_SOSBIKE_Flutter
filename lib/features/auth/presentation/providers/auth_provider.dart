@@ -40,29 +40,35 @@ class AuthProvider extends ChangeNotifier {
   String? _userType;
   String? get userType => _userType ?? _user?.userType;
   
-  String? get phoneNumber => _user?.phoneNumber ?? _profile?.phoneNumber;
-  String? get email => _user?.email ?? _profile?.email;
-  String? get gender => _user?.gender ?? _profile?.gender;
-  String? get dateOfBirth => _user?.dateOfBirth ?? _profile?.dateOfBirth?.toIso8601String();
-  String? get currentAddress => _user?.currentAddress ?? _profile?.currentAddress;
-  bool get isPhoneVerified => (_user?.isPhoneVerified == true) || (_profile?.isPhoneVerified == true);
-  bool get isActive => (_user?.isActive == true);
-
-  // ── Convenience getters from UserProfileDto ─────────────────────────────
   String? get phoneNumber => _profile?.phoneNumber ?? _user?.phoneNumber;
-  String? get email => _profile?.email;
-  String? get currentAddress => _profile?.currentAddress;
-  String? get gender => _profile?.gender;
+  String? get email => _profile?.email ?? _user?.email;
+  String? get currentAddress => _profile?.currentAddress ?? _user?.currentAddress;
+  String? get gender => _profile?.gender ?? _user?.gender;
+  
   /// Ngày sinh dạng 'dd/MM/yyyy', hoặc null nếu chưa có.
   String? get dateOfBirth {
     final dob = _profile?.dateOfBirth;
-    if (dob == null) return null;
-    return '${dob.day.toString().padLeft(2, '0')}/'
-        '${dob.month.toString().padLeft(2, '0')}/'
-        '${dob.year}';
+    if (dob != null) {
+      return '${dob.day.toString().padLeft(2, '0')}/'
+          '${dob.month.toString().padLeft(2, '0')}/'
+          '${dob.year}';
+    }
+    final dobUserStr = _user?.dateOfBirth;
+    if (dobUserStr != null && dobUserStr.isNotEmpty) {
+      try {
+        final parsed = DateTime.parse(dobUserStr);
+        return '${parsed.day.toString().padLeft(2, '0')}/'
+            '${parsed.month.toString().padLeft(2, '0')}/'
+            '${parsed.year}';
+      } catch (_) {}
+      return dobUserStr;
+    }
+    return null;
   }
+  
   /// Xác thực SĐT — hiện chưa theo dõi từ BE, mặc định true khi đã đăng nhập.
   bool get isPhoneVerified => _isAuthenticated;
+  bool get isActive => (_user?.isActive == true);
 
   /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
   void forceAuthReady() {

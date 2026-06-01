@@ -10,11 +10,6 @@ class MechanicRegisterDraft {
     required this.identityCard,
     required this.dateOfBirth,
     required this.currentAddress,
-    this.licensePlate = 'N/A',
-    this.vehicleModel = 'N/A',
-    this.vehicleGeneration = 'N/A',
-    this.driverLicenseNumber = 'N/A',
-    required this.bankAccountNumber,
     this.email,
     // Nghề nghiệp
     this.specialties = const [],
