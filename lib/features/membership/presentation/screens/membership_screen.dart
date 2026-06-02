@@ -45,27 +45,27 @@ class _MembershipScreenState extends State<MembershipScreen> {
         final isCustomer = (auth.user?.userType ?? 'CUSTOMER').toUpperCase() == 'CUSTOMER';
 
         if (provider.isLoading && plans.isEmpty) {
-          return const ColoredBox(
+          return const Material(
             color: _membershipBackground,
             child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
         }
 
         if (provider.errorMessage != null && plans.isEmpty) {
-          return ColoredBox(
+          return Material(
             color: _membershipBackground,
             child: _ErrorState(message: provider.errorMessage!, onRetry: provider.load),
           );
         }
 
         if (plans.isEmpty) {
-          return ColoredBox(
+          return Material(
             color: _membershipBackground,
             child: _ErrorState(message: 'Chưa có gói thành viên nào.', onRetry: provider.load),
           );
         }
 
-        return ColoredBox(
+        return Material(
           color: _membershipBackground,
           child: Column(
             children: [
@@ -420,7 +420,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                               ),
                               const SizedBox(height: 12),
                               const Text(
-                                'Quét mã hoặc chuyển khoản theo thông tin bên trên.',
+                                'Quét mã QR hoặc chuyển khoản theo nội dung bên trên để kích hoạt gói.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.black54, fontSize: 12.5, height: 1.35),
                               ),
@@ -783,32 +783,35 @@ class _AutoRenewSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.autorenew_rounded, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Tự gia hạn',
-              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.autorenew_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Tự gia hạn',
+                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+              ),
             ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.white,
-            activeTrackColor: color.withValues(alpha: 0.55),
-            inactiveThumbColor: Colors.white70,
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.18),
-          ),
-        ],
+            Switch.adaptive(
+              value: value,
+              onChanged: onChanged,
+              activeColor: Colors.white,
+              activeTrackColor: color.withValues(alpha: 0.55),
+              inactiveThumbColor: Colors.white70,
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.18),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,359 +1,267 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/membership/data/models/membership_models.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
 
-class CustomerWalletTab extends StatelessWidget {
+/// Tab **Thanh toán** khách — gói thành viên (QR), không ví trừ tiền / lịch sử giao dịch.
+class CustomerWalletTab extends StatefulWidget {
   const CustomerWalletTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
+  State<CustomerWalletTab> createState() => _CustomerWalletTabState();
+}
 
-    return SafeArea(
-      top: false,
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(top: top + 18, bottom: 18),
+class _CustomerWalletTabState extends State<CustomerWalletTab> {
+  static final _dateFormat = DateFormat('dd/MM/yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<MembershipProvider>().load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final membership = context.watch<MembershipProvider>();
+    final subscription = membership.currentSubscription;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(18, 4, 18, 0),
+          child: Text(
+            'Thanh toán',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              height: 1.15,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: Container(
             decoration: const BoxDecoration(
-              color: AppColors.primary,
+              color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: const Center(
-              child: Text(
-                'Thanh toán',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: membership.load,
+              child: membership.isLoading && subscription == null && membership.plans.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 120),
+                        const Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+                      children: [
+                        _MembershipStatusCard(
+                          subscription: subscription,
+                          dateFormat: _dateFormat,
+                        ),
+                        const SizedBox(height: 12),
+                        _MembershipPlansBanner(
+                          onTap: () => _openMembership(context),
+                        ),
+                        const SizedBox(height: 14),
+                        const _QrPaymentNotice(),
+                        if (membership.errorMessage != null &&
+                            membership.errorMessage!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            membership.errorMessage!,
+                            style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12),
+                          ),
+                        ],
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openMembership(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => const MembershipScreen(),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+}
+
+class _MembershipStatusCard extends StatelessWidget {
+  const _MembershipStatusCard({
+    required this.subscription,
+    required this.dateFormat,
+  });
+
+  final CustomerSubscription? subscription;
+  final DateFormat dateFormat;
+
+  bool get _isActive {
+    if (subscription == null) return false;
+    return subscription!.endDate.isAfter(DateTime.now()) &&
+        subscription!.status.toUpperCase() != 'EXPIRED';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _isActive;
+    final planName = subscription?.planName.trim().isNotEmpty == true
+        ? subscription!.planName
+        : 'Chưa có gói';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE83838), Color(0xFFB81818), Color(0xFF8E1212)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Gói thành viên',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  active ? 'Đang dùng' : 'Chưa kích hoạt',
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            planName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _WalletHeroCard(
-                    onAddCard: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Chức năng thêm thẻ sẽ làm sau.')),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _PlanButton(
-                    label: 'Gói Ưu Tiên',
-                    icon: Icons.workspace_premium_rounded,
-                    colors: const [Color(0xFF7A0E0E), Color(0xFFF01212), Color(0xFF7A0E0E)],
-                    onTap: () => _openMembershipBottomSheet(context),
-                  ),
-                  const SizedBox(height: 12),
-                  _PlanButton(
-                    label: 'Gói tài xế',
-                    icon: Icons.directions_bike_rounded,
-                    colors: const [Color(0xFF0A7A1F), Color(0xFF12E35B), Color(0xFF064012)],
-                    onTap: () => _openMembershipBottomSheet(context),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Giao dịch gần đây',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 10),
-                  const _EmptyRecentTransactions(),
-                ],
+          if (active && subscription != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Hết hạn: ${dateFormat.format(subscription!.endDate.toLocal())}',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
+            if (subscription!.autoRenew)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Tự gia hạn: Bật',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Text(
+              'Khách hàng thanh toán gói qua mã QR — không trừ số dư ví.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 12,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
-
-  static void _openMembershipBottomSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.92,
-          minChildSize: 0.55,
-          maxChildSize: 0.96,
-          builder: (context, scrollController) {
-            return ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-              child: Stack(
-                children: [
-                  const MembershipScreen(),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Material(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(999),
-                      child: InkWell(
-                        onTap: () => Navigator.of(context).pop(),
-                        borderRadius: BorderRadius.circular(999),
-                        child: const Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Icon(Icons.close, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 }
 
-class _WalletHeroCard extends StatelessWidget {
-  const _WalletHeroCard({required this.onAddCard});
-
-  final VoidCallback onAddCard;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          height: 170,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            color: const Color(0xFFF5EDE3),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 18),
-              const Expanded(
-                child: _HeroIllustration(),
-              ),
-              const SizedBox(width: 18),
-            ],
-          ),
-        ),
-        Positioned(
-          right: 18,
-          bottom: 16,
-          child: _AddCardButton(onTap: onAddCard),
-        ),
-      ],
-    );
-  }
-}
-
-class _HeroIllustration extends StatelessWidget {
-  const _HeroIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 120,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.white,
-            ),
-            child: Row(
-              children: const [
-                SizedBox(width: 14),
-                Icon(Icons.person, size: 54, color: Color(0xFF334155)),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: EdgeInsets.only(right: 10),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'DIGITAL\\nWALLET',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                          ),
-                          SizedBox(height: 8),
-                          _PayPill(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 14),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PayPill extends StatelessWidget {
-  const _PayPill();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF4256B3),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        child: Text(
-          'PAY',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        ),
-      ),
-    );
-  }
-}
-
-class _AddCardButton extends StatelessWidget {
-  const _AddCardButton({required this.onTap});
+class _MembershipPlansBanner extends StatelessWidget {
+  const _MembershipPlansBanner({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: const Color(0xFF7A1010),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE11D48),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.22),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Text(
-                'Thêm thẻ',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-              ),
-            ),
-            const Positioned(
-              right: -10,
-              top: -10,
-              child: _PlusBadge(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlusBadge extends StatelessWidget {
-  const _PlusBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0xFF22C55E),
-        shape: BoxShape.circle,
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(6),
-        child: Icon(Icons.add, size: 16, color: Colors.white),
-      ),
-    );
-  }
-}
-
-class _PlanButton extends StatelessWidget {
-  const _PlanButton({
-    required this.label,
-    required this.icon,
-    required this.colors,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final List<Color> colors;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          height: 74,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: colors,
-              stops: const [0, 0.5, 1],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
             children: [
-              const SizedBox(width: 18),
               Container(
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFD54F).withValues(alpha: 0.25),
+                  border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
                 ),
-                child: Icon(icon, color: const Color(0xFFFFE01B), size: 22),
+                child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD54F), size: 22),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                  ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Xem & đăng ký gói',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Thanh toán bằng QR / chuyển khoản',
+                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               ),
+              Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.85)),
             ],
           ),
         ),
@@ -362,27 +270,42 @@ class _PlanButton extends StatelessWidget {
   }
 }
 
-class _EmptyRecentTransactions extends StatelessWidget {
-  const _EmptyRecentTransactions();
+class _QrPaymentNotice extends StatelessWidget {
+  const _QrPaymentNotice();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Column(
-        children: const [
-          Icon(Icons.insert_drive_file_outlined, size: 110, color: Color(0xFF9CA3AF)),
-          SizedBox(height: 10),
-          Text('Không có thanh toán nào gần đây', style: TextStyle(color: Color(0xFF6B7280))),
-          SizedBox(height: 8),
-          Text('Xem thêm', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w700)),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.qr_code_2_rounded, color: AppColors.primary, size: 28),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Thanh toán gói thành viên',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Sau khi chọn gói, hệ thống hiển thị mã QR và nội dung chuyển khoản. '
+                  'Khách không dùng ví SOSBIKE để trừ phí gói (khác thợ sửa xe).',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12, height: 1.4),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
-

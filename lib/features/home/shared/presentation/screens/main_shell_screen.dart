@@ -17,6 +17,9 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_wallet_tab.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_order_history_tab.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_placeholder_tab.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
@@ -426,14 +429,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   );
                 },
               ),
-            Expanded(
-              child: auth.userType == 'CUSTOMER'
-                  ? ColoredBox(
-                      color: Colors.white,
-                      child: _buildTabStack(navH),
-                    )
-                  : _buildTabStack(navH),
-            ),
+            Expanded(child: _buildTabStack(navH)),
           ],
         ),
         if (!inOrderFlow)
@@ -452,8 +448,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     context.read<MechanicHistoryProvider>().load(force: true);
                     unawaited(context.read<MechanicRepairProvider>().loadActiveOrder());
                   }
-                  if (t == MainNavTab.wallet && auth.userType != 'CUSTOMER') {
-                    context.read<MechanicWalletProvider>().load(force: true);
+                  if (t == MainNavTab.history && auth.userType == 'CUSTOMER') {
+                    context.read<CustomerHistoryProvider>().load(force: true);
+                  }
+                  if (t == MainNavTab.wallet) {
+                    if (auth.userType == 'CUSTOMER') {
+                      context.read<MembershipProvider>().load();
+                    } else {
+                      context.read<MechanicWalletProvider>().load(force: true);
+                    }
                   }
                 },
                 userType: auth.userType,
@@ -465,10 +468,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: auth.userType == 'CUSTOMER' ? Colors.white : const Color(0xFF8B1A1A),
-      body: auth.userType == 'CUSTOMER'
-          ? shellBody
-          : AppBackground(child: shellBody),
+      backgroundColor: const Color(0xFF8B1A1A),
+      body: AppBackground(child: shellBody),
     );
   }
 
@@ -621,10 +622,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ? const CustomerDashboardTab()
           : const MechanicDashboardTab(),
       MainNavTab.history => userType == 'CUSTOMER'
-          ? const MainPlaceholderTab(
-              title: 'Lịch sử',
-              iconAsset: 'assets/images/main/nav_history.png',
-            )
+          ? const CustomerOrderHistoryTab()
           : MechanicCustomerHistoryTab(onContinueOrder: _resumeOrderFlow),
       MainNavTab.wallet => userType == 'CUSTOMER'
           ? const CustomerWalletTab()

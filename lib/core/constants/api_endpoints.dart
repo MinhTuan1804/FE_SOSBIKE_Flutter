@@ -1,19 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiEndpoints {
+  /// Local BE mặc định khi dev; override bằng `--dart-define` hoặc `.env`.
+  static const String _localDevBaseUrl = 'http://localhost:5200/api';
+
   static String get baseUrl {
+    const fromDefine = String.fromEnvironment('API_BASE_URL');
+    if (fromDefine.isNotEmpty) return fromDefine;
+
     try {
       if (dotenv.isInitialized) {
-        return dotenv.env['API_BASE_URL'] ?? const String.fromEnvironment(
-          'API_BASE_URL',
-          defaultValue: 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api',
-        );
+        final fromEnv = dotenv.env['API_BASE_URL']?.trim();
+        if (fromEnv != null && fromEnv.isNotEmpty) return fromEnv;
       }
     } catch (_) {}
-    return const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api',
-    );
+
+    return kDebugMode ? _localDevBaseUrl : _localDevBaseUrl;
   }
 
   static const String login = '/Auth/login';
@@ -53,6 +56,9 @@ class ApiEndpoints {
   static const String mechanicSpareParts = '/mechanics/me/spare-parts';
   static const String mechanicActiveOrder = '/mechanics/me/orders/active';
   static const String mechanicDevSimulateAccept = '/mechanics/me/orders/dev-simulate-accept';
+
+  static const String customerOrderHistory = '/customers/me/history';
+  static const String customerWallet = '/customers/me/wallet';
   static String mechanicOrderQuote(String orderId) => '/mechanics/me/orders/$orderId/quote';
   static String mechanicOrderArrive(String orderId) => '/mechanics/me/orders/$orderId/arrive';
   static String mechanicOrderStartRepair(String orderId) => '/mechanics/me/orders/$orderId/start-repair';
