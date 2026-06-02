@@ -83,6 +83,17 @@ class RescueProvider extends ChangeNotifier {
   StreamSubscription? _statusSub;
   StreamSubscription? _locationSub;
 
+  /// Các trạng thái không cần gọi API Direction (thợ đã đến nơi hoặc sau đó)
+  static const _noDirectionNeededStatuses = {
+    'ARRIVED', 'QUOTING', 'REPAIRING', 'COMPLETED', 'PAID',
+  };
+
+  /// Kiểm tra xem hiện tại có cần gọi Direction API không
+  bool get _isRouteStillNeeded {
+    final s = _activeOrderStatus?.toUpperCase();
+    return s == null || !_noDirectionNeededStatuses.contains(s);
+  }
+
   Future<void> fetchGoongRoute({
     required double custLat,
     required double custLng,
@@ -90,6 +101,12 @@ class RescueProvider extends ChangeNotifier {
     required double mechLng,
     bool force = false,
   }) async {
+    // Không cần tuyến đường khi thợ đã đến nơi hoặc các trạng thái sau đó
+    if (!_isRouteStillNeeded) {
+      debugPrint('[Goong] Bỏ qua Direction API – trạng thái: $_activeOrderStatus');
+      return;
+    }
+
     // Nếu không force và chưa đủ 2 phút (120s) kể từ lần gọi cuối, dùng ước tính Haversine cục bộ
     if (!force && _lastGoongRouteFetchTime != null) {
       final diff = DateTime.now().difference(_lastGoongRouteFetchTime!);
@@ -131,24 +148,22 @@ class RescueProvider extends ChangeNotifier {
       _isSearching = false;
       notifyListeners();
 
-      if (mechanic != null) {
-        // Customer connects to location tracking hub and subscribes
-        if (_currentOrderId != null) {
-          _locationService.trackOrder(_currentOrderId!);
-        }
+      // Customer connects to location tracking hub and subscribes
+      if (_currentOrderId != null) {
+        _locationService.trackOrder(_currentOrderId!);
+      }
 
-        // Fetch Goong route immediately using accepted details
-        final double? mLat = mechanic['mechanicLatitude'] != null ? (mechanic['mechanicLatitude'] as num).toDouble() : null;
-        final double? mLng = mechanic['mechanicLongitude'] != null ? (mechanic['mechanicLongitude'] as num).toDouble() : null;
-        if (mLat != null && mLng != null && _customerLatitude != null && _customerLongitude != null) {
-          fetchGoongRoute(
-            custLat: _customerLatitude!,
-            custLng: _customerLongitude!,
-            mechLat: mLat,
-            mechLng: mLng,
-            force: true, // Lần đầu tiên luôn force để vẽ tuyến đường ban đầu
-          );
-        }
+      // Fetch Goong route immediately using accepted details
+      final double? mLat = mechanic['mechanicLatitude'] != null ? (mechanic['mechanicLatitude'] as num).toDouble() : null;
+      final double? mLng = mechanic['mechanicLongitude'] != null ? (mechanic['mechanicLongitude'] as num).toDouble() : null;
+      if (mLat != null && mLng != null && _customerLatitude != null && _customerLongitude != null) {
+        fetchGoongRoute(
+          custLat: _customerLatitude!,
+          custLng: _customerLongitude!,
+          mechLat: mLat,
+          mechLng: mLng,
+          force: true, // Lần đầu tiên luôn force để vẽ tuyến đường ban đầu
+        );
       }
     });
 
@@ -178,9 +193,10 @@ class RescueProvider extends ChangeNotifier {
           _matchedMechanic!['mechanicLongitude'] = lng;
           notifyListeners();
         }
-        if (_customerLatitude != null && _customerLongitude != null) {
-          // Thay vì gọi fetchGoongRoute liên tục gây tốn phí API Direction,
-          // chúng ta tính khoảng cách đường bộ ước lượng thông qua đường chim bay chim bay (x1.25)
+        // Chỉ cập nhật khoảng cách/ETA khi thợ còn đang di chuyển (ACCEPTED)
+        // Sau khi thợ đã đến (ARRIVED+) không cần tính nữa
+        if (_isRouteStillNeeded && _customerLatitude != null && _customerLongitude != null) {
+          // Ước tính khoảng cách đường bộ qua đường chim bay (x1.25) thay vì gọi API Direction
           final distance = _calculateHaversineDistance(
             _customerLatitude!,
             _customerLongitude!,
@@ -491,8 +507,9 @@ class RescueProvider extends ChangeNotifier {
       
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, position.latitude, position.longitude);
-        if (_activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          // Ước tính khoảng cách/thời gian cục bộ
+        // Chỉ tính khoảng cách/ETA khi thợ còn đang di chuyển đến khách
+        // Khi đã ARRIVED hoặc sau đó, không cần cập nhật ETA nữa
+        if (_isRouteStillNeeded && _activeCustomerLatitude != null && _activeCustomerLongitude != null) {
           final distance = _calculateHaversineDistance(
             _activeCustomerLatitude!,
             _activeCustomerLongitude!,
@@ -513,7 +530,7 @@ class RescueProvider extends ChangeNotifier {
 
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, 10.762622, 106.660172);
-        if (_activeCustomerLatitude != null && _activeCustomerLongitude != null) {
+        if (_isRouteStillNeeded && _activeCustomerLatitude != null && _activeCustomerLongitude != null) {
           final distance = _calculateHaversineDistance(
             _activeCustomerLatitude!,
             _activeCustomerLongitude!,
