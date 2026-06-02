@@ -24,6 +24,33 @@ class MechanicWalletRepository {
     }
   }
 
+  Future<Map<String, dynamic>> createPaymentIntent(int amount) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.paymentIntents,
+        data: {
+          'amount': amount,
+          'method': 'BANK_TRANSFER',
+          'purpose': 'WALLET_DEPOSIT',
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getPaymentStatus(String paymentId) async {
+    try {
+      final response = await _dioClient.dio.get(
+        '${ApiEndpoints.payments}/$paymentId',
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> deposit(int amount, {String? description}) async {
     try {
       final response = await _dioClient.dio.post(
