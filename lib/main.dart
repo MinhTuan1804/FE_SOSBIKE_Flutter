@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_repository.dart';
 import 'package:fe_moblie_flutter/core/navigation/app_navigator.dart';
@@ -28,6 +29,10 @@ import 'package:fe_moblie_flutter/features/notifications/data/services/location_
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/chat_provider.dart';
 import 'package:fe_moblie_flutter/features/home/data/repositories/rescue_repository.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_history_repository.dart';
+import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_wallet_repository.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_history_repository.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
@@ -50,6 +55,7 @@ void main() async {
   } catch (e) {
     debugPrint('Warning: Could not load .env file: $e');
   }
+  debugPrint('API baseUrl: ${ApiEndpoints.baseUrl}');
 
   if (!kIsWeb) {
     try {
@@ -88,6 +94,8 @@ void main() async {
   final chatRepository = ChatRepository(dioClient);
   final chatRealtimeService = ChatRealtimeService(authService);
   final rescueRepository = RescueRepository(dioClient);
+  final customerHistoryRepository = CustomerHistoryRepository(dioClient);
+  final customerWalletRepository = CustomerWalletRepository(dioClient);
   final rescueRealtimeService = RescueRealtimeService(authService);
   final locationRealtimeService = LocationRealtimeService(authService);
 
@@ -116,6 +124,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
         ChangeNotifierProvider(create: (_) => ChatProvider(chatRepository, chatRealtimeService)),
         ChangeNotifierProvider(create: (_) => RescueProvider(rescueRepository, rescueRealtimeService, locationRealtimeService)),
+        ChangeNotifierProvider(create: (_) => CustomerHistoryProvider(customerHistoryRepository)),
+        ChangeNotifierProvider(create: (_) => CustomerWalletProvider(customerWalletRepository)),
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
         ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),
         ChangeNotifierProvider(create: (_) => MechanicWalletProvider(mechanicWalletRepository)),

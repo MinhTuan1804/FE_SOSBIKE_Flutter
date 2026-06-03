@@ -148,8 +148,19 @@ class MainBottomNavBar extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Text label
-
+                          if (isCustomer)
+                            Positioned(
+                              bottom: isSelected ? 10 : 6,
+                              child: Text(
+                                _customerTabLabel(item.$1),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: isSelected ? 1 : 0.82),
+                                  fontSize: 10,
+                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -161,6 +172,15 @@ class MainBottomNavBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _customerTabLabel(MainNavTab tab) {
+    return switch (tab) {
+      MainNavTab.orders => 'Trang chủ',
+      MainNavTab.history => 'Lịch sử',
+      MainNavTab.wallet => 'Thanh toán',
+      MainNavTab.maintenance => 'Thông báo',
+    };
   }
 
   IconData _getFallbackIcon(MainNavTab tab) {

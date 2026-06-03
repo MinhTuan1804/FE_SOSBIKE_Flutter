@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../constants/api_endpoints.dart';
 import '../services/auth_service.dart';
+import 'ngrok_headers.dart';
 
 class DioClient {
   late final Dio _dio;
@@ -17,6 +18,7 @@ class DioClient {
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         responseType: ResponseType.json,
+        headers: ngrokRequestHeaders(),
       ),
     );
 
@@ -32,6 +34,7 @@ class DioClient {
     // Auth Interceptor: Tự động đính kèm Token vào Header
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        applyNgrokBypass(options);
         final token = await _authService.getToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -102,9 +105,16 @@ class DioClient {
           baseUrl: ApiEndpoints.baseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
+          headers: ngrokRequestHeaders(),
         ),
       );
-      
+      tempDio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          applyNgrokBypass(options);
+          handler.next(options);
+        },
+      ));
+
       final response = await tempDio.post(
         ApiEndpoints.refreshToken,
         data: {'refreshToken': refreshToken},

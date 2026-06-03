@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
+import 'package:fe_moblie_flutter/core/network/ngrok_headers.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -18,10 +20,7 @@ class ApiException implements Exception {
       case DioExceptionType.receiveTimeout:
         return ApiException(message: 'Nhận dữ liệu quá hạn');
       case DioExceptionType.connectionError:
-        return ApiException(
-          message:
-              'Không kết nối được máy chủ (localhost:5200). Hãy chạy BE: dotnet run --launch-profile http',
-        );
+        return ApiException(message: _connectionErrorMessage());
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
         final data = error.response?.data;
@@ -35,6 +34,16 @@ class ApiException implements Exception {
       default:
         return ApiException(message: 'Đã xảy ra lỗi không xác định');
     }
+  }
+
+  static String _connectionErrorMessage() {
+    final base = ApiEndpoints.baseUrl;
+    if (isNgrokApiBaseUrl) {
+      return 'Không kết nối API ngrok ($base). '
+          'Kiểm tra tunnel Tuấn đang chạy, hoặc đổi e:\\SOS\\env sang '
+          'http://localhost:5200/api và chạy e:\\SOS\\start-be.ps1 (web + local dễ hơn).';
+    }
+    return 'Không kết nối được máy chủ ($base). Chạy BE: e:\\SOS\\start-be.ps1';
   }
 
   static String _parseResponseBody(dynamic data) {

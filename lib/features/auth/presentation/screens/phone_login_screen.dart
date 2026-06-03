@@ -1,12 +1,11 @@
-﻿import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
-import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
+import 'package:fe_moblie_flutter/features/auth/domain/backend_phone_auth.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/screens/mechanic_register_info_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/otp_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
@@ -97,8 +96,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       return;
     }
 
-    // Web / local BE: không dùng Firebase SMS
-    if (kIsWeb) {
+    // Web / API local (dev): SĐT + mật khẩu BE, không Firebase SMS
+    if (useBackendPhoneAuth) {
       if (_mode == AuthMode.login) {
         if (!mounted) return;
         Navigator.of(context).push(
@@ -113,35 +112,24 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         return;
       }
 
-      try {
-        authProvider.setLoading(true);
-        final otpService = context.read<BackendOtpService>();
-        final sent = await otpService.sendOtp(localPhone, purpose: 'register');
-        authProvider.setLoading(false);
-        if (!mounted) return;
+      // Dev/local BE: đăng ký không cần OTP (Otp:RequireForRegister=false)
+      if (!mounted) return;
+      if (widget.role == UserRole.mechanic) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => OtpLoginScreen(
+            builder: (_) => MechanicRegisterInfoScreen(phoneNumber: localPhone),
+          ),
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PasswordLoginScreen(
               role: widget.role,
               mode: _mode,
               phoneNumber: localPhone,
-              useBackendOtp: true,
-              initialDebugCode: sent.debugCode,
-              resendCooldownSeconds: 15,
             ),
           ),
         );
-      } catch (e) {
-        authProvider.setLoading(false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessageFrom(e)),
-              duration: const Duration(seconds: 5),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
-        }
       }
       return;
     }
