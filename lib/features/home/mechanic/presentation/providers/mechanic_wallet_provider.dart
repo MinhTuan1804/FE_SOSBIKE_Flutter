@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_wallet_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_wallet_repository.dart';
+import 'package:flutter/foundation.dart';
 
 class MechanicWalletProvider extends ChangeNotifier {
   MechanicWalletProvider(this._repository);
@@ -27,14 +27,8 @@ class MechanicWalletProvider extends ChangeNotifier {
 
     try {
       _data = await _repository.getWallet();
-      if (kDebugMode && (_data?.transactions.isEmpty ?? true) && (_data?.balance ?? 0) == 0) {
-        _data = MechanicWalletData.sample;
-      }
     } catch (e) {
       _errorMessage = e.toString();
-      if (kDebugMode) {
-        _data = MechanicWalletData.sample;
-      }
     } finally {
       _isLoading = false;
       notifyListeners();

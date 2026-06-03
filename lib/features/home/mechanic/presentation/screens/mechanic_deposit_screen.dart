@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -23,8 +24,50 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
   _DepositStep _step = _DepositStep.enterAmount;
   int _amount = 0;
   String? _paymentId;
+  String? _qrContent;
   String? _checkoutUrl;
   String? _paymentCode;
+  String? _bankBin;
+  String? _bankAccountNumber;
+  String? _bankAccountName;
+
+  // Auto-polling: tự động check trạng thái mỗi 5 giây khi đang ở màn QR
+  Timer? _pollingTimer;
+  bool _isPolling = false;
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (!mounted || _paymentId == null || _isPolling) return;
+      if (_step != _DepositStep.qrCode) {
+        _pollingTimer?.cancel();
+        return;
+      }
+      _isPolling = true;
+      try {
+        final provider = context.read<MechanicWalletProvider>();
+        final status = await provider.checkPaymentStatus(_paymentId!);
+        if (!mounted) return;
+        if (status?.toUpperCase() == 'PAID' || status?.toUpperCase() == 'SUCCESS') {
+          _pollingTimer?.cancel();
+          setState(() => _step = _DepositStep.success);
+        }
+      } finally {
+        _isPolling = false;
+      }
+    });
+  }
+
+  void _stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
 
   Future<void> _startDepositFlow(int amount) async {
     setState(() {
@@ -40,10 +83,16 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
     if (result != null) {
       setState(() {
         _paymentId = result['paymentId'] as String?;
-        _checkoutUrl = result['qrContent'] as String?;
+        _qrContent = result['qrContent'] as String?;
+        _checkoutUrl = result['checkoutUrl'] as String?;
         _paymentCode = result['paymentCode'] as String?;
+        _bankBin = result['bankBin'] as String?;
+        _bankAccountNumber = result['bankAccountNumber'] as String?;
+        _bankAccountName = result['bankAccountName'] as String?;
         _step = _DepositStep.qrCode;
       });
+      // Bắt đầu auto-polling sau khi có payment
+      _startPolling();
     } else {
       setState(() {
         _step = _DepositStep.failure;
@@ -57,6 +106,7 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
       return;
     }
 
+    _stopPolling();
     setState(() => _step = _DepositStep.processing);
 
     final provider = context.read<MechanicWalletProvider>();
@@ -68,10 +118,13 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
       setState(() => _step = _DepositStep.success);
     } else {
       setState(() => _step = _DepositStep.qrCode);
+      // Tiếp tục polling sau khi quay lại màn QR
+      _startPolling();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Hệ thống chưa nhận được thanh toán. Vui lòng đợi hoặc kiểm tra lại.'),
+          content: Text('Hệ thống chưa nhận được thanh toán. Đang tự động kiểm tra...'),
           behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
         ),
       );
     }
@@ -103,8 +156,12 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
         _DepositStep.qrCode => _QrCodeScreen(
             key: const ValueKey('qr'),
             amount: _amount,
+            qrContent: _qrContent,
             checkoutUrl: _checkoutUrl,
             paymentCode: _paymentCode,
+            bankBin: _bankBin,
+            bankAccountNumber: _bankAccountNumber,
+            bankAccountName: _bankAccountName,
             onBack: () => setState(() => _step = _DepositStep.enterAmount),
             onConfirm: _confirmDeposit,
           ),
@@ -146,22 +203,28 @@ class _QrCodeScreen extends StatelessWidget {
     required this.amount,
     required this.onBack,
     required this.onConfirm,
+    this.qrContent,
     this.checkoutUrl,
     this.paymentCode,
+    this.bankBin,
+    this.bankAccountNumber,
+    this.bankAccountName,
   });
 
   final int amount;
   final VoidCallback onBack;
   final VoidCallback onConfirm;
+  final String? qrContent;
   final String? checkoutUrl;
   final String? paymentCode;
-
-  static const _bankName = 'Vietcombank';
-  static const _accountNumber = '1234567890';
-  static const _accountHolder = 'CONG TY SOSBIKE';
+  final String? bankBin;
+  final String? bankAccountNumber;
+  final String? bankAccountName;
 
   @override
   Widget build(BuildContext context) {
+    final String? qrData = (qrContent != null && qrContent!.isNotEmpty) ? qrContent : checkoutUrl;
+    final hasQrData = qrData != null && qrData.isNotEmpty;
     final hasPayOS = checkoutUrl != null && checkoutUrl!.startsWith('http');
 
     return Scaffold(
@@ -284,9 +347,9 @@ class _QrCodeScreen extends StatelessWidget {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(9),
-                            child: hasPayOS
+                            child: hasQrData
                                 ? Image.network(
-                                    'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${Uri.encodeComponent(checkoutUrl!)}',
+                                    'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrData)}',
                                     fit: BoxFit.cover,
                                     loadingBuilder: (context, child, loadingProgress) {
                                       if (loadingProgress == null) return child;
@@ -350,7 +413,7 @@ class _QrCodeScreen extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 10),
-                        Text(hasPayOS ? 'Nhấn nút để mở ứng dụng ngân hàng/web' : 'Hoặc chuyển khoản thủ công',
+                        Text(hasQrData ? 'Nhấn nút để mở ứng dụng ngân hàng/web' : 'Hoặc chuyển khoản thủ công',
                             style:
                                 TextStyle(color: Colors.grey[600], fontSize: 12)),
                       ],
@@ -369,16 +432,22 @@ class _QrCodeScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _BankInfoRow(label: 'Ngân hàng', value: _bankName),
-                        const Divider(color: Color(0xFF3A1A1A), height: 20),
-                        _BankInfoRow(
-                            label: 'Số tài khoản',
-                            value: _accountNumber,
-                            canCopy: true),
-                        const Divider(color: Color(0xFF3A1A1A), height: 20),
-                        _BankInfoRow(
-                            label: 'Chủ tài khoản', value: _accountHolder),
-                        const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        if (bankBin != null) ...[
+                          _BankInfoRow(label: 'Ngân hàng (BIN)', value: bankBin!),
+                          const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        ],
+                        if (bankAccountNumber != null) ...[
+                          _BankInfoRow(
+                              label: 'Số tài khoản',
+                              value: bankAccountNumber!,
+                              canCopy: true),
+                          const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        ],
+                        if (bankAccountName != null) ...[
+                          _BankInfoRow(
+                              label: 'Chủ tài khoản', value: bankAccountName!),
+                          const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        ],
                         _BankInfoRow(
                             label: 'Số tiền',
                             value: '${fmtWalletAmount(amount)}đ',
