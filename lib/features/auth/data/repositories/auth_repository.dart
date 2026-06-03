@@ -127,6 +127,15 @@ class AuthRepository {
     String? bankAccountNumber,
     String? bankAccountHolder,
     XFile? avatarFile,
+    String? avatarUrl,
+    String? cccdFrontUrl,
+    String? cccdBackUrl,
+    String? certificateUrl,
+    String? vehiclePhotoUrl,
+    String? vehicleRegistrationUrl,
+    String? vehicleInsuranceUrl,
+    String? driverLicenseUrl,
+    String? color,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -143,6 +152,15 @@ class AuthRepository {
         if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
         if (bankAccountHolder != null) 'bankAccountHolder': bankAccountHolder,
         if (avatarFile != null) 'avatar': await _multipartFromXFile(avatarFile, 'avatar.jpg'),
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        if (cccdFrontUrl != null) 'cccdFrontUrl': cccdFrontUrl,
+        if (cccdBackUrl != null) 'cccdBackUrl': cccdBackUrl,
+        if (certificateUrl != null) 'certificateUrl': certificateUrl,
+        if (vehiclePhotoUrl != null) 'vehiclePhotoUrl': vehiclePhotoUrl,
+        if (vehicleRegistrationUrl != null) 'vehicleRegistrationUrl': vehicleRegistrationUrl,
+        if (vehicleInsuranceUrl != null) 'vehicleInsuranceUrl': vehicleInsuranceUrl,
+        if (driverLicenseUrl != null) 'driverLicenseUrl': driverLicenseUrl,
+        if (color != null) 'color': color,
       });
 
       final response = await _dioClient.dio.put(
@@ -253,5 +271,29 @@ class AuthRepository {
     final bytes = await file.readAsBytes();
     final name = file.name.isNotEmpty ? file.name : fallbackName;
     return MultipartFile.fromBytes(bytes, filename: name);
+  }
+
+  Future<Map<String, dynamic>> sendOtp(String phoneNumber, String purpose) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.sendOtp,
+        data: {'phoneNumber': phoneNumber, 'purpose': purpose},
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<String> verifyOtpCode(String phoneNumber, String code) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.verifyOtp,
+        data: {'phoneNumber': phoneNumber, 'code': code},
+      );
+      return response.data['otpToken'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
   }
 }

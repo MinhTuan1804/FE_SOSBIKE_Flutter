@@ -83,16 +83,49 @@ class MechanicWalletRepository {
     }
   }
 
-  Future<Map<String, dynamic>> withdraw(int amount, {String? description}) async {
+  Future<Map<String, dynamic>> withdraw(int amount, {String? description, String? otpToken}) async {
     try {
       final response = await _dioClient.dio.post(
         ApiEndpoints.mechanicWalletWithdraw,
         data: {
           'amount': amount,
           if (description != null && description.isNotEmpty) 'description': description,
+          if (otpToken != null && otpToken.isNotEmpty) 'otpToken': otpToken,
         },
       );
       return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<bool> checkPinStatus() async {
+    try {
+      final response = await _dioClient.dio.get('/wallet/pin-status');
+      return response.data['hasPin'] ?? false;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<void> setupPin(String pin) async {
+    try {
+      await _dioClient.dio.post(
+        '/wallet/setup-pin',
+        data: {'pin': pin},
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<bool> verifyPin(String pin) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/wallet/verify-pin',
+        data: {'pin': pin},
+      );
+      return response.data['success'] ?? false;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

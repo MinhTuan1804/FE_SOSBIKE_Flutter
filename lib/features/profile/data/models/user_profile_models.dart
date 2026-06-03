@@ -57,25 +57,40 @@ class UserProfileDto {
 
 class MechanicProfileDto {
   const MechanicProfileDto({
+    this.isVerified = false,
     required this.identityCard,
     required this.licensePlate,
     this.vehicleModel,
     this.vehicleGeneration,
     this.driverLicenseNumber,
+    this.vehiclePhotoUrl,
     this.vehicleRegistrationUrl,
     this.vehicleInsuranceUrl,
+    this.cccdFrontUrl,
+    this.cccdBackUrl,
+    this.certificateUrl,
+    this.driverLicenseUrl,
+    this.color,
   });
 
+  final bool isVerified;
   final String identityCard;
   final String licensePlate;
   final String? vehicleModel;
   final String? vehicleGeneration;
   final String? driverLicenseNumber;
-  final String? vehicleRegistrationUrl;
+  final String? vehiclePhotoUrl;        // ảnh chụp thực của xe
+  final String? vehicleRegistrationUrl; // ảnh cà vẹt xe
   final String? vehicleInsuranceUrl;
+  final String? cccdFrontUrl;
+  final String? cccdBackUrl;
+  final String? certificateUrl;
+  final String? driverLicenseUrl;
+  final String? color;
 
   factory MechanicProfileDto.fromJson(Map<String, dynamic> json) {
     return MechanicProfileDto(
+      isVerified: json['isVerified'] ?? json['isverified'] ?? false,
       identityCard: '${json['identityCard'] ?? json['identitycard'] ?? ''}',
       licensePlate: '${json['licensePlate'] ?? json['licenseplate'] ?? ''}',
       vehicleModel: json['vehicleModel'] as String? ?? json['vehiclemodel'] as String?,
@@ -83,10 +98,16 @@ class MechanicProfileDto {
           json['vehicleGeneration'] as String? ?? json['vehiclegeneration'] as String?,
       driverLicenseNumber:
           json['driverLicenseNumber'] as String? ?? json['driverlicensenumber'] as String?,
+      vehiclePhotoUrl: json['vehiclePhotoUrl'] as String? ?? json['vehiclephotourl'] as String?,
       vehicleRegistrationUrl: json['vehicleRegistrationUrl'] as String? ??
           json['vehicleregistrationurl'] as String?,
       vehicleInsuranceUrl:
           json['vehicleInsuranceUrl'] as String? ?? json['vehicleinsuranceurl'] as String?,
+      cccdFrontUrl: json['cccdFrontUrl'] as String? ?? json['cccdfronturl'] as String?,
+      cccdBackUrl: json['cccdBackUrl'] as String? ?? json['cccdbackurl'] as String?,
+      certificateUrl: json['certificateUrl'] as String? ?? json['certificateurl'] as String?,
+      driverLicenseUrl: json['driverLicenseUrl'] as String? ?? json['driverlicenseurl'] as String?,
+      color: json['color'] as String?,
     );
   }
 }
