@@ -67,6 +67,23 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
   }
 
   @override
+  void didUpdateWidget(covariant MechanicInspectVehicleView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialItems != oldWidget.initialItems) {
+      final preselectedIds = widget.preselectedItems.map((e) => e.id).toSet();
+      if (preselectedIds.isNotEmpty) {
+        _items = widget.initialItems
+            .map((item) => item.copyWith(selected: preselectedIds.contains(item.id)))
+            .toList();
+      } else {
+        _items = widget.initialItems
+            .map((item) => item.id == '1' ? item.copyWith(selected: true) : item)
+            .toList();
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _partNameCtrl.dispose();
     _partPriceCtrl.dispose();

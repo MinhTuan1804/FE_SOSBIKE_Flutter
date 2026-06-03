@@ -1154,9 +1154,18 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     try {
       final intent = await rescue.createRescueOrderPayment(orderId, _selectedPaymentMethod);
       if (intent != null) {
-        setState(() {
-          _paymentIntentCreated = true;
-        });
+        if (_selectedPaymentMethod == 'CASH') {
+          // Cash payment does not require user confirmation.
+          // Confirm payment immediately!
+          final paymentId = intent['paymentId'] as String?;
+          if (paymentId != null) {
+            await rescue.confirmRescueOrderPayment(paymentId, 'CASH_MOCK_TX');
+          }
+        } else {
+          setState(() {
+            _paymentIntentCreated = true;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {

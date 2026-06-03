@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'mechanic_wallet_shared.dart';
@@ -21,24 +23,110 @@ enum _DepositStep { enterAmount, qrCode, processing, success, failure }
 class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
   _DepositStep _step = _DepositStep.enterAmount;
   int _amount = 0;
+  String? _paymentId;
+  String? _qrContent;
+  String? _checkoutUrl;
+  String? _paymentCode;
+  String? _bankBin;
+  String? _bankAccountNumber;
+  String? _bankAccountName;
 
-  void _goToQr(int amount) => setState(() {
-        _amount = amount;
-        _step = _DepositStep.qrCode;
-      });
+  // Auto-polling: tự động check trạng thái mỗi 5 giây khi đang ở màn QR
+  Timer? _pollingTimer;
+  bool _isPolling = false;
 
-  Future<void> _confirmDeposit() async {
-    setState(() => _step = _DepositStep.processing);
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (!mounted || _paymentId == null || _isPolling) return;
+      if (_step != _DepositStep.qrCode) {
+        _pollingTimer?.cancel();
+        return;
+      }
+      _isPolling = true;
+      try {
+        final provider = context.read<MechanicWalletProvider>();
+        final status = await provider.checkPaymentStatus(_paymentId!);
+        if (!mounted) return;
+        if (status?.toUpperCase() == 'PAID' || status?.toUpperCase() == 'SUCCESS') {
+          _pollingTimer?.cancel();
+          setState(() => _step = _DepositStep.success);
+        }
+      } finally {
+        _isPolling = false;
+      }
+    });
+  }
+
+  void _stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  Future<void> _startDepositFlow(int amount) async {
+    setState(() {
+      _amount = amount;
+      _step = _DepositStep.processing;
+    });
 
     final provider = context.read<MechanicWalletProvider>();
-    final success = await provider.deposit(_amount);
+    final result = await provider.createPaymentIntent(amount);
 
     if (!mounted) return;
 
-    if (success) {
+    if (result != null) {
+      setState(() {
+        _paymentId = result['paymentId'] as String?;
+        _qrContent = result['qrContent'] as String?;
+        _checkoutUrl = result['checkoutUrl'] as String?;
+        _paymentCode = result['paymentCode'] as String?;
+        _bankBin = result['bankBin'] as String?;
+        _bankAccountNumber = result['bankAccountNumber'] as String?;
+        _bankAccountName = result['bankAccountName'] as String?;
+        _step = _DepositStep.qrCode;
+      });
+      // Bắt đầu auto-polling sau khi có payment
+      _startPolling();
+    } else {
+      setState(() {
+        _step = _DepositStep.failure;
+      });
+    }
+  }
+
+  Future<void> _confirmDeposit() async {
+    if (_paymentId == null) {
+      setState(() => _step = _DepositStep.failure);
+      return;
+    }
+
+    _stopPolling();
+    setState(() => _step = _DepositStep.processing);
+
+    final provider = context.read<MechanicWalletProvider>();
+    final status = await provider.checkPaymentStatus(_paymentId!);
+
+    if (!mounted) return;
+
+    if (status?.toUpperCase() == 'PAID' || status?.toUpperCase() == 'SUCCESS') {
       setState(() => _step = _DepositStep.success);
     } else {
-      setState(() => _step = _DepositStep.failure);
+      setState(() => _step = _DepositStep.qrCode);
+      // Tiếp tục polling sau khi quay lại màn QR
+      _startPolling();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hệ thống chưa nhận được thanh toán. Đang tự động kiểm tra...'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -62,18 +150,24 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
             icon: Icons.savings_outlined,
             accentColor: AppColors.primary,
             onBack: () => Navigator.of(context).pop(),
-            onNext: _goToQr,
+            onNext: _startDepositFlow,
             quickAmounts: const [50000, 100000, 200000, 500000, 1000000, 2000000],
           ),
         _DepositStep.qrCode => _QrCodeScreen(
             key: const ValueKey('qr'),
             amount: _amount,
+            qrContent: _qrContent,
+            checkoutUrl: _checkoutUrl,
+            paymentCode: _paymentCode,
+            bankBin: _bankBin,
+            bankAccountNumber: _bankAccountNumber,
+            bankAccountName: _bankAccountName,
             onBack: () => setState(() => _step = _DepositStep.enterAmount),
             onConfirm: _confirmDeposit,
           ),
         _DepositStep.processing => const WalletProcessingScreen(
             key: ValueKey('processing'),
-            message: 'Đang xác nhận thanh toán...',
+            message: 'Đang xử lý...',
           ),
         _DepositStep.success => WalletResultScreen(
             key: const ValueKey('success'),
@@ -89,7 +183,7 @@ class _MechanicDepositScreenState extends State<MechanicDepositScreen> {
             key: const ValueKey('failure'),
             isSuccess: false,
             title: 'Nạp tiền thất bại',
-            subtitle: context.read<MechanicWalletProvider>().errorMessage ?? 'Không xác nhận được giao dịch.\nVui lòng thử lại.',
+            subtitle: context.read<MechanicWalletProvider>().errorMessage ?? 'Không khởi tạo được giao dịch.\nVui lòng thử lại.',
             amount: _amount,
             amountLabel: '${fmtWalletAmount(_amount)}đ',
             amountColor: AppColors.primary,
@@ -109,19 +203,30 @@ class _QrCodeScreen extends StatelessWidget {
     required this.amount,
     required this.onBack,
     required this.onConfirm,
+    this.qrContent,
+    this.checkoutUrl,
+    this.paymentCode,
+    this.bankBin,
+    this.bankAccountNumber,
+    this.bankAccountName,
   });
 
   final int amount;
   final VoidCallback onBack;
   final VoidCallback onConfirm;
-
-  static const _bankName = 'Vietcombank';
-  static const _accountNumber = '1234567890';
-  static const _accountHolder = 'CONG TY SOSBIKE';
-  static const _transferNote = 'SOSBIKE NAP VI';
+  final String? qrContent;
+  final String? checkoutUrl;
+  final String? paymentCode;
+  final String? bankBin;
+  final String? bankAccountNumber;
+  final String? bankAccountName;
 
   @override
   Widget build(BuildContext context) {
+    final String? qrData = (qrContent != null && qrContent!.isNotEmpty) ? qrContent : checkoutUrl;
+    final hasQrData = qrData != null && qrData.isNotEmpty;
+    final hasPayOS = checkoutUrl != null && checkoutUrl!.startsWith('http');
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A0A0A),
       body: Column(
@@ -240,41 +345,75 @@ class _QrCodeScreen extends StatelessWidget {
                                 Border.all(color: AppColors.primary, width: 3),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Stack(
-                            children: [
-                              ..._qrCorners(),
-                              Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary,
-                                        borderRadius: BorderRadius.circular(10),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(9),
+                            child: hasQrData
+                                ? Image.network(
+                                    'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrData)}',
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(child: Icon(Icons.error_outline, color: AppColors.primary));
+                                    },
+                                  )
+                                : Stack(
+                                    children: [
+                                      ..._qrCorners(),
+                                      Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: 48,
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: const Center(
+                                                child: Text('SOS',
+                                                    style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.w900,
+                                                        fontSize: 13)),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text('QR sẽ tải từ API',
+                                                style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 9)),
+                                          ],
+                                        ),
                                       ),
-                                      child: const Center(
-                                        child: Text('SOS',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 13)),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text('QR sẽ tải từ API',
-                                        style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 9)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                                    ],
+                                  ),
                           ),
                         ),
+                        if (hasPayOS) ...[
+                          const SizedBox(height: 14),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final uri = Uri.parse(checkoutUrl!);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                            label: const Text('Mở link thanh toán PayOS', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 10),
-                        Text('Hoặc chuyển khoản thủ công',
+                        Text(hasQrData ? 'Nhấn nút để mở ứng dụng ngân hàng/web' : 'Hoặc chuyển khoản thủ công',
                             style:
                                 TextStyle(color: Colors.grey[600], fontSize: 12)),
                       ],
@@ -293,16 +432,22 @@ class _QrCodeScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _BankInfoRow(label: 'Ngân hàng', value: _bankName),
-                        const Divider(color: Color(0xFF3A1A1A), height: 20),
-                        _BankInfoRow(
-                            label: 'Số tài khoản',
-                            value: _accountNumber,
-                            canCopy: true),
-                        const Divider(color: Color(0xFF3A1A1A), height: 20),
-                        _BankInfoRow(
-                            label: 'Chủ tài khoản', value: _accountHolder),
-                        const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        if (bankBin != null) ...[
+                          _BankInfoRow(label: 'Ngân hàng (BIN)', value: bankBin!),
+                          const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        ],
+                        if (bankAccountNumber != null) ...[
+                          _BankInfoRow(
+                              label: 'Số tài khoản',
+                              value: bankAccountNumber!,
+                              canCopy: true),
+                          const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        ],
+                        if (bankAccountName != null) ...[
+                          _BankInfoRow(
+                              label: 'Chủ tài khoản', value: bankAccountName!),
+                          const Divider(color: Color(0xFF3A1A1A), height: 20),
+                        ],
                         _BankInfoRow(
                             label: 'Số tiền',
                             value: '${fmtWalletAmount(amount)}đ',
@@ -310,7 +455,7 @@ class _QrCodeScreen extends StatelessWidget {
                         const Divider(color: Color(0xFF3A1A1A), height: 20),
                         _BankInfoRow(
                             label: 'Nội dung CK',
-                            value: '$_transferNote ${fmtWalletAmount(amount)}',
+                            value: paymentCode != null ? 'SOSBIKE $paymentCode' : 'SOSBIKE NAP VI',
                             canCopy: true),
                       ],
                     ),

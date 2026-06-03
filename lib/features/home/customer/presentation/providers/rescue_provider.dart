@@ -24,6 +24,8 @@ class RescueProvider extends ChangeNotifier {
 
   final GoongService _goongService = GoongService();
   DateTime? _lastGoongRouteFetchTime;
+  int _goongApiCallCount = 0;
+  Timer? _routeUpdateTimer;
 
   // Active Mechanic Order Coords for dynamic routing on mechanic side
   double? _activeCustomerLatitude;
@@ -34,6 +36,89 @@ class RescueProvider extends ChangeNotifier {
 
   RescueProvider(this._repository, this._realtimeService, this._locationService) {
     _setupSignalRListeners();
+  }
+
+  void _startRouteTracking({
+    required double custLat,
+    required double custLng,
+    required double mechLat,
+    required double mechLng,
+  }) async {
+    _routeUpdateTimer?.cancel();
+    _routeUpdateTimer = null;
+    _goongApiCallCount = 0;
+
+    // Call 1: Immediate fetch
+    await fetchGoongRoute(
+      custLat: custLat,
+      custLng: custLng,
+      mechLat: mechLat,
+      mechLng: mechLng,
+      force: true,
+    );
+    _goongApiCallCount = 1;
+
+    final durationMins = _goongDurationMins;
+    if (durationMins == null || durationMins <= 0) {
+      debugPrint('[Goong] Duration is null or 0, cannot schedule periodic route updates.');
+      return;
+    }
+
+    // Interval duration = (duration in minutes * 60) / 3 in seconds
+    final int intervalSeconds = ((durationMins * 60) / 3).round().clamp(60, 3600);
+    debugPrint('[Goong] Initial duration: $durationMins mins. Scheduling updates every $intervalSeconds seconds.');
+
+    _routeUpdateTimer = Timer.periodic(Duration(seconds: intervalSeconds), (timer) async {
+      if (!_isRouteStillNeeded || _goongApiCallCount >= 3) {
+        debugPrint('[Goong] Stopping route updates. Call count: $_goongApiCallCount, Status: $_activeOrderStatus');
+        _routeUpdateTimer?.cancel();
+        _routeUpdateTimer = null;
+        return;
+      }
+
+      // Get latest coordinates
+      double? currentCustLat;
+      double? currentCustLng;
+      double? currentMechLat;
+      double? currentMechLng;
+
+      if (_matchedMechanic != null) {
+        // Customer side
+        currentCustLat = _customerLatitude;
+        currentCustLng = _customerLongitude;
+        currentMechLat = _matchedMechanic!['mechanicLatitude'] != null
+            ? (_matchedMechanic!['mechanicLatitude'] as num).toDouble()
+            : null;
+        currentMechLng = _matchedMechanic!['mechanicLongitude'] != null
+            ? (_matchedMechanic!['mechanicLongitude'] as num).toDouble()
+            : null;
+      } else {
+        // Mechanic side
+        currentCustLat = _activeCustomerLatitude;
+        currentCustLng = _activeCustomerLongitude;
+        currentMechLat = _mechanicLatitude;
+        currentMechLng = _mechanicLongitude;
+      }
+
+      if (currentCustLat != null &&
+          currentCustLng != null &&
+          currentMechLat != null &&
+          currentMechLng != null) {
+        debugPrint('[Goong] Fetching periodic route update. Call count before fetch: $_goongApiCallCount');
+        await fetchGoongRoute(
+          custLat: currentCustLat,
+          custLng: currentCustLng,
+          mechLat: currentMechLat,
+          mechLng: currentMechLng,
+          force: true,
+        );
+        _goongApiCallCount++;
+        if (_goongApiCallCount >= 3) {
+          _routeUpdateTimer?.cancel();
+          _routeUpdateTimer = null;
+        }
+      }
+    });
   }
 
   // Common State
@@ -157,12 +242,11 @@ class RescueProvider extends ChangeNotifier {
       final double? mLat = mechanic['mechanicLatitude'] != null ? (mechanic['mechanicLatitude'] as num).toDouble() : null;
       final double? mLng = mechanic['mechanicLongitude'] != null ? (mechanic['mechanicLongitude'] as num).toDouble() : null;
       if (mLat != null && mLng != null && _customerLatitude != null && _customerLongitude != null) {
-        fetchGoongRoute(
+        _startRouteTracking(
           custLat: _customerLatitude!,
           custLng: _customerLongitude!,
           mechLat: mLat,
           mechLng: mLng,
-          force: true, // Lần đầu tiên luôn force để vẽ tuyến đường ban đầu
         );
       }
     });
@@ -179,6 +263,26 @@ class RescueProvider extends ChangeNotifier {
             debugPrint('Failed to auto-fetch quote: $e');
           });
         }
+      }
+      if (status == 'ACCEPTED' && _routeUpdateTimer == null) {
+        final double? mLat = _matchedMechanic != null && _matchedMechanic!['mechanicLatitude'] != null
+            ? (_matchedMechanic!['mechanicLatitude'] as num).toDouble()
+            : null;
+        final double? mLng = _matchedMechanic != null && _matchedMechanic!['mechanicLongitude'] != null
+            ? (_matchedMechanic!['mechanicLongitude'] as num).toDouble()
+            : null;
+        if (mLat != null && mLng != null && _customerLatitude != null && _customerLongitude != null) {
+          _startRouteTracking(
+            custLat: _customerLatitude!,
+            custLng: _customerLongitude!,
+            mechLat: mLat,
+            mechLng: mLng,
+          );
+        }
+      }
+      if (!_isRouteStillNeeded) {
+        _routeUpdateTimer?.cancel();
+        _routeUpdateTimer = null;
       }
       notifyListeners();
     });
@@ -351,6 +455,8 @@ class RescueProvider extends ChangeNotifier {
     _activeQuote = null;
     _paymentIntent = null;
     _lastGoongRouteFetchTime = null; // Reset bộ đệm thời gian tải Goong
+    _routeUpdateTimer?.cancel();
+    _routeUpdateTimer = null;
     await _realtimeService.disconnect();
     notifyListeners();
   }
@@ -372,6 +478,8 @@ class RescueProvider extends ChangeNotifier {
         _startLocationUpdates();
       } else {
         _stopLocationUpdates();
+        _routeUpdateTimer?.cancel();
+        _routeUpdateTimer = null;
         await _realtimeService.disconnect();
         await _locationService.disconnect();
         _incomingRequest = null;
@@ -420,15 +528,12 @@ class RescueProvider extends ChangeNotifier {
 
       // Tải tuyến đường Goong ban đầu một lần duy nhất khi thợ chấp nhận đơn
       if (_activeCustomerLatitude != null && _activeCustomerLongitude != null && _mechanicLatitude != null && _mechanicLongitude != null) {
-        fetchGoongRoute(
+        _startRouteTracking(
           custLat: _activeCustomerLatitude!,
           custLng: _activeCustomerLongitude!,
           mechLat: _mechanicLatitude!,
           mechLng: _mechanicLongitude!,
-          force: true, // Force tải tuyến đường ban đầu
-        ).catchError((e) {
-          debugPrint('Failed to fetch initial Goong route: $e');
-        });
+        );
       }
 
       notifyListeners();
@@ -453,6 +558,8 @@ class RescueProvider extends ChangeNotifier {
     _activeOrderStatus = null;
     _activeQuote = null;
     _paymentIntent = null;
+    _routeUpdateTimer?.cancel();
+    _routeUpdateTimer = null;
     notifyListeners();
   }
 
@@ -567,6 +674,7 @@ class RescueProvider extends ChangeNotifier {
     _statusSub?.cancel();
     _locationSub?.cancel();
     _locationTimer?.cancel();
+    _routeUpdateTimer?.cancel();
     super.dispose();
   }
 
