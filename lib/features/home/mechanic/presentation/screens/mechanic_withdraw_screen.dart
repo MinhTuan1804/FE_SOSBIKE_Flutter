@@ -30,15 +30,76 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
         _step = _WithdrawStep.confirmBank;
       });
 
-  void _goToOtp() => setState(() => _step = _WithdrawStep.otp);
+  Future<void> _sendOtp() async {
+    final auth = context.read<AuthProvider>();
+    final phone = auth.phoneNumber;
+    if (phone == null || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không tìm thấy số điện thoại của bạn.')),
+      );
+      return;
+    }
 
-  Future<void> _confirmOtp() async {
-    setState(() => _step = _WithdrawStep.processing);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
 
-    final provider = context.read<MechanicWalletProvider>();
-    final success = await provider.withdraw(_amount);
+    final debugCode = await auth.sendWithdrawOtp(phone);
 
     if (!mounted) return;
+    Navigator.of(context).pop(); // Close spinner
+
+    if (debugCode != null) {
+      setState(() {
+        _step = _WithdrawStep.otp;
+      });
+      if (debugCode != 'sent' && debugCode.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('DEV MODE: Mã OTP của bạn là: $debugCode'),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.errorMessage ?? 'Gửi OTP thất bại.')),
+      );
+    }
+  }
+
+  Future<void> _confirmOtp(String otpCode) async {
+    final auth = context.read<AuthProvider>();
+    final phone = auth.phoneNumber;
+    if (phone == null || phone.isEmpty) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
+    final otpToken = await auth.verifyWithdrawOtp(phone, otpCode);
+    if (otpToken == null) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close spinner
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.errorMessage ?? 'Mã OTP không chính xác hoặc đã hết hạn.')),
+      );
+      return;
+    }
+
+    final provider = context.read<MechanicWalletProvider>();
+    final success = await provider.withdraw(_amount, otpToken: otpToken);
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Close spinner
 
     if (success) {
       setState(() => _step = _WithdrawStep.success);
@@ -85,7 +146,7 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
             bankHolder: bankHolder,
             balance: widget.currentBalance,
             onBack: () => setState(() => _step = _WithdrawStep.enterAmount),
-            onConfirm: _goToOtp,
+            onConfirm: _sendOtp,
           ),
         _WithdrawStep.otp => _OtpScreen(
             key: const ValueKey('otp'),
@@ -100,8 +161,8 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
         _WithdrawStep.success => WalletResultScreen(
             key: const ValueKey('success'),
             isSuccess: true,
-            title: 'Rút tiền thành công!',
-            subtitle: 'Tiền đã được chuyển về tài khoản ngân hàng của bạn.',
+            title: 'Gửi yêu cầu rút tiền thành công!',
+            subtitle: 'Yêu cầu của bạn đang chờ admin duyệt và chuyển tiền.',
             amount: _amount,
             amountLabel: '-${fmtWalletAmount(_amount)}đ',
             amountColor: const Color(0xFF22C55E),
@@ -410,7 +471,7 @@ class _OtpScreen extends StatefulWidget {
 
   final int amount;
   final VoidCallback onBack;
-  final VoidCallback onConfirm;
+  final Function(String) onConfirm;
 
   @override
   State<_OtpScreen> createState() => _OtpScreenState();
@@ -453,12 +514,45 @@ class _OtpScreenState extends State<_OtpScreen> {
     setState(() {});
   }
 
-  void _resend() {
+  Future<void> _resend() async {
+    final auth = context.read<AuthProvider>();
+    final phone = auth.phoneNumber;
+    if (phone == null || phone.isEmpty) return;
+
     _startTimer();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Đã gửi lại mã OTP'),
-      behavior: SnackBarBehavior.floating,
-    ));
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+
+    final debugCode = await auth.sendWithdrawOtp(phone);
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Close spinner
+
+    if (debugCode != null) {
+      if (debugCode != 'sent' && debugCode.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('DEV MODE: Mã OTP của bạn là: $debugCode'),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Đã gửi lại mã OTP'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.errorMessage ?? 'Gửi OTP thất bại.')),
+      );
+    }
   }
 
   @override
@@ -663,7 +757,7 @@ class _OtpScreenState extends State<_OtpScreen> {
         child: SizedBox(
           height: 50,
           child: ElevatedButton(
-            onPressed: _complete ? widget.onConfirm : null,
+            onPressed: _complete ? () => widget.onConfirm(_ctrls.map((c) => c.text).join()) : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               disabledBackgroundColor: const Color(0xFF3A1A1A),

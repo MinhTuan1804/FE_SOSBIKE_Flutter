@@ -9,6 +9,7 @@ import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<VehicleProvider>().fetchMyVehicles();
+      context.read<AuthProvider>().fetchMyProfile(silent: true);
     });
   }
 
@@ -32,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final vehicleProvider = context.watch<VehicleProvider>();
+    final isVerified = auth.profile?.mechanic?.isVerified ?? false;
 
     return Scaffold(
       backgroundColor: _bgColor,
@@ -246,123 +249,560 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                // ── SECTION: Hồ sơ & Giấy tờ thợ (luôn hiển thị với mechanic) ──
+                if (auth.userType?.toUpperCase() == 'MECHANIC') ...[
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Hồ sơ & Giấy tờ thợ',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Icon(Icons.assignment_ind_outlined, color: AppColors.primary, size: 24),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isVerified
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : AppColors.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isVerified ? Icons.verified_outlined : Icons.assignment_ind_outlined,
+                            color: isVerified ? Colors.green : AppColors.primary,
+                            size: 24,
+                          ),
+                        ),
+                        title: Text(
+                          isVerified ? 'Hồ sơ đã được xác thực' : 'Hoàn thiện hồ sơ & Xác thực thợ',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isVerified ? Colors.green[700] : Colors.black87,
+                          ),
+                        ),
+                        subtitle: Text(
+                          isVerified
+                              ? 'Tài khoản của bạn đã được Admin SOSBIKE duyệt'
+                              : 'Khu vực hoạt động, ảnh CCCD, chứng chỉ nghề & ngân hàng',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isVerified ? Colors.green[400] : Colors.grey,
+                          ),
+                        ),
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: isVerified ? Colors.green[300] : Colors.grey,
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MechanicSetupProfileScreen(),
+                            ),
+                          ).then((_) {
+                            if (context.mounted) {
+                              context.read<AuthProvider>().fetchMyProfile(silent: true);
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
 
-                // 3. Phần Phương tiện của tôi
+
+                // ── SECTION: Phương tiện của tôi (luôn hiển thị, khác nhau theo loại tài khoản) ──
+                const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: const Text(
-                    'Phương tiện của tôi',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Phương tiện của tôi',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      // Chỉ customer mới có nút thêm xe, mechanic quản lý xe qua hồ sơ thợ
+                      if (auth.userType?.toUpperCase() != 'MECHANIC')
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PageLoader(child: AddVehicleScreen()),
+                              ),
+                            ).then((_) {
+                              if (context.mounted) {
+                                context.read<VehicleProvider>().fetchMyVehicles();
+                              }
+                            });
+                          },
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                
-                if (vehicleProvider.isLoading)
-                  const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                else if (vehicleProvider.vehicles.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: OutlinedButton.icon(
-                      onPressed: () {
+
+                // Mechanic: hiển thị xe đăng ký trong hồ sơ thợ (model, biển số, đời xe)
+                if (auth.userType?.toUpperCase() == 'MECHANIC') ...[
+                  if (auth.profile?.mechanic?.licensePlate != null &&
+                      auth.profile!.mechanic!.licensePlate.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PageLoader(child: AddVehicleScreen()),
+                            // initialTab: 2 → mở thẳng tab "Phương tiện"
+                            builder: (context) => const MechanicSetupProfileScreen(initialTab: 2),
                           ),
-                        );
+                        ).then((_) {
+                          if (context.mounted) {
+                            context.read<AuthProvider>().fetchMyProfile(silent: true);
+                          }
+                        });
                       },
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('Thêm thông tin xe'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary, width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  )
-                else
-                  ...vehicleProvider.vehicles.map<Widget>((v) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFC8102E), // Màu đỏ đậm cho thẻ xe
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Ảnh xe bên trái, to ra
-
-                        
-                        // Chi tiết xe
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${v.brand} ${v.model}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Biển số: ${v.licenseplate}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ── Ảnh xe (full width, có gradient overlay) ──
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                              child: Stack(
                                 children: [
-                                  _VehicleBadge(label: _formatVehicleType(v.vehicletype)),
+                                  // Ảnh xe
+                                  if (auth.profile!.mechanic!.vehiclePhotoUrl != null &&
+                                      auth.profile!.mechanic!.vehiclePhotoUrl!.isNotEmpty)
+                                    CachedNetworkImage(
+                                      imageUrl: auth.profile!.mechanic!.vehiclePhotoUrl!,
+                                      width: double.infinity,
+                                      height: 180,
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, __) => Container(
+                                        height: 180,
+                                        color: const Color(0xFFF5F5F5),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.primary,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      errorWidget: (_, __, ___) => const _VehiclePhotoPlaceholder(type: 'OTHER'),
+                                    )
+                                  else
+                                    const _VehiclePhotoPlaceholder(type: 'OTHER'),
+
+                                  // Gradient overlay từ dưới lên
+                                  Positioned(
+                                    left: 0, right: 0, bottom: 0,
+                                    child: Container(
+                                      height: 90,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            Colors.black.withValues(alpha: 0.75),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Tên xe trên gradient
+                                  Positioned(
+                                    left: 16, right: 16, bottom: 12,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                auth.profile!.mechanic!.vehicleModel ?? 'Xe máy thợ',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                auth.profile!.mechanic!.licensePlate,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: 1.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Badge loại xe
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: const Text(
+                                            'Xe thợ chuyên dụng',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               ),
-                            ],
+                            ),
+
+                            // ── Chi tiết xe ──────────────────────────────
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  // Row 1: Năm SX + Màu xe
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.calendar_today_outlined,
+                                          label: 'Đời xe',
+                                          value: auth.profile!.mechanic!.vehicleGeneration != null &&
+                                                  auth.profile!.mechanic!.vehicleGeneration!.isNotEmpty
+                                              ? auth.profile!.mechanic!.vehicleGeneration!
+                                              : 'Chưa có',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.palette_outlined,
+                                          label: 'Màu xe',
+                                          value: auth.profile!.mechanic!.color != null &&
+                                                  auth.profile!.mechanic!.color!.isNotEmpty
+                                              ? auth.profile!.mechanic!.color!
+                                              : 'Chưa có',
+                                          colorDot: _parseColor(auth.profile!.mechanic!.color),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Row 2: GPLX + Biển số
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.badge_outlined,
+                                          label: 'Số GPLX',
+                                          value: auth.profile!.mechanic!.driverLicenseNumber != null &&
+                                                  auth.profile!.mechanic!.driverLicenseNumber!.isNotEmpty
+                                              ? auth.profile!.mechanic!.driverLicenseNumber!
+                                              : 'Chưa có',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.confirmation_number_outlined,
+                                          label: 'Biển số',
+                                          value: auth.profile!.mechanic!.licensePlate,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Chưa cấu hình phương tiện hoạt động. Vui lòng hoàn thiện hồ sơ thợ.',
+                        style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
+                      ),
+                    ),
+
+                // Customer: hiển thị danh sách xe thông thường
+                ] else ...[
+                  if (vehicleProvider.isLoading)
+                    const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  else if (vehicleProvider.vehicles.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PageLoader(child: AddVehicleScreen()),
+                            ),
+                          ).then((_) {
+                            if (context.mounted) {
+                              context.read<VehicleProvider>().fetchMyVehicles();
+                            }
+                          });
+                        },
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Thêm thông tin xe'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary, width: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
+                      ),
+                    )
+                  else
+                    ...vehicleProvider.vehicles.map<Widget>((v) {
+                      final hasPhoto = v.photourl != null && v.photourl!.isNotEmpty;
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // ── Ảnh xe (full width, có gradient overlay) ──
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                              child: Stack(
+                                children: [
+                                  // Ảnh xe
+                                  if (hasPhoto)
+                                    CachedNetworkImage(
+                                      imageUrl: v.photourl!,
+                                      width: double.infinity,
+                                      height: 180,
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, __) => Container(
+                                        height: 180,
+                                        color: const Color(0xFFF5F5F5),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.primary,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      errorWidget: (_, __, ___) => _VehiclePhotoPlaceholder(type: v.vehicletype),
+                                    )
+                                  else
+                                    _VehiclePhotoPlaceholder(type: v.vehicletype),
 
-                        if (v.photourl != null && v.photourl!.isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: v.photourl!,
-                              width: 120,
-                              height: 100,
-                              fit: BoxFit.fill,
-                              placeholder: (context, url) => Container(
-                                width: 80, height: 80, color: Colors.white24,
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                width: 80, height: 80, color: Colors.white24,
-                                child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 36),
+                                  // Gradient overlay từ dưới lên
+                                  Positioned(
+                                    left: 0, right: 0, bottom: 0,
+                                    child: Container(
+                                      height: 90,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            Colors.black.withValues(alpha: 0.75),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Tên xe trên gradient
+                                  Positioned(
+                                    left: 16, right: 16, bottom: 12,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${v.brand} ${v.model}',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                v.licenseplate,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: 1.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Badge loại xe
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            _formatVehicleType(v.vehicletype),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          )
-                        else
-                          Container(
-                            width: 80, height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.white24,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 36),
-                          ),
 
-                      ],
-                    ),
-                  )),
+                            // ── Chi tiết xe ──────────────────────────────
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  // Row 1: Năm SX + Màu xe
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.calendar_today_outlined,
+                                          label: 'Năm SX',
+                                          value: v.yearofmanufacture != null
+                                              ? '${v.yearofmanufacture}'
+                                              : 'Chưa có',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.palette_outlined,
+                                          label: 'Màu xe',
+                                          value: v.color?.isNotEmpty == true
+                                              ? v.color!
+                                              : 'Chưa có',
+                                          colorDot: _parseColor(v.color),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Row 2: Số km + Biển số
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.speed_outlined,
+                                          label: 'Số km',
+                                          value: v.currentmileage != null
+                                              ? '${_formatMileage(v.currentmileage!)} km'
+                                              : 'Chưa có',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _VehicleDetailChip(
+                                          icon: Icons.confirmation_number_outlined,
+                                          label: 'Biển số',
+                                          value: v.licenseplate,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+
+                ],
+
 
                 const SizedBox(height: 120), // Khoảng trống cho thanh điều hướng
               ],
@@ -447,6 +887,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return genderCode;
     }
+  }
+
+  Color? _parseColor(String? colorName) {
+    if (colorName == null || colorName.isEmpty) return null;
+    switch (colorName.toLowerCase()) {
+      case 'đen': case 'black':  return Colors.black87;
+      case 'trắng': case 'white': return Colors.white;
+      case 'đỏ': case 'red':    return Colors.red;
+      case 'xanh lam': case 'blue': return Colors.blue;
+      case 'xanh lá': case 'green': return Colors.green;
+      case 'vàng': case 'yellow': return Colors.amber;
+      case 'cam': case 'orange': return Colors.orange;
+      case 'xám': case 'grey': case 'gray': return Colors.grey;
+      case 'bạc': case 'silver': return const Color(0xFFC0C0C0);
+      case 'nâu': case 'brown': return Colors.brown;
+      case 'tím': case 'purple': return Colors.purple;
+      case 'hồng': case 'pink': return Colors.pink;
+      default: return null;
+    }
+  }
+
+  String _formatMileage(int km) {
+    if (km >= 1000) {
+      return '${(km / 1000).toStringAsFixed(1)}k';
+    }
+    return '$km';
   }
 }
 
@@ -535,24 +1001,117 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _VehicleBadge extends StatelessWidget {
-  const _VehicleBadge({required this.label});
+// ── Widget placeholder khi xe chưa có ảnh ─────────────────────────────────
+class _VehiclePhotoPlaceholder extends StatelessWidget {
+  const _VehiclePhotoPlaceholder({required this.type});
+  final String type;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMotorbike = !type.toUpperCase().contains('CAR');
+    return Container(
+      width: double.infinity,
+      height: 180,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1C1C1E),
+            const Color(0xFF2C2C2E),
+          ],
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isMotorbike ? Icons.two_wheeler_outlined : Icons.directions_car_outlined,
+            color: Colors.white24,
+            size: 56,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Chưa có ảnh xe',
+            style: TextStyle(color: Colors.white38, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Widget chip thông tin chi tiết xe ─────────────────────────────────────
+class _VehicleDetailChip extends StatelessWidget {
+  const _VehicleDetailChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.colorDot,
+  });
+
+  final IconData icon;
   final String label;
+  final String value;
+  final Color? colorDot;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: const Color(0xFFF8F8F8),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-        ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    if (colorDot != null) ...[
+                      Container(
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.only(right: 5),
+                        decoration: BoxDecoration(
+                          color: colorDot,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                        ),
+                      ),
+                    ],
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

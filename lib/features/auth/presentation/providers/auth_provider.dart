@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
@@ -427,8 +428,15 @@ class AuthProvider extends ChangeNotifier {
     String? bankAccountNumber,
     String? bankAccountHolder,
     XFile? avatarFile,
-    XFile? vehicleRegistration,
-    XFile? vehicleInsurance,
+    String? avatarUrl,
+    String? cccdFrontUrl,
+    String? cccdBackUrl,
+    String? certificateUrl,
+    String? vehiclePhotoUrl,
+    String? vehicleRegistrationUrl,
+    String? vehicleInsuranceUrl,
+    String? driverLicenseUrl,
+    String? color,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -448,21 +456,25 @@ class AuthProvider extends ChangeNotifier {
         bankAccountNumber: bankAccountNumber,
         bankAccountHolder: bankAccountHolder,
         avatarFile: avatarFile,
+        avatarUrl: avatarUrl,
+        cccdFrontUrl: cccdFrontUrl,
+        cccdBackUrl: cccdBackUrl,
+        certificateUrl: certificateUrl,
+        vehiclePhotoUrl: vehiclePhotoUrl,
+        vehicleRegistrationUrl: vehicleRegistrationUrl,
+        vehicleInsuranceUrl: vehicleInsuranceUrl,
+        driverLicenseUrl: driverLicenseUrl,
+        color: color,
       );
       if (newAvatar != null) {
         _avatarUrl = newAvatar;
         await _authService.saveAvatarUrl(newAvatar);
+      } else if (avatarUrl != null) {
+        _avatarUrl = avatarUrl;
+        await _authService.saveAvatarUrl(avatarUrl);
       }
       _displayName = fullName;
       await _authService.saveUserName(fullName);
-
-      if (avatarFile != null || vehicleRegistration != null || vehicleInsurance != null) {
-        await _repository.uploadMechanicDocuments(
-          portrait: avatarFile,
-          vehicleRegistration: vehicleRegistration,
-          vehicleInsurance: vehicleInsurance,
-        );
-      }
 
       await fetchMyProfile();
       return true;
@@ -476,24 +488,208 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Upload ảnh xác thực thợ sau khi đã có JWT.
-  Future<bool> uploadMechanicDocuments(MechanicRegisterDraft draft) async {
-    if (draft.portraitFile == null &&
-        draft.cccdFrontFile == null &&
-        draft.cccdBackFile == null) {
-      return true; // Không có ảnh nào — bỏ qua
+  Future<String> uploadFileToFirebase(File file, String folder) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('Người dùng chưa đăng nhập Firebase.');
     }
 
+    final rawExt = file.path.contains('.') ? file.path.split('.').last : 'jpg';
+    final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
+    final fileName = '${folder.replaceAll('/', '_')}_${DateTime.now().microsecondsSinceEpoch}_${file.path.hashCode}.$ext';
+    final ref = FirebaseStorage.instance.ref().child('$folder/${user.uid}/$fileName');
+
+    await ref.putFile(
+      file,
+      SettableMetadata(contentType: 'image/$ext'),
+    );
+    return await ref.getDownloadURL();
+  }
+
+  Future<String?> sendWithdrawOtp(String phoneNumber) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final res = await _repository.sendOtp(phoneNumber, 'WITHDRAW');
+      return res['debugCode'] as String? ?? 'sent';
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> verifyWithdrawOtp(String phoneNumber, String code) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final token = await _repository.verifyOtpCode(phoneNumber, code);
+      return token;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> setupMechanicProfile({
+    required String province,
+    required String district,
+    required String bankName,
+    required String bankAccountNumber,
+    required String bankAccountHolder,
+    XFile? portrait,
+    XFile? cccdFront,
+    XFile? cccdBack,
+    XFile? certificate,
+    String? vehicleModel,
+    String? vehicleGeneration,
+    String? licensePlate,
+    String? driverLicenseNumber,
+    XFile? vehiclePhoto,         // ảnh chụp thực của xe
+    XFile? vehicleRegistration,
+    XFile? vehicleInsurance,
+    XFile? driverLicense,
+    String? color,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _repository.uploadMechanicDocuments(
-        portrait: draft.portraitFile,
-        vehicleRegistration: null,
-        vehicleInsurance: null,
+      final List<Map<String, dynamic>> uploads = [];
+      if (portrait != null) {
+        uploads.add({
+          'file': File(portrait.path),
+          'folder': 'avatars',
+          'key': 'portrait',
+        });
+      }
+      if (cccdFront != null) {
+        uploads.add({
+          'file': File(cccdFront.path),
+          'folder': 'documents',
+          'key': 'cccdFront',
+        });
+      }
+      if (cccdBack != null) {
+        uploads.add({
+          'file': File(cccdBack.path),
+          'folder': 'documents',
+          'key': 'cccdBack',
+        });
+      }
+      if (certificate != null) {
+        uploads.add({
+          'file': File(certificate.path),
+          'folder': 'documents',
+          'key': 'certificate',
+        });
+      }
+      if (vehiclePhoto != null) {
+        uploads.add({
+          'file': File(vehiclePhoto.path),
+          'folder': 'vehicles',
+          'key': 'vehiclePhoto',
+        });
+      }
+      if (vehicleRegistration != null) {
+        uploads.add({
+          'file': File(vehicleRegistration.path),
+          'folder': 'documents',
+          'key': 'vehicleRegistration',
+        });
+      }
+      if (vehicleInsurance != null) {
+        uploads.add({
+          'file': File(vehicleInsurance.path),
+          'folder': 'documents',
+          'key': 'vehicleInsurance',
+        });
+      }
+      if (driverLicense != null) {
+        uploads.add({
+          'file': File(driverLicense.path),
+          'folder': 'documents',
+          'key': 'driverLicense',
+        });
+      }
+
+      final Map<String, String> uploadedUrls = {};
+      if (uploads.isNotEmpty) {
+        final results = await Future.wait(
+          uploads.map((item) => uploadFileToFirebase(item['file'] as File, item['folder'] as String)),
+        );
+        for (int i = 0; i < uploads.length; i++) {
+          final key = uploads[i]['key'] as String;
+          uploadedUrls[key] = results[i];
+        }
+      }
+
+      final portraitUrl = uploadedUrls['portrait'];
+      final cccdFrontUrl = uploadedUrls['cccdFront'];
+      final cccdBackUrl = uploadedUrls['cccdBack'];
+      final certificateUrl = uploadedUrls['certificate'];
+      final vehiclePhotoUrl = uploadedUrls['vehiclePhoto'];
+      final vehicleRegistrationUrl = uploadedUrls['vehicleRegistration'];
+      final vehicleInsuranceUrl = uploadedUrls['vehicleInsurance'];
+      final driverLicenseUrl = uploadedUrls['driverLicense'];
+
+      final address = '${district.trim()}, ${province.trim()}';
+
+      final success = await saveMyProfile(
+        fullName: displayName,
+        currentAddress: address,
+        bankName: bankName,
+        bankAccountNumber: bankAccountNumber,
+        bankAccountHolder: bankAccountHolder,
+        vehicleModel: vehicleModel,
+        vehicleGeneration: vehicleGeneration,
+        licensePlate: licensePlate,
+        driverLicenseNumber: driverLicenseNumber,
+        avatarUrl: portraitUrl,
+        cccdFrontUrl: cccdFrontUrl,
+        cccdBackUrl: cccdBackUrl,
+        certificateUrl: certificateUrl,
+        vehiclePhotoUrl: vehiclePhotoUrl,
+        vehicleRegistrationUrl: vehicleRegistrationUrl,
+        vehicleInsuranceUrl: vehicleInsuranceUrl,
+        driverLicenseUrl: driverLicenseUrl,
+        color: color,
       );
+
+      return success;
+    } catch (e, st) {
+      debugPrint('setupMechanicProfile error: $e\n$st');
+      _errorMessage = errorMessageFrom(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> uploadMechanicDocuments(MechanicRegisterDraft draft) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (draft.portraitFile != null) {
+        final portraitUrl = await uploadFileToFirebase(File(draft.portraitFile!.path), 'avatars');
+        await saveMyProfile(
+          fullName: displayName,
+          avatarUrl: portraitUrl,
+        );
+      }
       return true;
     } catch (e, st) {
       debugPrint('AuthProvider.uploadMechanicDocuments error: $e\n$st');

@@ -10,12 +10,16 @@ class MechanicWalletProvider extends ChangeNotifier {
   MechanicWalletData? _data;
   bool _isLoading = false;
   String? _errorMessage;
+  bool? _hasPin;
+  bool _isPinUnlocked = false;
 
   MechanicWalletData? get data => _data;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<MechanicWalletTransaction> get transactions => _data?.transactions ?? const [];
   List<MechanicWithdrawRequest> get withdrawRequests => _data?.withdrawRequests ?? const [];
+  bool? get hasPin => _hasPin;
+  bool get isPinUnlocked => _isPinUnlocked;
 
   Future<void> load({bool force = false}) async {
     if (_isLoading) return;
@@ -27,6 +31,7 @@ class MechanicWalletProvider extends ChangeNotifier {
 
     try {
       _data = await _repository.getWallet();
+      _hasPin = await _repository.checkPinStatus();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -36,6 +41,57 @@ class MechanicWalletProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() => load(force: true);
+
+  Future<void> checkWalletPinStatus() async {
+    try {
+      _hasPin = await _repository.checkPinStatus();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+  }
+
+  Future<bool> setupWalletPin(String pin) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _repository.setupPin(pin);
+      _hasPin = true;
+      _isPinUnlocked = true; // Auto unlock after setup
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyWalletPin(String pin) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final ok = await _repository.verifyPin(pin);
+      if (ok) {
+        _isPinUnlocked = true;
+      }
+      return ok;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void lockWallet() {
+    _isPinUnlocked = false;
+    notifyListeners();
+  }
 
   Future<Map<String, dynamic>?> createPaymentIntent(int amount) async {
     _isLoading = true;
@@ -88,13 +144,13 @@ class MechanicWalletProvider extends ChangeNotifier {
   }
 
   /// Rút tiền (trả về true nếu tạo request thành công)
-  Future<bool> withdraw(int amount, {String? description}) async {
+  Future<bool> withdraw(int amount, {String? description, String? otpToken}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _repository.withdraw(amount, description: description);
+      await _repository.withdraw(amount, description: description, otpToken: otpToken);
       await load(force: true);
       return true;
     } catch (e) {

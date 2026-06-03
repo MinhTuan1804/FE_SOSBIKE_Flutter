@@ -21,7 +21,9 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
+import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/core/widgets/app_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
@@ -406,6 +408,27 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     final rescueProvider = context.watch<RescueProvider>();
 
+    final isMechanic = auth.userType?.toUpperCase() == 'MECHANIC';
+    if (isMechanic) {
+      final isVerified = auth.profile?.mechanic?.isVerified ?? false;
+      if (!isVerified) {
+        if (auth.profile == null && auth.isLoading) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF8B1A1A),
+            body: Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+        return Scaffold(
+          backgroundColor: const Color(0xFF8B1A1A),
+          body: AppBackground(
+            child: _buildLockoutScreen(context, auth),
+          ),
+        );
+      }
+    }
+
     final shellBody = Stack(
       clipBehavior: Clip.none,
       children: [
@@ -453,7 +476,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     unawaited(context.read<MechanicRepairProvider>().loadActiveOrder());
                   }
                   if (t == MainNavTab.wallet && auth.userType != 'CUSTOMER') {
-                    context.read<MechanicWalletProvider>().load(force: true);
+                    final walletProv = context.read<MechanicWalletProvider>();
+                    walletProv.lockWallet();
+                    walletProv.load(force: true);
                   }
                 },
                 userType: auth.userType,
@@ -469,6 +494,155 @@ class _MainShellScreenState extends State<MainShellScreen> {
       body: auth.userType == 'CUSTOMER'
           ? shellBody
           : AppBackground(child: shellBody),
+    );
+  }
+
+  Widget _buildLockoutScreen(BuildContext context, AuthProvider auth) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_person_outlined,
+                color: Colors.white,
+                size: 80,
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'Tài khoản chưa được duyệt',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Hồ sơ đăng ký của bạn đang chờ Admin SOSBIKE phê duyệt hoặc thông tin của bạn chưa được điền đầy đủ.\n\n'
+              'Vui lòng bấm vào nút bên dưới để hoàn thiện thông tin xác thực (CCCD, Bằng lái, Đăng ký xe, Bảo hiểm & Ngân hàng) để kích hoạt tài khoản.',
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: Colors.white.withOpacity(0.8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MechanicSetupProfileScreen(),
+                    ),
+                  ).then((_) {
+                    auth.fetchMyProfile(silent: true);
+                  });
+                },
+                icon: const Icon(Icons.assignment_ind_rounded, color: AppColors.primary),
+                label: const Text(
+                  'Hoàn thiện hồ sơ xác thực',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                  );
+                  await auth.fetchMyProfile();
+                  if (context.mounted) {
+                    Navigator.pop(context); // dismiss loader
+                  }
+                },
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                label: const Text(
+                  'Kiểm tra trạng thái duyệt',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Đăng xuất'),
+                      content: const Text('Bạn có muốn đăng xuất?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Hủy'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true && context.mounted) {
+                    await auth.logout();
+                    if (context.mounted) {
+                      navigateToLogin();
+                    }
+                  }
+                },
+                icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                label: const Text(
+                  'Đăng xuất',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54, width: 1.2),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

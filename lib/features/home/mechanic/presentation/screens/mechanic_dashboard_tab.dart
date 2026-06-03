@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_dashboard_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
+
 
 /// Tab Đơn hàng — dashboard theo Figma, dữ liệu từ API.
 class MechanicDashboardTab extends StatefulWidget {
@@ -135,7 +137,8 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
     }
 
     final data = dashboard ?? MechanicDashboardData.empty;
-    final trips = data.recentTrips;
+    final auth = context.watch<AuthProvider>();
+    final isVerified = auth.profile?.mechanic?.isVerified ?? false;
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -149,9 +152,11 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Banner hoàn thiện hồ sơ (hiển thị nếu chưa được duyệt) ──
-                _SetupProfileBanner(),
-                const SizedBox(height: 4),
-                _MapCard(onViewTrips: () => _showTripsSheet(trips)),
+                if (!isVerified) ...[
+                  _SetupProfileBanner(),
+                  const SizedBox(height: 4),
+                ],
+                _MapCard(onViewTrips: () => _showTripsSheet(data.recentTrips)),
                 const SizedBox(height: 12),
                 IntrinsicHeight(
                   child: Row(
