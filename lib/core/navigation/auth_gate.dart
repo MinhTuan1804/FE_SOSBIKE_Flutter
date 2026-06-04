@@ -10,6 +10,7 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/intro_welcome_screen.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_shell_screen.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 
 /// Màn khởi động: chờ token → shell chính hoặc luồng đăng nhập (navigator con).
 class AuthGate extends StatefulWidget {
@@ -22,6 +23,7 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   Timer? _authFailsafe;
   final GlobalKey<NavigatorState> _authFlowNavKey = GlobalKey<NavigatorState>();
+  bool _notificationBootstrapped = false;
 
   @override
   void initState() {
@@ -84,7 +86,22 @@ class _AuthGateState extends State<AuthGate> {
         }
 
         if (auth.isAuthenticated) {
+          if (!_notificationBootstrapped) {
+            _notificationBootstrapped = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              context.read<NotificationProvider>().load();
+            });
+          }
           return const MainShellScreen();
+        }
+
+        if (_notificationBootstrapped) {
+          _notificationBootstrapped = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            context.read<NotificationProvider>().reset();
+          });
         }
 
         // Luồng đăng nhập chỉ trên navigator con — không đè lên AuthGate ở root.

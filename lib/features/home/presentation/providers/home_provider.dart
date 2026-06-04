@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/features/home/data/models/post_model.dart';
+import 'package:fe_moblie_flutter/features/home/data/models/blog_post_model.dart';
 import 'package:fe_moblie_flutter/features/home/data/repositories/home_repository.dart';
 
 class HomeProvider extends ChangeNotifier {
@@ -7,11 +7,11 @@ class HomeProvider extends ChangeNotifier {
 
   HomeProvider(this._repository);
 
-  List<PostModel> _posts = [];
+  List<BlogPostModel> _posts = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<PostModel> get posts => _posts;
+  List<BlogPostModel> get posts => _posts;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
