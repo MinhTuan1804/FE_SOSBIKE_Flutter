@@ -22,6 +22,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/core/widgets/app_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
@@ -338,26 +339,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      if (!mounted) return;
-      await context.read<AuthProvider>().fetchMyProfile(silent: true);
-    });
-    context.read<RescueProvider>().addListener(_onRescueStatusChanged);
-  }
-
-  @override
-  void dispose() {
-    try {
-      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
-    } catch (_) {}
-    super.dispose();
-  }
-
   void _onRescueStatusChanged() {
     final rescue = context.read<RescueProvider>();
     final auth = context.read<AuthProvider>();
@@ -397,12 +378,33 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      await context.read<AuthProvider>().fetchMyProfile(silent: true);
+    });
+    context.read<RescueProvider>().addListener(_onRescueStatusChanged);
+  }
+
+  @override
+  void dispose() {
+    try {
+      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
     final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !inOrderFlow;
+    final unreadNotificationCount = context.watch<NotificationProvider>().unreadCount;
 
     final rescueProvider = context.watch<RescueProvider>();
 
@@ -457,6 +459,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   }
                 },
                 userType: auth.userType,
+                unreadNotificationCount: unreadNotificationCount,
               ),
             ),
           ),

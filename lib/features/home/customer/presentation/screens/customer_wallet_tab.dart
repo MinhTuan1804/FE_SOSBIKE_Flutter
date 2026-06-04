@@ -10,27 +10,9 @@ class CustomerWalletTab extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
 
     return SafeArea(
-      top: false,
+      top: true,
       child: Column(
         children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(top: top + 18, bottom: 18),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: const Center(
-              child: Text(
-                'Thanh toán',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),

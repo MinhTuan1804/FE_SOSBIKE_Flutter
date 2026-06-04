@@ -22,10 +22,13 @@ import 'package:fe_moblie_flutter/features/home/presentation/providers/home_prov
 import 'package:fe_moblie_flutter/features/membership/data/repositories/membership_repository.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/repositories/chat_repository.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/repositories/notification_repository.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/services/chat_realtime_service.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/services/notification_realtime_service.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/services/rescue_realtime_service.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/services/location_realtime_service.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/chat_provider.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/features/home/data/repositories/rescue_repository.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
@@ -76,7 +79,7 @@ void main() async {
 
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
-  final homeRepository = HomeRepository();
+  final homeRepository = HomeRepository(dioClient);
   final membershipRepository = MembershipRepository(dioClient);
   final mechanicDashboardRepository = MechanicDashboardRepository(dioClient);
   final mechanicHistoryRepository = MechanicHistoryRepository(dioClient);
@@ -87,6 +90,8 @@ void main() async {
   final backendOtpService = BackendOtpService(dioClient);
   final chatRepository = ChatRepository(dioClient);
   final chatRealtimeService = ChatRealtimeService(authService);
+  final notificationRepository = NotificationRepository(dioClient);
+  final notificationRealtimeService = NotificationRealtimeService(authService);
   final rescueRepository = RescueRepository(dioClient);
   final rescueRealtimeService = RescueRealtimeService(authService);
   final locationRealtimeService = LocationRealtimeService(authService);
@@ -115,6 +120,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
         ChangeNotifierProvider(create: (_) => ChatProvider(chatRepository, chatRealtimeService)),
+        ChangeNotifierProvider(create: (_) => NotificationProvider(notificationRepository, notificationRealtimeService)),
         ChangeNotifierProvider(create: (_) => RescueProvider(rescueRepository, rescueRealtimeService, locationRealtimeService)),
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
         ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),

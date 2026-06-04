@@ -10,12 +10,14 @@ class MainBottomNavBar extends StatelessWidget {
     required this.onChanged,
     required this.userType,
     this.showActive = true,
+    this.unreadNotificationCount = 0,
   });
 
   final MainNavTab current;
   final ValueChanged<MainNavTab> onChanged;
   final String? userType;
   final bool showActive;
+  final int unreadNotificationCount;
 
   static const _barHeight = 65.0;
   static const _bumpRadius = 34.0;
@@ -137,15 +139,43 @@ class MainBottomNavBar extends StatelessWidget {
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutBack,
                             bottom: isSelected ? 36.0 : 20.0,
-                            child: Image.asset(
-                              item.$2,
-                              height: _tabIconSize,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Icon(
-                                _getFallbackIcon(item.$1),
-                                color: Colors.white,
-                                size: _tabIconSize,
-                              ),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Image.asset(
+                                  item.$2,
+                                  height: _tabIconSize,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    _getFallbackIcon(item.$1),
+                                    color: Colors.white,
+                                    size: _tabIconSize,
+                                  ),
+                                ),
+                                if (item.$1 == MainNavTab.maintenance && unreadNotificationCount > 0)
+                                  Positioned(
+                                    right: -4,
+                                    top: -6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        borderRadius: BorderRadius.circular(999),
+                                        border: Border.all(color: Colors.white, width: 1.2),
+                                      ),
+                                      child: Text(
+                                        unreadNotificationCount > 99 ? '99+' : '$unreadNotificationCount',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           // Text label
