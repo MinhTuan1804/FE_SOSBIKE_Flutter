@@ -39,6 +39,11 @@ class ApiEndpoints {
   static const String payments = '/payments';
   static const String mechanicDocuments = '/mechanics/me/documents';
   static const String appConfig = '/config/app';
+  static const String blogs = '/blogs';
+  static const String notifications = '/notifications';
+  static const String notificationUnreadCount = '/notifications/unread-count';
+  static String notificationMarkRead(int notificationId) => '/notifications/$notificationId/read';
+  static const String notificationMarkAllRead = '/notifications/read-all';
 
   static const String chatConversations = '/chats/conversations';
 
