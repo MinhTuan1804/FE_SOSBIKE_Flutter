@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiEndpoints {
   /// Local BE mặc định khi dev; override bằng `--dart-define` hoặc `.env`.
-  static const String _localDevBaseUrl = 'http://localhost:5200/api';
+  static const String _localDevBaseUrl = 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api';
 
   static String get baseUrl {
     const fromDefine = String.fromEnvironment('API_BASE_URL');
@@ -28,6 +28,7 @@ class ApiEndpoints {
   static const String users = '/users';
   static const String userMe = '/users/me';
   static const String updateProfile = '/users/me';
+  static const String sendEmailVerification = '/users/me/send-email-verification';
 
   static const String membershipPlans = '/customer-memberships/plans';
   static const String currentMembership = '/customer-memberships/me';

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/edit_profile_screen.dart';
@@ -210,10 +211,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         isVerified: auth.isPhoneVerified,
                       ),
                       const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
-                      _InfoRow(
+                       _InfoRow(
                         icon: Icons.email_outlined,
                         title: (auth.email != null && auth.email!.isNotEmpty) ? auth.email! : 'Chưa cập nhật', 
                         subtitle: 'Email',
+                        isVerified: (auth.email != null && auth.email!.isNotEmpty)
+                            ? auth.profile?.isEmailVerified ?? false
+                            : null,
+                        onVerify: (auth.email != null && auth.email!.isNotEmpty)
+                            ? () => _showEmailVerificationDialog(context, auth.email!)
+                            : null,
                       ),
                       const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
                       _InfoRow(
@@ -914,6 +921,202 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     return '$km';
   }
+
+  void _showEmailVerificationDialog(BuildContext context, String email) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => EmailLinkVerificationDialog(email: email),
+    );
+  }
+}
+
+class EmailLinkVerificationDialog extends StatefulWidget {
+  const EmailLinkVerificationDialog({super.key, required this.email});
+  final String email;
+
+  @override
+  State<EmailLinkVerificationDialog> createState() => _EmailLinkVerificationDialogState();
+}
+
+class _EmailLinkVerificationDialogState extends State<EmailLinkVerificationDialog> {
+  int _cooldown = 30;
+  Timer? _cooldownTimer;
+  bool _isSending = false;
+  String? _errorMsg;
+
+  @override
+  void initState() {
+    super.initState();
+    _sendLink();
+  }
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCooldown() {
+    setState(() {
+      _cooldown = 30;
+    });
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_cooldown == 0) {
+        timer.cancel();
+      } else {
+        setState(() {
+          _cooldown--;
+        });
+      }
+    });
+  }
+
+  Future<void> _sendLink() async {
+    if (_isSending) return;
+    setState(() {
+      _isSending = true;
+      _errorMsg = null;
+    });
+
+    final success = await context.read<AuthProvider>().sendEmailVerification();
+    if (mounted) {
+      setState(() {
+        _isSending = false;
+      });
+      if (success) {
+        _startCooldown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Liên kết xác thực đã được gửi.')),
+        );
+      } else {
+        setState(() {
+          _errorMsg = context.read<AuthProvider>().errorMessage ?? 'Không thể gửi email xác thực.';
+        });
+      }
+    }
+  }
+
+  Future<void> _checkVerificationStatus() async {
+    setState(() {
+      _isSending = true;
+    });
+    final auth = context.read<AuthProvider>();
+    final profile = await auth.fetchMyProfile(silent: true);
+    if (mounted) {
+      setState(() {
+        _isSending = false;
+      });
+      if (profile != null && profile.isEmailVerified) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Xác thực Email thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email chưa được xác thực. Vui lòng kiểm tra hộp thư của bạn.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Xác thực Email',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Chúng tôi đã gửi một liên kết xác thực đến địa chỉ email:',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.email,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Vui lòng mở hộp thư email của bạn, nhấp vào liên kết xác thực (nút "Xác nhận Email của bạn") và sau đó quay lại đây nhấn nút dưới để kiểm tra.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            if (_errorMsg != null) ...[
+              Text(
+                _errorMsg!,
+                style: const TextStyle(color: Colors.red, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+            ],
+            ElevatedButton(
+              onPressed: _isSending ? null : _checkVerificationStatus,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: _isSending
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text('Tôi đã xác nhận', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: (_cooldown > 0 || _isSending) ? null : _sendLink,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              child: Text(
+                _cooldown > 0
+                ? 'Gửi lại email sau ${_cooldown}s'
+                : 'Gửi lại email',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _InfoRow extends StatelessWidget {
@@ -923,6 +1126,7 @@ class _InfoRow extends StatelessWidget {
     required this.subtitle,
     this.isVerified,
     this.padding = const EdgeInsets.all(16),
+    this.onVerify,
   });
 
   final IconData icon;
@@ -930,6 +1134,7 @@ class _InfoRow extends StatelessWidget {
   final String subtitle;
   final bool? isVerified;
   final EdgeInsetsGeometry padding;
+  final VoidCallback? onVerify;
 
   @override
   Widget build(BuildContext context) {
@@ -952,20 +1157,26 @@ class _InfoRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
                       ),
                     ),
                     if (isVerified != null) ...[
-                      const SizedBox(width: 8),
+                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -981,16 +1192,30 @@ class _InfoRow extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ]
+                      if (!isVerified! && onVerify != null) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: onVerify,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                            ),
+                            child: const Text(
+                              'Xác nhận',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
                 ),
               ],
             ),

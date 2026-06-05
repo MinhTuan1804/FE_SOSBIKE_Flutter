@@ -37,7 +37,7 @@ class _MechanicIncomeTabState extends State<MechanicIncomeTab> {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
       children: [
         _TodayRevenueCard(
           amountLabel: _formatCurrency(income.todayRevenue),

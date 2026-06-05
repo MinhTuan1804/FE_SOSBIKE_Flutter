@@ -652,7 +652,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        if (auth.userType == 'CUSTOMER')
+        if (auth.userType == 'CUSTOMER' && _tab != MainNavTab.history && _tab != MainNavTab.wallet)
           Positioned.fill(
             child: _CustomerHomeBackground(backgroundUrl: appConfig.ui.homeBackgroundUrl),
           ),
@@ -714,7 +714,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ],
         if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none && appConfig.flags.sosEnabled)
           Positioned(
-            right: 12,
+            right: -2,
             bottom: navH + 8,
             child: _SosFab(
               isActive: rescueProvider.incomingRequest != null,
@@ -921,6 +921,7 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
         ],
       ),
     );
+
   }
 }
 

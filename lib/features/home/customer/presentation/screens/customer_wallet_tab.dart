@@ -5,8 +5,9 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/membership/data/models/membership_models.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/screens/membership_screen.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/screens/customer_subscription_checkout_screen.dart';
 
-/// Tab **Thanh toán** khách — gói thành viên (QR), không ví trừ tiền / lịch sử giao dịch.
+/// Tab Thanh toán - hiển thị thông tin gói thành viên của khách hàng
 class CustomerWalletTab extends StatefulWidget {
   const CustomerWalletTab({super.key});
 
@@ -30,6 +31,7 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
   Widget build(BuildContext context) {
     final membership = context.watch<MembershipProvider>();
     final subscription = membership.currentSubscription;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -45,51 +47,111 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Expanded(
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: RefreshIndicator(
-              color: AppColors.primary,
-              onRefresh: membership.load,
-              child: membership.isLoading && subscription == null && membership.plans.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        const SizedBox(height: 120),
-                        const Center(
-                          child: CircularProgressIndicator(color: AppColors.primary),
-                        ),
-                      ],
-                    )
-                  : ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
-                      children: [
-                        _MembershipStatusCard(
-                          subscription: subscription,
-                          dateFormat: _dateFormat,
-                        ),
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: membership.load,
+            child: membership.isLoading && subscription == null && membership.plans.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 120),
+                      Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    ],
+                  )
+                : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 100),
+                    children: [
+                      _MembershipStatusCard(
+                        subscription: subscription,
+                        dateFormat: _dateFormat,
+                      ),
+                      if (membership.pendingSession != null) ...[
                         const SizedBox(height: 12),
-                        _MembershipPlansBanner(
-                          onTap: () => _openMembership(context),
+                        _PendingPaymentBanner(
+                          session: membership.pendingSession!,
+                          onContinue: () async {
+                            final plans = membership.plans;
+                            CustomerMembershipPlan? targetPlan;
+                            for (final p in plans) {
+                              if (p.planId == membership.pendingSession!.planId) {
+                                targetPlan = p;
+                                break;
+                              }
+                            }
+                            if (targetPlan == null) {
+                              targetPlan = CustomerMembershipPlan(
+                                planId: membership.pendingSession!.planId,
+                                name: membership.pendingSession!.planName,
+                                targetAudience: 'B2C',
+                                price: membership.pendingSession!.price,
+                                durationDays: 30,
+                                billingCycle: 'MONTH',
+                                isFree: false,
+                                isCurrentPlan: false,
+                                benefits: const [],
+                              );
+                            }
+
+                            final ok = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CustomerSubscriptionCheckoutScreen(
+                                  plan: targetPlan!,
+                                  intent: membership.pendingSession!.intent,
+                                  autoRenew: membership.pendingSession!.autoRenew,
+                                  createdAt: membership.pendingSession!.createdAt,
+                                ),
+                              ),
+                            );
+                            if (context.mounted) {
+                              context.read<MembershipProvider>().load();
+                            }
+                          },
+                          onCancel: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                title: const Text('Hủy giao dịch', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                content: const Text('Bạn có chắc muốn hủy bỏ giao dịch đang chờ thanh toán này không?', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Đóng', style: TextStyle(color: Colors.white54)),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                                    child: const Text('Xác nhận hủy', style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await membership.clearPendingSession();
+                            }
+                          },
                         ),
-                        const SizedBox(height: 14),
-                        const _QrPaymentNotice(),
-                        if (membership.errorMessage != null &&
-                            membership.errorMessage!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            membership.errorMessage!,
-                            style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12),
-                          ),
-                        ],
                       ],
-                    ),
-            ),
+                      const SizedBox(height: 12),
+                      _MembershipPlansBanner(
+                        onTap: () => _openMembership(context),
+                      ),
+                      if (membership.errorMessage != null &&
+                          membership.errorMessage!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          membership.errorMessage!,
+                          style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
           ),
         ),
       ],
@@ -97,11 +159,9 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
   }
 
   void _openMembership(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => const MembershipScreen(),
-        fullscreenDialog: true,
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MembershipScreen()),
     );
   }
 }
@@ -270,39 +330,136 @@ class _MembershipPlansBanner extends StatelessWidget {
   }
 }
 
-class _QrPaymentNotice extends StatelessWidget {
-  const _QrPaymentNotice();
+class _PendingPaymentBanner extends StatelessWidget {
+  const _PendingPaymentBanner({
+    required this.session,
+    required this.onContinue,
+    required this.onCancel,
+  });
+
+  final PendingPaymentSession session;
+  final VoidCallback onContinue;
+  final VoidCallback onCancel;
+
+  String _formatMoney(double value) {
+    final number = value.round().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < number.length; i++) {
+      final remaining = number.length - i;
+      buffer.write(number[i]);
+      if (remaining > 1 && remaining % 3 == 1) buffer.write(',');
+    }
+    return buffer.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: const Color(0xFF2A1414),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
       ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.qr_code_2_rounded, color: AppColors.primary, size: 28),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Thanh toán gói thành viên',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.15),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'Sau khi chọn gói, hệ thống hiển thị mã QR và nội dung chuyển khoản. '
-                  'Khách không dùng ví SOSBIKE để trừ phí gói (khác thợ sửa xe).',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12, height: 1.4),
+                child: const Icon(Icons.pending_actions_rounded, color: AppColors.primary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GIAO DỊCH CHƯA HOÀN TẤT',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    SizedBox(height: 1),
+                    Text(
+                      'Đang chờ thanh toán...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              TextButton(
+                onPressed: onCancel,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white60,
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Hủy',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Gói: ${session.planName}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Số tiền: ${_formatMoney(session.price)}đ',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 30,
+                child: ElevatedButton(
+                  onPressed: onContinue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                  child: const Text(
+                    'Thanh toán tiếp',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

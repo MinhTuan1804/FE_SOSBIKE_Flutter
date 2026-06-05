@@ -296,4 +296,12 @@ class AuthRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<void> sendEmailVerification() async {
+    try {
+      await _dioClient.dio.post(ApiEndpoints.sendEmailVerification);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

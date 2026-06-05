@@ -148,6 +148,7 @@ class CustomerPaymentIntent {
     required this.paymentMethod,
     required this.paymentType,
     this.qrContent,
+    this.checkoutUrl,
     this.expiredAt,
     this.transactionDate,
   });
@@ -158,6 +159,7 @@ class CustomerPaymentIntent {
   final String paymentMethod;
   final String paymentType;
   final String? qrContent;
+  final String? checkoutUrl;
   final DateTime? expiredAt;
   final DateTime? transactionDate;
 
@@ -169,6 +171,7 @@ class CustomerPaymentIntent {
       paymentMethod: json['paymentMethod']?.toString() ?? '',
       paymentType: json['paymentType']?.toString() ?? '',
       qrContent: json['qrContent']?.toString(),
+      checkoutUrl: json['checkoutUrl']?.toString(),
       expiredAt: _asDateOrNull(json['expiredAt']),
       transactionDate: _asDateOrNull(json['transactionDate']),
     );
@@ -197,3 +200,67 @@ DateTime? _asDateOrNull(dynamic value) {
   if (value is String) return DateTime.tryParse(value);
   return null;
 }
+
+class PendingPaymentSession {
+  final int planId;
+  final String planName;
+  final double price;
+  final bool autoRenew;
+  final CustomerPaymentIntent intent;
+  final DateTime createdAt;
+
+  PendingPaymentSession({
+    required this.planId,
+    required this.planName,
+    required this.price,
+    required this.autoRenew,
+    required this.intent,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'planId': planId,
+        'planName': planName,
+        'price': price,
+        'autoRenew': autoRenew,
+        'intent': {
+          'paymentId': intent.paymentId,
+          'paymentCode': intent.paymentCode,
+          'amount': intent.amount,
+          'paymentMethod': intent.paymentMethod,
+          'paymentType': intent.paymentType,
+          'qrContent': intent.qrContent,
+          'checkoutUrl': intent.checkoutUrl,
+          'expiredAt': intent.expiredAt?.toIso8601String(),
+          'transactionDate': intent.transactionDate?.toIso8601String(),
+        },
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory PendingPaymentSession.fromJson(Map<String, dynamic> json) {
+    final intentJson = json['intent'] as Map<String, dynamic>;
+    return PendingPaymentSession(
+      planId: json['planId'] as int,
+      planName: json['planName'] as String,
+      price: (json['price'] as num).toDouble(),
+      autoRenew: json['autoRenew'] as bool,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      intent: CustomerPaymentIntent(
+        paymentId: intentJson['paymentId'] as String,
+        paymentCode: intentJson['paymentCode'] as String,
+        amount: (intentJson['amount'] as num).toDouble(),
+        paymentMethod: intentJson['paymentMethod'] as String,
+        paymentType: intentJson['paymentType'] as String,
+        qrContent: intentJson['qrContent'] as String?,
+        checkoutUrl: intentJson['checkoutUrl'] as String?,
+        expiredAt: intentJson['expiredAt'] != null
+            ? DateTime.parse(intentJson['expiredAt'] as String)
+            : null,
+        transactionDate: intentJson['transactionDate'] != null
+            ? DateTime.parse(intentJson['transactionDate'] as String)
+            : null,
+      ),
+    );
+  }
+}
+

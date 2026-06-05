@@ -94,7 +94,7 @@ class MechanicWithdrawRequest {
   }
 
   String get statusLabel => switch (status.toUpperCase()) {
-        'PENDING' => 'Chờ duyệt',
+        'PENDING' => 'Đang xử lý',
         'APPROVED' => 'Đã duyệt',
         'REJECTED' => 'Từ chối',
         'COMPLETED' => 'Hoàn tất',

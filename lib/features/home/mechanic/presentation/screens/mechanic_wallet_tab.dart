@@ -124,7 +124,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                       onRefresh: provider.refresh,
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 100),
                         children: [
                           _WalletCard(balanceLabel: wallet.balanceLabel, balance: wallet.balance),
                           const SizedBox(height: 12),
@@ -137,6 +137,8 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                               );
                             },
                           ),
+                          const SizedBox(height: 16),
+                          _buildDateFilter(context, provider),
                           const SizedBox(height: 16),
                           if (wallet.withdrawRequests.isNotEmpty) ...[
                             const Text(
@@ -596,6 +598,109 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           ],
         ),
       );
+
+  Widget _buildDateFilter(BuildContext context, MechanicWalletProvider provider) {
+    final start = provider.startDate;
+    final end = provider.endDate;
+    final hasFilter = start != null && end != null;
+
+    final rangeText = hasFilter
+        ? '${DateFormat('dd/MM/yyyy').format(start)} - ${DateFormat('dd/MM/yyyy').format(end)}'
+        : 'Tất cả thời gian';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: hasFilter ? AppColors.primary.withValues(alpha: 0.3) : const Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.calendar_month_outlined,
+            color: hasFilter ? AppColors.primary : const Color(0xFF6B7280),
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: InkWell(
+              onTap: () => _selectDateRange(context, provider),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Thời gian giao dịch',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    rangeText,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: hasFilter ? AppColors.primary : const Color(0xFF111827),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (hasFilter)
+            IconButton(
+              icon: const Icon(Icons.cancel_rounded, color: Color(0xFF9CA3AF), size: 20),
+              onPressed: () => provider.clearDateRange(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+          else
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF9CA3AF),
+              size: 20,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectDateRange(BuildContext context, MechanicWalletProvider provider) async {
+    final now = DateTime.now();
+    final initialRange = provider.startDate != null && provider.endDate != null
+        ? DateTimeRange(start: provider.startDate!, end: provider.endDate!)
+        : null;
+
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: initialRange,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF111827),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      provider.setDateRange(picked.start, picked.end);
+    }
+  }
 }
 
 const _kBanks = [
@@ -1057,6 +1162,23 @@ class _WithdrawRequestTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
                 ),
+                if (req.status.toUpperCase() == 'PENDING') ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: const [
+                      Icon(Icons.access_time_rounded, size: 11, color: Color(0xFFD97706)),
+                      SizedBox(width: 4),
+                      Text(
+                        'Duyệt tiền có thể mất 5-10 phút',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFD97706),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   dateFormat.format(req.requestedAt.toLocal()),
