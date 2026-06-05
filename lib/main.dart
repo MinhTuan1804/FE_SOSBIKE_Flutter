@@ -18,8 +18,6 @@ import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/features/auth/data/repositories/auth_repository.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
-import 'package:fe_moblie_flutter/features/home/data/repositories/home_repository.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/providers/home_provider.dart';
 import 'package:fe_moblie_flutter/features/membership/data/repositories/membership_repository.dart';
 import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/repositories/chat_repository.dart';
@@ -85,7 +83,6 @@ void main() async {
 
   // 2. Khởi tạo Repositories
   final authRepository = AuthRepository(dioClient);
-  final homeRepository = HomeRepository(dioClient);
   final membershipRepository = MembershipRepository(dioClient);
   final mechanicDashboardRepository = MechanicDashboardRepository(dioClient);
   final mechanicHistoryRepository = MechanicHistoryRepository(dioClient);
@@ -125,7 +122,6 @@ void main() async {
         Provider<BackendOtpService>.value(value: backendOtpService),
         ChangeNotifierProvider<AppConfigProvider>.value(value: appConfigProvider),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository)),
         ChangeNotifierProvider(create: (_) => MembershipProvider(membershipRepository)),
         ChangeNotifierProvider(create: (_) => ChatProvider(chatRepository, chatRealtimeService)),
         ChangeNotifierProvider(create: (_) => NotificationProvider(notificationRepository, notificationRealtimeService)),
