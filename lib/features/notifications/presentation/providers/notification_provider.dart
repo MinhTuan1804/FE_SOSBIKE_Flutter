@@ -119,9 +119,7 @@ class NotificationProvider extends ChangeNotifier {
       await _realtimeService.disconnect();
     }
 
-    if (_realtimeSub == null) {
-      _realtimeSub = _realtimeService.notifications.listen(applyRealtime);
-    }
+    _realtimeSub ??= _realtimeService.notifications.listen(applyRealtime);
 
     await _realtimeService.connect();
   }

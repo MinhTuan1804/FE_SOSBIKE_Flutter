@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,6 +10,7 @@ class AuthService {
   static const _keyRefreshToken = 'refresh_token';
   static const _keyUserName = 'user_full_name';
   static const _keyAvatarUrl = 'user_avatar_url';
+  static const _keyBlogVisitorId = 'blog_visitor_id';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(
@@ -18,6 +20,7 @@ class AuthService {
   );
 
   String? _memoryToken;
+  String? _memoryBlogVisitorId;
 
   Future<void> saveToken(String token) async {
     _memoryToken = token;
@@ -160,5 +163,35 @@ class AuthService {
     } catch (e) {
       debugPrint('AuthService.clearUserProfile: $e');
     }
+  }
+
+  Future<String> getOrCreateBlogVisitorId() async {
+    if (_memoryBlogVisitorId != null && _memoryBlogVisitorId!.isNotEmpty) {
+      return _memoryBlogVisitorId!;
+    }
+
+    try {
+      final stored = await _storage.read(key: _keyBlogVisitorId);
+      if (stored != null && stored.isNotEmpty) {
+        _memoryBlogVisitorId = stored;
+        return stored;
+      }
+
+      final visitorId = _generateVisitorId();
+      _memoryBlogVisitorId = visitorId;
+      await _storage.write(key: _keyBlogVisitorId, value: visitorId);
+      return visitorId;
+    } catch (e) {
+      debugPrint('AuthService.getOrCreateBlogVisitorId fallback memory: $e');
+      final visitorId = _memoryBlogVisitorId ?? _generateVisitorId();
+      _memoryBlogVisitorId = visitorId;
+      return visitorId;
+    }
+  }
+
+  String _generateVisitorId() {
+    final random = Random();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }

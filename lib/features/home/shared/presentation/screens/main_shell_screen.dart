@@ -18,9 +18,6 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_order_history_tab.dart';
-import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
-import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
-import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_placeholder_tab.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
@@ -53,12 +50,9 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   MainNavTab _tab = MainNavTab.orders;
-  bool _isOnline = false;
-  bool _showIncomingRequest = false;
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
   List<MechanicSessionSparePart> _sessionSpareParts = const [];
-  bool _editingRepairItems = false;
   bool _quoteSent = false;
   IncomingRescueRequest? _activeIncomingRequest;
 
