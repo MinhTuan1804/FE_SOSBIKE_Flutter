@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
 enum MainNavTab { orders, history, wallet, maintenance }
@@ -148,19 +148,6 @@ class MainBottomNavBar extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (isCustomer)
-                            Positioned(
-                              bottom: isSelected ? 10 : 6,
-                              child: Text(
-                                _customerTabLabel(item.$1),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: isSelected ? 1 : 0.82),
-                                  fontSize: 10,
-                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                                  height: 1,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
@@ -174,14 +161,6 @@ class MainBottomNavBar extends StatelessWidget {
     );
   }
 
-  static String _customerTabLabel(MainNavTab tab) {
-    return switch (tab) {
-      MainNavTab.orders => 'Trang chủ',
-      MainNavTab.history => 'Lịch sử',
-      MainNavTab.wallet => 'Thanh toán',
-      MainNavTab.maintenance => 'Thông báo',
-    };
-  }
 
   IconData _getFallbackIcon(MainNavTab tab) {
     return switch (tab) {

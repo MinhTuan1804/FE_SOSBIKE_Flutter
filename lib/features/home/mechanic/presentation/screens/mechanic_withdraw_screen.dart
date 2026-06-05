@@ -162,7 +162,7 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
             key: const ValueKey('success'),
             isSuccess: true,
             title: 'Gửi yêu cầu rút tiền thành công!',
-            subtitle: 'Yêu cầu của bạn đang chờ admin duyệt và chuyển tiền.',
+            subtitle: 'Yêu cầu của bạn đang chờ admin duyệt và chuyển tiền.\nQuá trình duyệt tiền có thể mất từ 5-10 phút.',
             amount: _amount,
             amountLabel: '-${fmtWalletAmount(_amount)}đ',
             amountColor: const Color(0xFF22C55E),

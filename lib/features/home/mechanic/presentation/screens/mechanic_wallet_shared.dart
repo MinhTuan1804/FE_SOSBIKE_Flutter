@@ -504,11 +504,15 @@ class _WalletResultScreenState extends State<WalletResultScreen>
               const SizedBox(height: 28),
               FadeTransition(
                 opacity: fade,
-                child: Text(widget.title,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900)),
+                child: Text(
+                  widget.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               FadeTransition(

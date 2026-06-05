@@ -136,7 +136,7 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
                   )
                 : ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 100),
                     itemCount: items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, index) => _HistoryCard(

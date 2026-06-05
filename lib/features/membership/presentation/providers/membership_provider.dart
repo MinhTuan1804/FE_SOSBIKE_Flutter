@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fe_moblie_flutter/features/membership/data/models/membership_models.dart';
 import 'package:fe_moblie_flutter/features/membership/data/repositories/membership_repository.dart';
 
@@ -6,9 +8,12 @@ class MembershipProvider extends ChangeNotifier {
   MembershipProvider(this._repository);
 
   final MembershipRepository _repository;
+  final _secureStorage = const FlutterSecureStorage();
+  static const _sessionKey = 'pending_membership_payment_session';
 
   List<CustomerMembershipPlan> _plans = [];
   CustomerSubscription? _currentSubscription;
+  PendingPaymentSession? _pendingSession;
   bool _isLoading = false;
   bool _isSubscribing = false;
   bool _isCancellingRenewal = false;
@@ -16,10 +21,27 @@ class MembershipProvider extends ChangeNotifier {
 
   List<CustomerMembershipPlan> get plans => _plans;
   CustomerSubscription? get currentSubscription => _currentSubscription;
+  PendingPaymentSession? get pendingSession => _pendingSession;
   bool get isLoading => _isLoading;
   bool get isSubscribing => _isSubscribing;
   bool get isCancellingRenewal => _isCancellingRenewal;
   String? get errorMessage => _errorMessage;
+
+  Future<void> savePendingSession(PendingPaymentSession session) async {
+    _pendingSession = session;
+    await _secureStorage.write(
+      key: _sessionKey,
+      value: jsonEncode(session.toJson()),
+    );
+    notifyListeners();
+  }
+
+  Future<void> clearPendingSession() async {
+    _pendingSession = null;
+    await _secureStorage.delete(key: _sessionKey);
+    notifyListeners();
+  }
+
 
   bool canSubscribe(CustomerMembershipPlan plan) {
     if (plan.isCurrentPlan) return false;
@@ -52,6 +74,25 @@ class MembershipProvider extends ChangeNotifier {
       final currentSubscription = await _repository.getCurrentSubscription();
       _plans = _markCurrentPlan(plans, currentSubscription?.planId);
       _currentSubscription = currentSubscription;
+
+      final sessionStr = await _secureStorage.read(key: _sessionKey);
+      if (sessionStr != null) {
+        try {
+          final session = PendingPaymentSession.fromJson(
+            jsonDecode(sessionStr) as Map<String, dynamic>,
+          );
+          final diff = DateTime.now().difference(session.createdAt);
+          if (diff.inMinutes >= 15) {
+            await clearPendingSession();
+          } else {
+            _pendingSession = session;
+          }
+        } catch (_) {
+          await clearPendingSession();
+        }
+      } else {
+        _pendingSession = null;
+      }
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -170,6 +211,7 @@ class MembershipProvider extends ChangeNotifier {
         paymentId: paymentId,
         autoRenew: autoRenew,
       );
+      await clearPendingSession();
       await load();
       return true;
     } catch (e) {

@@ -13,6 +13,9 @@ class MechanicWalletProvider extends ChangeNotifier {
   bool? _hasPin;
   bool _isPinUnlocked = false;
 
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   MechanicWalletData? get data => _data;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -20,6 +23,28 @@ class MechanicWalletProvider extends ChangeNotifier {
   List<MechanicWithdrawRequest> get withdrawRequests => _data?.withdrawRequests ?? const [];
   bool? get hasPin => _hasPin;
   bool get isPinUnlocked => _isPinUnlocked;
+
+  DateTime? get startDate => _startDate;
+  DateTime? get endDate => _endDate;
+
+  void setDateRange(DateTime? start, DateTime? end) {
+    _startDate = start;
+    // Set end date to end of day to include all transactions on that day
+    if (end != null) {
+      _endDate = DateTime(end.year, end.month, end.day, 23, 59, 59);
+    } else {
+      _endDate = null;
+    }
+    notifyListeners();
+    load(force: true);
+  }
+
+  void clearDateRange() {
+    _startDate = null;
+    _endDate = null;
+    notifyListeners();
+    load(force: true);
+  }
 
   Future<void> load({bool force = false}) async {
     if (_isLoading) return;
@@ -30,7 +55,10 @@ class MechanicWalletProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _data = await _repository.getWallet();
+      _data = await _repository.getWallet(
+        startDate: _startDate,
+        endDate: _endDate,
+      );
       _hasPin = await _repository.checkPinStatus();
     } catch (e) {
       _errorMessage = e.toString();

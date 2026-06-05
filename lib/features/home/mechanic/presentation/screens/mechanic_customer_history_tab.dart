@@ -123,7 +123,7 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
                 )
               : ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(14, activeOrder != null ? 12 : 0, 14, 16),
+                  padding: EdgeInsets.fromLTRB(14, activeOrder != null ? 12 : 0, 14, 100),
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {

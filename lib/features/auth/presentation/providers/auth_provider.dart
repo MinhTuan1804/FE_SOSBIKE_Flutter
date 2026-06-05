@@ -713,4 +713,20 @@ class AuthProvider extends ChangeNotifier {
     _profile = null;
     notifyListeners();
   }
+
+  Future<bool> sendEmailVerification() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _repository.sendEmailVerification();
+      return true;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

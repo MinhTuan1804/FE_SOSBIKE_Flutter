@@ -9,11 +9,20 @@ class MechanicWalletRepository {
 
   final DioClient _dioClient;
 
-  Future<MechanicWalletData> getWallet({int limit = 20}) async {
+  Future<MechanicWalletData> getWallet({
+    int limit = 20,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'limit': limit,
+        if (startDate != null) 'startDate': startDate.toIso8601String(),
+        if (endDate != null) 'endDate': endDate.toIso8601String(),
+      };
       final response = await _dioClient.dio.get(
         ApiEndpoints.mechanicWallet,
-        queryParameters: {'limit': limit},
+        queryParameters: queryParams,
       );
       if (response.data is! Map) {
         throw const FormatException('Wallet response is invalid.');
