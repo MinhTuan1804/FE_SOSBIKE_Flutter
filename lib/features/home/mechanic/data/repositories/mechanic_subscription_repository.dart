@@ -16,4 +16,37 @@ class MechanicSubscriptionRepository {
     }
     return MechanicCurrentSubscription.empty;
   }
+
+  Future<List<MechanicPriorityPlan>> getPlans() async {
+    final response =
+        await _dioClient.dio.get(ApiEndpoints.mechanicSubscriptionPlans);
+    final data = response.data;
+    if (data is! List) return const [];
+
+    final plans = data
+        .whereType<Map<String, dynamic>>()
+        .map(MechanicPriorityPlan.fromApi)
+        .toList();
+    return MechanicPriorityPlan.sortByTier(plans);
+  }
+
+  Future<MechanicCurrentSubscription> subscribe({
+    required int planId,
+    bool autoRenew = false,
+    String paymentMethod = 'WALLET',
+  }) async {
+    final response = await _dioClient.dio.post(
+      ApiEndpoints.mechanicSubscriptionSubscribe,
+      data: {
+        'planId': planId,
+        'autoRenew': autoRenew,
+        'paymentMethod': paymentMethod,
+      },
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      return MechanicCurrentSubscription.fromJson(data);
+    }
+    return MechanicCurrentSubscription.empty;
+  }
 }

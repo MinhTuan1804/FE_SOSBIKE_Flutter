@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_priority_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_subscription_checkout_screen.dart';
 
 /// Màn **Gói Ưu Tiên / Gói Cơ Bản** cho thợ.
@@ -27,7 +28,8 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
       initialPage: _currentPage,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MechanicSubscriptionProvider>().load();
+      context.read<MechanicSubscriptionProvider>().loadAll(force: true);
+      context.read<MechanicWalletProvider>().load(force: true);
     });
   }
 
@@ -47,8 +49,15 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
 
   @override
   Widget build(BuildContext context) {
-    final plans = MechanicPriorityPlan.plans;
-    final activePlan = plans[_currentPage];
+    final prov = context.watch<MechanicSubscriptionProvider>();
+    final plans = prov.plans;
+    if (_currentPage >= plans.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _currentPage = 0);
+      });
+    }
+    final safeIndex = _currentPage.clamp(0, plans.length - 1);
+    final activePlan = plans[safeIndex];
 
     return Scaffold(
       body: AnimatedContainer(
@@ -83,6 +92,14 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
                   },
                 ),
               ),
+              if (prov.isLoadingPlans && !prov.plansFromApi)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Colors.white70),
+                  ),
+                )
+              else
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
@@ -122,14 +139,55 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
     );
   }
 
+  Future<bool> _confirmSwitchPlan({
+    required BuildContext context,
+    required MechanicCurrentSubscription current,
+    required MechanicPriorityPlan target,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Đổi gói ưu tiên?'),
+        content: Text(
+          'Bạn đang dùng "${current.planName}".\n\n'
+          'Chuyển sang "${target.title}" (${target.priceLabel}${target.periodLabel}) '
+          'sẽ kết thúc gói hiện tại. Thời hạn và quyền lợi còn lại không được chuyển sang gói mới.\n\n'
+          'Bạn có chắc muốn tiếp tục?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Giữ gói hiện tại'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Đổi gói'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   void _showUpgradeDialog(BuildContext context, MechanicPriorityPlan plan) async {
+    final sub = context.read<MechanicSubscriptionProvider>().subscription;
+    final isSwitch = sub.hasActivePlan &&
+        sub.planTier != MechanicPriorityTier.free &&
+        plan.planId != null &&
+        (sub.planId != plan.planId || sub.planTier != plan.tier);
+
+    if (isSwitch) {
+      final ok = await _confirmSwitchPlan(context: context, current: sub, target: plan);
+      if (!ok || !mounted) return;
+    }
+
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
         builder: (_) => MechanicSubscriptionCheckoutScreen(plan: plan),
         fullscreenDialog: true,
       ),
     );
-    // Nếu đăng ký thành công, reload card gói đang dùng
     if (result == true && mounted) {
       context.read<MechanicSubscriptionProvider>().refresh();
     }
