@@ -707,7 +707,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final mechanicName = match['mechanicName'] as String? ?? 'Thợ cứu hộ';
     
     final intent = rescue.paymentIntent ?? {};
-    final txCode = intent['paymentCode'] as String? ?? 'ORD-COMPLETED';
+    final txCode = (intent['paymentCode'] ?? intent['PaymentCode']) as String? ?? 'ORD-COMPLETED';
     final methodLabel = _selectedPaymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản';
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
@@ -993,14 +993,14 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
   Widget _buildBankTransferDetailsCard(RescueProvider rescue) {
     final intent = rescue.paymentIntent ?? {};
-    final amount = intent['amount'] as num? ?? 0;
-    final code = intent['paymentCode'] as String? ?? 'ORD';
+    final amount = (intent['amount'] ?? intent['Amount']) as num? ?? 0;
+    final code = (intent['paymentCode'] ?? intent['PaymentCode']) as String? ?? 'ORD';
     final formattedAmt = NumberFormat('#,##0', 'vi_VN').format(amount);
 
-    final bankName = intent['bankBin'] as String? ?? 'MB Bank (Quân Đội)';
-    final accountName = intent['bankAccountName'] as String? ?? 'SOSBIKE SERVICE CO.';
-    final accountNumber = intent['bankAccountNumber'] as String? ?? '8888 8888 8888';
-    final qrContent = intent['qrContent'] as String?;
+    final bankName = (intent['bankBin'] ?? intent['BankBin']) as String? ?? 'MB Bank (Quân Đội)';
+    final accountName = (intent['bankAccountName'] ?? intent['BankAccountName']) as String? ?? 'SOSBIKE SERVICE CO.';
+    final accountNumber = (intent['bankAccountNumber'] ?? intent['BankAccountNumber']) as String? ?? '8888 8888 8888';
+    final qrContent = (intent['qrContent'] ?? intent['QrContent']) as String?;
 
     return Container(
       decoration: BoxDecoration(
@@ -1210,7 +1210,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         if (_selectedPaymentMethod == 'CASH') {
           // Cash payment does not require user confirmation.
           // Confirm payment immediately!
-          final paymentId = intent['paymentId'] as String?;
+          final paymentId = (intent['paymentId'] ?? intent['PaymentId']) as String?;
           if (paymentId != null) {
             await rescue.confirmRescueOrderPayment(paymentId, 'CASH_MOCK_TX');
           }
@@ -1239,7 +1239,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final intent = rescue.paymentIntent;
     if (intent == null) return;
 
-    final paymentId = intent['paymentId'] as String?;
+    final paymentId = (intent['paymentId'] ?? intent['PaymentId']) as String?;
     if (paymentId == null) return;
 
     setState(() {

@@ -192,14 +192,10 @@ class RescueProvider extends ChangeNotifier {
       return;
     }
 
-    // Nếu không force và chưa đủ 2 phút (120s) kể từ lần gọi cuối, dùng ước tính Haversine cục bộ
+    // Nếu không force và chưa đủ 10 giây kể từ lần gọi cuối, bỏ qua để tránh gọi trùng lặp quá nhanh
     if (!force && _lastGoongRouteFetchTime != null) {
       final diff = DateTime.now().difference(_lastGoongRouteFetchTime!);
-      if (diff < const Duration(minutes: 2)) {
-        final distance = _calculateHaversineDistance(custLat, custLng, mechLat, mechLng);
-        _goongDistanceKm = distance * 1.25;
-        _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
-        notifyListeners();
+      if (diff < const Duration(seconds: 10)) {
         return;
       }
     }
@@ -300,16 +296,15 @@ class RescueProvider extends ChangeNotifier {
         // Chỉ cập nhật khoảng cách/ETA khi thợ còn đang di chuyển (ACCEPTED)
         // Sau khi thợ đã đến (ARRIVED+) không cần tính nữa
         if (_isRouteStillNeeded && _customerLatitude != null && _customerLongitude != null) {
-          // Ước tính khoảng cách đường bộ qua đường chim bay (x1.25) thay vì gọi API Direction
-          final distance = _calculateHaversineDistance(
-            _customerLatitude!,
-            _customerLongitude!,
-            lat,
-            lng,
-          );
-          _goongDistanceKm = distance * 1.25; // Nhân hệ số uốn khúc đường bộ
-          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60); // Ước tính 3 phút/km
-          notifyListeners();
+          fetchGoongRoute(
+            custLat: _customerLatitude!,
+            custLng: _customerLongitude!,
+            mechLat: lat,
+            mechLng: lng,
+            force: true,
+          ).catchError((e) {
+            debugPrint('[Goong Error] LocationSub update failed: $e');
+          });
         }
       }
     });
@@ -617,15 +612,15 @@ class RescueProvider extends ChangeNotifier {
         // Chỉ tính khoảng cách/ETA khi thợ còn đang di chuyển đến khách
         // Khi đã ARRIVED hoặc sau đó, không cần cập nhật ETA nữa
         if (_isRouteStillNeeded && _activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          final distance = _calculateHaversineDistance(
-            _activeCustomerLatitude!,
-            _activeCustomerLongitude!,
-            position.latitude,
-            position.longitude,
-          );
-          _goongDistanceKm = distance * 1.25;
-          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
-          notifyListeners();
+          fetchGoongRoute(
+            custLat: _activeCustomerLatitude!,
+            custLng: _activeCustomerLongitude!,
+            mechLat: position.latitude,
+            mechLng: position.longitude,
+            force: true,
+          ).catchError((e) {
+            debugPrint('[Goong Error] Sync location update failed: $e');
+          });
         }
       }
     } catch (e) {
@@ -638,15 +633,15 @@ class RescueProvider extends ChangeNotifier {
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, 10.762622, 106.660172);
         if (_isRouteStillNeeded && _activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          final distance = _calculateHaversineDistance(
-            _activeCustomerLatitude!,
-            _activeCustomerLongitude!,
-            10.762622,
-            106.660172,
-          );
-          _goongDistanceKm = distance * 1.25;
-          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
-          notifyListeners();
+          fetchGoongRoute(
+            custLat: _activeCustomerLatitude!,
+            custLng: _activeCustomerLongitude!,
+            mechLat: 10.762622,
+            mechLng: 106.660172,
+            force: true,
+          ).catchError((e) {
+            debugPrint('[Goong Error] Sync mock location update failed: $e');
+          });
         }
       }
     }

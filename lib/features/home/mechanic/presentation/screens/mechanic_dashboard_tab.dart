@@ -35,6 +35,29 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
 
   String _formatOrderCount(int count) => count.toString().padLeft(2, '0');
 
+  String _translateStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return 'Đang chờ';
+      case 'ACCEPTED':
+        return 'Đã nhận';
+      case 'ARRIVED':
+        return 'Đã đến';
+      case 'QUOTING':
+        return 'Báo giá';
+      case 'REPAIRING':
+        return 'Đang sửa';
+      case 'COMPLETED':
+        return 'Hoàn thành';
+      case 'PAID':
+        return 'Đã thanh toán';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      default:
+        return status;
+    }
+  }
+
   void _showTripsSheet(List<MechanicTripSummary> trips) {
     showModalBottomSheet<void>(
       context: context,
@@ -83,7 +106,7 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      subtitle: Text('${trip.status} · ${_dateFormat.format(trip.createdAt.toLocal())}'),
+                      subtitle: Text('${_translateStatus(trip.status)} · ${_dateFormat.format(trip.createdAt.toLocal())}'),
                       trailing: Text(
                         _formatCurrency(trip.totalAmount),
                         style: const TextStyle(
