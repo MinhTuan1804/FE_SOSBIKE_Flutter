@@ -29,6 +29,7 @@ import 'package:fe_moblie_flutter/features/notifications/presentation/screens/no
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
+import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 import 'package:fe_moblie_flutter/core/widgets/app_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_accept_order_screen.dart';
@@ -402,13 +403,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
     super.dispose();
   }
 
+  bool _mechanicHasBankLinked(AuthProvider auth) {
+    final wallet = auth.profile?.wallet;
+    return wallet != null &&
+        (wallet.bankName?.isNotEmpty ?? false) &&
+        (wallet.bankAccountNumber?.isNotEmpty ?? false) &&
+        (wallet.bankAccountHolder?.isNotEmpty ?? false);
+  }
+
+  bool _isMechanicWalletOnboarding(AuthProvider auth, MechanicWalletProvider walletProv) {
+    if (auth.userType == 'CUSTOMER' || _tab != MainNavTab.wallet) return false;
+    return walletProv.isInWalletSetupFlow(hasBankLinked: _mechanicHasBankLinked(auth));
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final walletProv = context.watch<MechanicWalletProvider>();
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
-    final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !inOrderFlow;
+    final inWalletSetup = _isMechanicWalletOnboarding(auth, walletProv);
+    final hideShellChrome = inOrderFlow || inWalletSetup;
+    final showMainHeader =
+        !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !hideShellChrome;
     final unreadNotificationCount = context.watch<NotificationProvider>().unreadCount;
 
     final rescueProvider = context.watch<RescueProvider>();
@@ -457,7 +475,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             Expanded(child: _buildTabStack(navH)),
           ],
         ),
-        if (!inOrderFlow)
+        if (!hideShellChrome)
           Positioned(
             left: 0,
             right: 0,
@@ -652,9 +670,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Widget _buildTabStack(double navH) {
     final auth = context.watch<AuthProvider>();
+    final walletProv = context.watch<MechanicWalletProvider>();
     final appConfig = context.watch<AppConfigProvider>().config;
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
-    final contentBottomPad = inOrderFlow ? 0.0 : navH * 0.35;
+    final inWalletSetup = _isMechanicWalletOnboarding(auth, walletProv);
+    final hideShellChrome = inOrderFlow || inWalletSetup;
+    final contentBottomPad = hideShellChrome ? 0.0 : navH * 0.35;
 
     final rescueProvider = context.watch<RescueProvider>();
     final reqMap = rescueProvider.incomingRequest;
@@ -722,7 +743,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
         ],
-        if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none && appConfig.flags.sosEnabled)
+        if (auth.userType != 'CUSTOMER' &&
+            _orderFlow == _MechanicOrderFlow.none &&
+            !inWalletSetup &&
+            appConfig.flags.sosEnabled)
           Positioned(
             right: -2,
             bottom: navH + 8,
@@ -806,7 +830,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
           : const MechanicWalletTab(),
       MainNavTab.maintenance => userType == 'CUSTOMER'
           ? const NotificationsTabScreen()
-          : const MechanicActivityTab(),
+          : const ComingSoonOverlay(
+              featureName: 'Bảo trì & Hoạt động',
+              message: 'Đặt lịch bảo dưỡng và quản lý hoạt động cho thợ đang được phát triển.',
+              child: MechanicActivityTab(previewOnly: true),
+            ),
     };
   }
 }

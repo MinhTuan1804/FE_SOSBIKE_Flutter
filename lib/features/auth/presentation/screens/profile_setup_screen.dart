@@ -17,6 +17,8 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_l
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_screen_shell.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
+import 'package:fe_moblie_flutter/core/data/models/vietnam_address_selection.dart';
+import 'package:fe_moblie_flutter/core/widgets/vietnam_address_picker.dart';
 
 /// Màn hình nhập thông tin cơ bản sau khi xác thực OTP thành công (đăng ký).
 class ProfileSetupScreen extends StatefulWidget {
@@ -41,7 +43,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _referralController = TextEditingController();
   final _identityController = TextEditingController();
   final _plateController = TextEditingController();
-  final _addressController = TextEditingController();
+  VietnamAddressSelection _addressSelection = const VietnamAddressSelection();
 
   DateTime? _selectedDob;
   Gender? _selectedGender;
@@ -217,8 +219,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       email: email.isNotEmpty ? email : null,
       firebaseIdToken: await firebaseUser?.getIdToken(),
       identityCard: _isMechanic ? identity : null,
-      currentAddress: _addressController.text.trim().isNotEmpty 
-          ? _addressController.text.trim() 
+      currentAddress: _addressSelection.formattedFullAddress.isNotEmpty
+          ? _addressSelection.formattedFullAddress
           : null,
       dateOfBirth: _selectedDob,
     );
@@ -459,17 +461,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         const SizedBox(height: 20),
 
         // ── Địa chỉ hiện tại ──
-        _label('Địa chỉ hiện tại'),
-        TextField(
-          controller: _addressController,
-          decoration: _fieldDecoration(
-            'Nhập địa chỉ của bạn',
-            suffixIcon: const Icon(
-              Icons.location_on_outlined,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
+        VietnamAddressPicker(
+          sectionTitle: 'Địa chỉ hiện tại',
+          style: VietnamAddressPickerStyle.filled,
+          streetSuffixIcon: const Icon(
+            Icons.location_on_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
           ),
+          onChanged: (value) => setState(() => _addressSelection = value),
         ),
 
         if (_isMechanic) ...[

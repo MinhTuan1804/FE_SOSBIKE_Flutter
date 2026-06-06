@@ -73,6 +73,7 @@ flutter:
 
   assets:
     - assets/.env
+    - assets/data/vietnam/admin_units.json
     # Logo — img/Main navba header/Ellipse 1.png
     - assets/images/onboarding/logo.png
     - assets/images/login/btn_next.png

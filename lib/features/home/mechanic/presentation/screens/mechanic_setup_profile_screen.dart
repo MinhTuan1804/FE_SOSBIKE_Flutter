@@ -8,26 +8,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/core/data/models/vietnam_address_selection.dart';
+import 'package:fe_moblie_flutter/core/widgets/vietnam_address_picker.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
-
-const _kProvinces = [
-  'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ',
-  'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu',
-  'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước',
-  'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông',
-  'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang',
-  'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hậu Giang', 'Hòa Bình',
-  'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu',
-  'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định',
-  'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên',
-  'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị',
-  'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên',
-  'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang',
-  'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái',
-];
 
 const _kBanks = [
   'Vietcombank', 'Techcombank', 'VietinBank', 'BIDV', 'Agribank',
@@ -54,8 +40,8 @@ class _MechanicSetupProfileScreenState
   late final TabController _tabCtrl;
 
   // ── Khu vực hoạt động (thuật toán quét đơn tự động) ─────────────────────────
-  String? _province;
-  final _districtCtrl = TextEditingController();
+  VietnamAddressSelection _serviceArea = const VietnamAddressSelection();
+  String? _initialServiceAreaAddress;
 
   // ── Xác thực ────────────────────────────────────────────────────────
   XFile? _cccdFront;
@@ -98,17 +84,7 @@ class _MechanicSetupProfileScreenState
       final profile = auth.profile;
       if (profile != null) {
         setState(() {
-          final address = profile.currentAddress;
-          if (address != null && address.contains(',')) {
-            final parts = address.split(',');
-            if (parts.length >= 2) {
-              final prov = parts.last.trim();
-              if (_kProvinces.contains(prov)) {
-                _province = prov;
-              }
-              _districtCtrl.text = parts.first.trim();
-            }
-          }
+          _initialServiceAreaAddress = profile.currentAddress;
 
           if (profile.mechanic != null) {
             final mech = profile.mechanic!;
@@ -141,7 +117,6 @@ class _MechanicSetupProfileScreenState
   @override
   void dispose() {
     _tabCtrl.dispose();
-    _districtCtrl.dispose();
     _vehicleModelCtrl.dispose();
     _vehicleGenCtrl.dispose();
     _licensePlateCtrl.dispose();
@@ -152,6 +127,13 @@ class _MechanicSetupProfileScreenState
     super.dispose();
   }
 
+  (String, String) _parseLegacyServiceArea(String? address) {
+    if (address == null || !address.contains(',')) return ('', '');
+    final parts = address.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    if (parts.length < 2) return ('', '');
+    return (parts.first, parts.last);
+  }
+
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
       );
@@ -159,7 +141,7 @@ class _MechanicSetupProfileScreenState
   void _saveAndNext() {
     final tab = _tabCtrl.index;
 
-    if (tab == 0 && _province == null) {
+    if (tab == 0 && !_serviceArea.hasProvince) {
       return _snack('Vui lòng chọn tỉnh/thành phố');
     }
     
@@ -215,8 +197,10 @@ class _MechanicSetupProfileScreenState
 
     try {
       final success = await auth.setupMechanicProfile(
-        province: _province ?? '',
-        district: _districtCtrl.text,
+        province: _serviceArea.provinceName ??
+            _parseLegacyServiceArea(_initialServiceAreaAddress).$2,
+        district: _serviceArea.districtName ??
+            _parseLegacyServiceArea(_initialServiceAreaAddress).$1,
         bankName: _bankName ?? '',
         bankAccountNumber: _bankAccCtrl.text,
         bankAccountHolder: _bankHolderCtrl.text,
@@ -483,24 +467,14 @@ class _MechanicSetupProfileScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel('Tỉnh / Thành phố *'),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _province,
-            isExpanded: true,
-            decoration: _dropDeco('Chọn tỉnh/thành'),
-            items: _kProvinces
-                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                .toList(),
-            onChanged: (v) => setState(() => _province = v),
-          ),
-          const SizedBox(height: 20),
-          _sectionLabel('Quận / Huyện (tuỳ chọn)'),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _districtCtrl,
-            decoration:
-                _textDeco('Quận Bình Thạnh, Huyện Củ Chi...'),
+          VietnamAddressPicker(
+            mode: VietnamAddressPickerMode.serviceArea,
+            style: VietnamAddressPickerStyle.filled,
+            districtOptional: true,
+            showStreetDetail: false,
+            spacing: 20,
+            initialAddress: _initialServiceAreaAddress,
+            onChanged: (value) => setState(() => _serviceArea = value),
           ),
           // Bán kính & "sửa tận nơi" do thuật toán quét đơn bên BE tự động xử lý.
           // Thợ không cần chọn thủ công ở đây.

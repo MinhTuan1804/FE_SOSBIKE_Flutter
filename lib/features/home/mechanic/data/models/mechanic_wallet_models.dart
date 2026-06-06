@@ -113,8 +113,10 @@ class MechanicWalletData {
     required this.transactions,
     this.withdrawRequests = const [],
     this.currency = 'VND',
+    this.hasWallet = true,
   });
 
+  final bool hasWallet;
   final int balance;
   final String currency;
   final List<MechanicWalletTransaction> transactions;
@@ -132,6 +134,7 @@ class MechanicWalletData {
     final rawTx = json['recentTransactions'];
     final rawWithdraw = json['recentWithdrawRequests'];
     return MechanicWalletData(
+      hasWallet: json.containsKey('hasWallet') ? json['hasWallet'] == true : true,
       balance: MechanicWalletTransaction._toInt(json['balance']),
       currency: json['currency']?.toString() ?? 'VND',
       transactions: rawTx is List
