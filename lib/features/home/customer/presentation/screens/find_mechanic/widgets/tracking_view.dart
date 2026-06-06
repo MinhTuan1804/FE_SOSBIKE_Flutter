@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
@@ -996,6 +997,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final code = intent['paymentCode'] as String? ?? 'ORD';
     final formattedAmt = NumberFormat('#,##0', 'vi_VN').format(amount);
 
+    final bankName = intent['bankBin'] as String? ?? 'MB Bank (Quân Đội)';
+    final accountName = intent['bankAccountName'] as String? ?? 'SOSBIKE SERVICE CO.';
+    final accountNumber = intent['bankAccountNumber'] as String? ?? '8888 8888 8888';
+    final qrContent = intent['qrContent'] as String?;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[50],
@@ -1010,21 +1016,52 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
           ),
           const SizedBox(height: 12),
-          // Mock QR Image / Card
+          // QR Image / Card
           Container(
-            height: 130,
-            width: 130,
+            height: 150,
+            width: 150,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey[300]!),
             ),
-            child: Icon(Icons.qr_code, size: 100, color: AppColors.primary),
+            child: qrContent != null && qrContent.trim().isNotEmpty
+                ? Image.network(
+                    'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrContent)}',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.primary),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Lỗi tải QR',
+                              style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)),
+                        ),
+                      );
+                    },
+                  )
+                : Icon(Icons.qr_code, size: 100, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
-          _buildBankInfoRow('Ngân hàng', 'MB Bank (Quân Đội)'),
-          _buildBankInfoRow('Chủ tài khoản', 'SOSBIKE SERVICE CO.'),
-          _buildBankInfoRow('Số tài khoản', '8888 8888 8888'),
+          _buildBankInfoRow('Ngân hàng', bankName),
+          _buildBankInfoRow('Chủ tài khoản', accountName),
+          _buildBankInfoRow('Số tài khoản', accountNumber, isCopyable: true),
           _buildBankInfoRow('Số tiền', '$formattedAmtđ', isHighlight: true),
           _buildBankInfoRow('Nội dung chuyển khoản', code, isCopyable: true),
         ],
@@ -1039,21 +1076,37 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Row(
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: isHighlight ? AppColors.primary : Colors.black87,
+          GestureDetector(
+            onTap: isCopyable
+                ? () async {
+                    await Clipboard.setData(ClipboardData(text: value));
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Đã sao chép: $value'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.primary,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                : null,
+            child: Row(
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isHighlight ? AppColors.primary : Colors.black87,
+                  ),
                 ),
-              ),
-              if (isCopyable) ...[
-                const SizedBox(width: 4),
-                const Icon(Icons.copy, size: 12, color: Colors.grey),
-              ]
-            ],
+                if (isCopyable) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.copy, size: 12, color: Colors.grey),
+                ]
+              ],
+            ),
           ),
         ],
       ),
