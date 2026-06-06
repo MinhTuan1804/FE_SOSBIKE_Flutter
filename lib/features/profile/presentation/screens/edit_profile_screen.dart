@@ -99,6 +99,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_dateOfBirth == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn ngày sinh')),
+      );
+      return;
+    }
 
     final auth = context.read<AuthProvider>();
     
@@ -218,8 +224,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Vui lòng nhập họ tên' : null,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Vui lòng nhập họ tên';
+                        }
+                        if (value.trim().length < 2) {
+                          return 'Họ và tên phải có ít nhất 2 ký tự';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 20),
 
