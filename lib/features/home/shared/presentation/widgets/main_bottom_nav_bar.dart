@@ -67,7 +67,7 @@ class MainBottomNavBar extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: -18,
-            height: _barHeight + bottom + 30,
+                height: _barHeight + bottom + 30,
             child: const DecoratedBox(
               decoration: BoxDecoration(
                 color: AppColors.primary,
