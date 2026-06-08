@@ -155,11 +155,6 @@ class MechanicIncomeData {
     IncomePeriod period,
   ) {
     final now = DateTime.now();
-    final days = period == IncomePeriod.today
-        ? 1
-        : period == IncomePeriod.week
-            ? 7
-            : 30;
 
     // Tạo map date → total
     final map = <String, int>{};
@@ -169,9 +164,27 @@ class MechanicIncomeData {
       map[key] = (map[key] ?? 0) + o.totalAmount;
     }
 
-    final result = <DailyIncomeGroup>[];
-    for (var i = days - 1; i >= 0; i--) {
-      final date = DateTime(now.year, now.month, now.day - i);
+    final dates = <DateTime>[];
+    switch (period) {
+      case IncomePeriod.today:
+        dates.add(DateTime(now.year, now.month, now.day));
+        break;
+      case IncomePeriod.week:
+        final weekday = now.weekday; // 1=Mon..7=Sun
+        final monday = DateTime(now.year, now.month, now.day - (weekday - 1));
+        for (var i = 0; i < 7; i++) {
+          dates.add(DateTime(monday.year, monday.month, monday.day + i));
+        }
+        break;
+      case IncomePeriod.month:
+        // Từ ngày 1 của tháng hiện tại → hôm nay (khớp "trong tháng")
+        for (var day = 1; day <= now.day; day++) {
+          dates.add(DateTime(now.year, now.month, day));
+        }
+        break;
+    }
+
+    return dates.map((date) {
       final key =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final total = map[key] ?? 0;
@@ -180,9 +193,8 @@ class MechanicIncomeData {
           : period == IncomePeriod.month
               ? '${date.day}/${date.month}'
               : _weekdayLabel(date.weekday);
-      result.add(DailyIncomeGroup(dayLabel: label, date: date, total: total));
-    }
-    return result;
+      return DailyIncomeGroup(dayLabel: label, date: date, total: total);
+    }).toList();
   }
 
   static String _weekdayLabel(int weekday) {

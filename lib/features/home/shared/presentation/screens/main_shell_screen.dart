@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/features/profile/data/models/user_profile_models.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
@@ -552,6 +553,131 @@ class MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
+  Future<void> _checkApprovalStatus(BuildContext context, AuthProvider auth) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+
+    final profile = await auth.fetchMyProfile(silent: true);
+
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+
+    if (profile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Không kiểm tra được trạng thái. Vui lòng thử lại.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    final isVerified = profile.mechanic?.isVerified ?? false;
+    if (isVerified) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          icon: const Icon(Icons.verified_rounded, color: Colors.green, size: 40),
+          title: const Text('Đã được duyệt!'),
+          content: const Text(
+            'Tài khoản thợ của bạn đã được admin phê duyệt.\n'
+            'Bạn có thể bắt đầu nhận đơn ngay bây giờ.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Bắt đầu', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final missing = _missingMechanicProfileItems(profile);
+    final message = missing.isEmpty
+        ? 'Hồ sơ của bạn đã đủ thông tin và đang chờ admin SOSBIKE phê duyệt.\n'
+            'Thường mất 1–2 ngày làm việc.'
+        : 'Hồ sơ chưa đủ thông tin. Vui lòng bổ sung:\n\n'
+            '${missing.map((item) => '• $item').join('\n')}';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Icon(
+          missing.isEmpty ? Icons.hourglass_top_rounded : Icons.assignment_late_outlined,
+          color: missing.isEmpty ? Colors.orange : AppColors.primary,
+          size: 40,
+        ),
+        title: Text(missing.isEmpty ? 'Đang chờ duyệt' : 'Hồ sơ chưa đủ'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+          if (missing.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MechanicSetupProfileScreen(),
+                  ),
+                ).then((_) => auth.fetchMyProfile(silent: true));
+              },
+              child: const Text(
+                'Hoàn thiện hồ sơ',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<String> _missingMechanicProfileItems(UserProfileDto profile) {
+    final mech = profile.mechanic;
+    final wallet = profile.wallet;
+    final missing = <String>[];
+
+    if (mech == null) {
+      missing.add('Hồ sơ thợ');
+      return missing;
+    }
+
+    bool hasUrl(String? url) => url != null && url.trim().isNotEmpty;
+
+    if (!hasUrl(mech.cccdFrontUrl)) missing.add('CCCD mặt trước');
+    if (!hasUrl(mech.cccdBackUrl)) missing.add('CCCD mặt sau');
+    if (!hasUrl(profile.avatarUrl)) missing.add('Ảnh chân dung');
+    if (mech.vehicleModel == null || mech.vehicleModel!.trim().isEmpty) {
+      missing.add('Mẫu xe');
+    }
+    if (mech.licensePlate.trim().isEmpty) missing.add('Biển số xe');
+    if (mech.driverLicenseNumber == null || mech.driverLicenseNumber!.trim().isEmpty) {
+      missing.add('Số GPLX');
+    }
+    if (!hasUrl(mech.vehicleRegistrationUrl)) missing.add('Đăng ký xe (cà vẹt)');
+    if (!hasUrl(mech.driverLicenseUrl)) missing.add('Ảnh bằng lái xe');
+
+    final bankOk = wallet != null &&
+        (wallet.bankName?.trim().isNotEmpty ?? false) &&
+        (wallet.bankAccountNumber?.trim().isNotEmpty ?? false) &&
+        (wallet.bankAccountHolder?.trim().isNotEmpty ?? false);
+    if (!bankOk) missing.add('Tài khoản ngân hàng');
+
+    return missing;
+  }
+
   Widget _buildLockoutScreen(BuildContext context, AuthProvider auth) {
     return Center(
       child: SingleChildScrollView(
@@ -626,17 +752,7 @@ class MainShellScreenState extends State<MainShellScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  showDialog<void>(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                  );
-                  await auth.fetchMyProfile();
-                  if (context.mounted) {
-                    Navigator.pop(context); // dismiss loader
-                  }
-                },
+                onPressed: () => _checkApprovalStatus(context, auth),
                 icon: const Icon(Icons.refresh_rounded, color: Colors.white),
                 label: const Text(
                   'Kiểm tra trạng thái duyệt',

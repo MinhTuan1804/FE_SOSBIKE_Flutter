@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,7 +47,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   DateTime? _selectedDob;
   Gender? _selectedGender;
-  File? _avatarFile;
+  XFile? _avatarFile;
+  Uint8List? _avatarPreviewBytes;
   bool _saving = false;
 
   @override
@@ -72,7 +73,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         imageQuality: 80,
       );
       if (picked != null) {
-        setState(() => _avatarFile = File(picked.path));
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _avatarFile = picked;
+          _avatarPreviewBytes = bytes;
+        });
       }
     } catch (e) {
       debugPrint('Lỗi chọn ảnh: $e');
@@ -310,9 +315,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: const Color(0xFFE8EAED),
-                  backgroundImage:
-                      _avatarFile != null ? FileImage(_avatarFile!) : null,
-                  child: _avatarFile == null
+                  backgroundImage: _avatarPreviewBytes != null
+                      ? MemoryImage(_avatarPreviewBytes!)
+                      : null,
+                  child: _avatarPreviewBytes == null
                       ? const Icon(Icons.person,
                           size: 50, color: Color(0xFF9E9E9E))
                       : null,

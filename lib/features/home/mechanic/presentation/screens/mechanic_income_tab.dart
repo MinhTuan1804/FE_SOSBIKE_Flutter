@@ -539,13 +539,26 @@ class _DailyChartSection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 180,
+            height: 196,
             child: _DailyBarChart(
               groups: groups,
               maxVal: maxVal,
               formatMoney: formatMoney,
+              minSlotWidth: groups.length > 14 ? 44.0 : 0,
             ),
           ),
+          if (groups.length > 14)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text(
+                'Vuốt ngang để xem đủ các ngày',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -568,11 +581,13 @@ class _DailyBarChart extends StatefulWidget {
     required this.groups,
     required this.maxVal,
     required this.formatMoney,
+    this.minSlotWidth = 0,
   });
 
   final List<DailyIncomeGroup> groups;
   final int maxVal;
   final String Function(int) formatMoney;
+  final double minSlotWidth;
 
   @override
   State<_DailyBarChart> createState() => _DailyBarChartState();
@@ -585,40 +600,74 @@ class _DailyBarChartState extends State<_DailyBarChart> {
   Widget build(BuildContext context) {
     final groups = widget.groups;
     final maxVal = widget.maxVal == 0 ? 1 : widget.maxVal;
+    final useScroll = widget.minSlotWidth > 0;
+    final chartWidth = useScroll
+        ? widget.minSlotWidth * groups.length
+        : double.infinity;
 
-    return CustomPaint(
-      painter: _DailyBarPainter(
-        groups: groups,
-        maxVal: maxVal,
-        selectedIndex: _selectedIndex,
-        primaryColor: AppColors.primary,
-      ),
-      child: GestureDetector(
-        onTapDown: (details) {
-          // Tính index từ x position
-          final slotW = context.size!.width / groups.length;
-          final idx =
-              (details.localPosition.dx / slotW).floor().clamp(0, groups.length - 1);
-          setState(() => _selectedIndex = idx);
+    Widget buildChart({double? width}) {
+      final painter = _DailyBarPainter(
+          groups: groups,
+          maxVal: maxVal,
+          selectedIndex: _selectedIndex,
+          primaryColor: AppColors.primary,
+        minSlotWidth: widget.minSlotWidth,
+      );
 
-          // Show tooltip
-          final g = groups[idx];
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${g.dayLabel}: ${widget.formatMoney(g.total)}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
+      final interactive = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (details) {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final slotW = useScroll
+                ? widget.minSlotWidth
+                : box.size.width / groups.length;
+            final idx = (details.localPosition.dx / slotW)
+                .floor()
+                .clamp(0, groups.length - 1);
+            setState(() => _selectedIndex = idx);
+
+            final g = groups[idx];
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${g.dayLabel}: ${widget.formatMoney(g.total)}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
               ),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-            ),
-          );
-        },
+            );
+          },
+      );
+
+      if (width == null) {
+        return CustomPaint(painter: painter, child: interactive);
+      }
+
+      return CustomPaint(
+        size: Size(width, 196),
+        painter: painter,
+        child: interactive,
+      );
+    }
+
+    if (!useScroll) {
+      return buildChart();
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: true,
+      child: SizedBox(
+        width: chartWidth,
+        height: 196,
+        child: buildChart(width: chartWidth),
       ),
     );
   }
@@ -630,17 +679,19 @@ class _DailyBarPainter extends CustomPainter {
     required this.maxVal,
     required this.primaryColor,
     this.selectedIndex,
+    this.minSlotWidth = 0,
   });
 
   final List<DailyIncomeGroup> groups;
   final int maxVal;
   final Color primaryColor;
   final int? selectedIndex;
+  final double minSlotWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
     const topPad = 8.0;
-    const bottomPad = 28.0;
+    const bottomPad = 34.0;
     const leftPad = 0.0;
     const rightPad = 0.0;
     final chartH = size.height - topPad - bottomPad;
@@ -648,8 +699,11 @@ class _DailyBarPainter extends CustomPainter {
 
     if (groups.isEmpty) return;
 
-    final slotW = chartW / groups.length;
+    final slotW = minSlotWidth > 0 ? minSlotWidth : chartW / groups.length;
     const barW = 18.0;
+    final labelStep = groups.length <= 10
+        ? 1
+        : math.max(1, (groups.length / 8).ceil());
 
     // Grid lines
     final gridPaint = Paint()
@@ -686,25 +740,32 @@ class _DailyBarPainter extends CustomPainter {
         Paint()..color = barColor,
       );
 
-      // Label ngày
-      _drawText(
-        canvas,
-        group.dayLabel,
-        Offset(cx - 12, size.height - bottomPad + 6),
-        TextStyle(
-          fontSize: 9,
-          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-          color: isSelected ? primaryColor : const Color(0xFF9CA3AF),
-        ),
-      );
+      // Nhãn: luôn hiện ngày có doanh thu; thưa thêm khi > 10 cột
+      final showLabel = isSelected ||
+          i == 0 ||
+          i == groups.length - 1 ||
+          group.total > 0 ||
+          (groups.length > 10 && i % labelStep == 0);
+      if (showLabel) {
+        _drawTextCentered(
+          canvas,
+          group.dayLabel,
+          Offset(cx, size.height - bottomPad + 8),
+          TextStyle(
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+            color: isSelected ? primaryColor : const Color(0xFF9CA3AF),
+          ),
+        );
+      }
 
       // Value label trên cột nếu > 0
-      if (group.total > 0 && barH > 20) {
+      if (group.total > 0 && barH > 16) {
         final valStr = _shortMoney(group.total);
-        _drawText(
+        _drawTextCentered(
           canvas,
           valStr,
-          Offset(barX - 4, barY - 14),
+          Offset(cx, barY - 12),
           TextStyle(
             fontSize: 8.5,
             fontWeight: FontWeight.w700,
@@ -727,6 +788,22 @@ class _DailyBarPainter extends CustomPainter {
       textDirection: ui.TextDirection.ltr,
     )..layout();
     builder.paint(canvas, offset);
+  }
+
+  void _drawTextCentered(
+    Canvas canvas,
+    String text,
+    Offset center,
+    TextStyle style,
+  ) {
+    final builder = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    builder.paint(
+      canvas,
+      Offset(center.dx - builder.width / 2, center.dy),
+    );
   }
 
   @override
