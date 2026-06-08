@@ -39,9 +39,9 @@ class MechanicDashboardData {
   }
 
   static double _toDouble(Object? value) {
-    if (value == null) return 0;
+    if (value == null) return 0.0;
     if (value is num) return value.toDouble();
-    return double.tryParse(value.toString()) ?? 0;
+    return double.tryParse(value.toString()) ?? 0.0;
   }
 
   static int _toInt(Object? value) {
