@@ -18,6 +18,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_order_history_tab.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
