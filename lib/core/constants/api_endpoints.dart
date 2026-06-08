@@ -40,6 +40,7 @@ class ApiEndpoints {
   static const String mechanicDocuments = '/mechanics/me/documents';
   static const String appConfig = '/config/app';
   static const String blogs = '/blogs';
+  static String blogTrackView(String slug) => '/blogs/$slug/view';
   static const String notifications = '/notifications';
   static const String notificationUnreadCount = '/notifications/unread-count';
   static String notificationMarkRead(int notificationId) => '/notifications/$notificationId/read';

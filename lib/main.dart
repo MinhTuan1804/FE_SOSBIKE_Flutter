@@ -29,6 +29,8 @@ import 'package:fe_moblie_flutter/features/notifications/data/services/location_
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/chat_provider.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/features/home/data/repositories/rescue_repository.dart';
+import 'package:fe_moblie_flutter/features/home/data/repositories/home_repository.dart';
+import 'package:fe_moblie_flutter/features/home/presentation/providers/home_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_history_repository.dart';
 import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_wallet_repository.dart';
@@ -97,6 +99,7 @@ void main() async {
   final notificationRepository = NotificationRepository(dioClient);
   final notificationRealtimeService = NotificationRealtimeService(authService);
   final rescueRepository = RescueRepository(dioClient);
+  final homeRepository = HomeRepository(dioClient);
   final customerHistoryRepository = CustomerHistoryRepository(dioClient);
   final customerWalletRepository = CustomerWalletRepository(dioClient);
   final rescueRealtimeService = RescueRealtimeService(authService);
@@ -127,6 +130,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider(chatRepository, chatRealtimeService)),
         ChangeNotifierProvider(create: (_) => NotificationProvider(notificationRepository, notificationRealtimeService)),
         ChangeNotifierProvider(create: (_) => RescueProvider(rescueRepository, rescueRealtimeService, locationRealtimeService)),
+        ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository, authService)),
         ChangeNotifierProvider(create: (_) => CustomerHistoryProvider(customerHistoryRepository)),
         ChangeNotifierProvider(create: (_) => CustomerWalletProvider(customerWalletRepository)),
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),

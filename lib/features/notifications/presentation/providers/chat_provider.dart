@@ -130,9 +130,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> _startRealtime(String orderId) async {
-    if (_realtimeSub == null) {
-      _realtimeSub = _realtimeService.messages.listen(_handleRealtimeMessage);
-    }
+    _realtimeSub ??= _realtimeService.messages.listen(_handleRealtimeMessage);
     await _realtimeService.connect();
     await _realtimeService.joinOrder(orderId);
   }
