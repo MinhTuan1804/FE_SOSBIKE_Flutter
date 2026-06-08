@@ -48,11 +48,17 @@ class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
   @override
-  State<MainShellScreen> createState() => _MainShellScreenState();
+  State<MainShellScreen> createState() => MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen> {
+class MainShellScreenState extends State<MainShellScreen> {
   MainNavTab _tab = MainNavTab.orders;
+
+  void setTab(MainNavTab tab) {
+    setState(() {
+      _tab = tab;
+    });
+  }
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
   List<MechanicSessionSparePart> _sessionSpareParts = const [];
@@ -806,6 +812,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             onCompleteRepair: _completeRepairFlow,
           ),
         _MechanicOrderFlow.complete => MechanicPaymentCompleteView(
+            orderId: repairProvider.activeOrderId ?? '',
             onFinish: _finishOrderFlow,
             onGoHome: _goHomeFromFlow,
           ),

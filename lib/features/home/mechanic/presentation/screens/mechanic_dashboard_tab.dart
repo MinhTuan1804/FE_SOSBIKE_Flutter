@@ -185,7 +185,14 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(child: _RevenueCard(amount: _formatCurrency(data.todayRevenue))),
+                      Expanded(
+                        child: _RevenueCard(
+                          amount: _formatCurrency(data.todayRevenue),
+                          cashAmount: _formatCurrency(data.todayRevenueCash),
+                          qrAmount: _formatCurrency(data.todayRevenueQr),
+                          transferAmount: _formatCurrency(data.todayRevenueTransfer),
+                        ),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(child: _RatingCard(rating: _formatRating(data.todayRating))),
                     ],
@@ -301,25 +308,30 @@ class _DashboardStyles {
 }
 
 class _RevenueCard extends StatelessWidget {
-  const _RevenueCard({required this.amount});
+  const _RevenueCard({
+    required this.amount,
+    required this.cashAmount,
+    required this.qrAmount,
+    required this.transferAmount,
+  });
 
   final String amount;
+  final String cashAmount;
+  final String qrAmount;
+  final String transferAmount;
 
   @override
   Widget build(BuildContext context) {
     return _WhiteCard(
-      minHeight: 132,
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      padding: const EdgeInsets.all(12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
             'Doanh thu hôm nay',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: _DashboardStyles.label,
           ),
-          const Spacer(),
+          const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -327,15 +339,39 @@ class _RevenueCard extends StatelessWidget {
               amount,
               maxLines: 1,
               style: const TextStyle(
-                fontSize: 30,
+                fontSize: 22,
                 fontWeight: FontWeight.w900,
                 color: Color(0xFF16A34A),
                 height: 1.05,
               ),
             ),
           ),
+          const Divider(height: 12, thickness: 1),
+          _breakdownRow('QR PayOS', qrAmount, const Color(0xFF2563EB)),
+          const SizedBox(height: 4),
+          _breakdownRow('Tiền mặt', cashAmount, const Color(0xFF16A34A)),
+          const SizedBox(height: 4),
+          _breakdownRow('Chuyển khoản', transferAmount, const Color(0xFFD97706)),
         ],
       ),
+    );
+  }
+
+  Widget _breakdownRow(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF6B7280)),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
+        ),
+      ],
     );
   }
 }

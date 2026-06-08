@@ -136,4 +136,18 @@ class MechanicRepairRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<Map<String, dynamic>> settleCashOrder(String orderId, double amount) async {
+    try {
+      final response = await _dioClient.dio.post(
+        ApiEndpoints.mechanicSettleCash(orderId),
+        data: {
+          'amount': amount,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

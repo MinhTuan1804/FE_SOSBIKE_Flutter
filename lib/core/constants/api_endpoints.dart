@@ -72,4 +72,5 @@ class ApiEndpoints {
   static String mechanicOrderArrive(String orderId) => '/mechanics/me/orders/$orderId/arrive';
   static String mechanicOrderStartRepair(String orderId) => '/mechanics/me/orders/$orderId/start-repair';
   static String mechanicCompleteRepair(String orderId) => '/mechanics/me/orders/$orderId/complete-repair';
+  static String mechanicSettleCash(String orderId) => '/mechanics/me/orders/$orderId/settle-cash';
 }

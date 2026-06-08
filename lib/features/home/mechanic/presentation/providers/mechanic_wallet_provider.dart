@@ -10,7 +10,7 @@ class MechanicWalletProvider extends ChangeNotifier {
   MechanicWalletData? _data;
   bool _isLoading = false;
   String? _errorMessage;
-  bool _hasWallet = false;
+  bool _hasWallet = true;
   bool? _hasPin;
   bool _isPinUnlocked = false;
 
@@ -28,7 +28,6 @@ class MechanicWalletProvider extends ChangeNotifier {
 
   /// Tạo ví → PIN → liên kết ngân hàng: ẩn header/nav shell.
   bool isInWalletSetupFlow({required bool hasBankLinked}) {
-    if (!_hasWallet) return true;
     if (_hasPin == false) return true;
     if (_hasPin == true && !_isPinUnlocked) return true;
     if (_isPinUnlocked && !hasBankLinked) return true;
@@ -70,15 +69,9 @@ class MechanicWalletProvider extends ChangeNotifier {
         startDate: _startDate,
         endDate: _endDate,
       );
-      _hasWallet = _data?.hasWallet ?? false;
-      if (!_hasWallet) {
-        _hasPin = false;
-        _isPinUnlocked = false;
-        return;
-      }
+      _hasWallet = true;
       try {
         final pinStatus = await _repository.checkPinStatus();
-        _hasWallet = pinStatus.hasWallet;
         _hasPin = pinStatus.hasPin;
       } catch (e) {
         debugPrint('checkPinStatus failed: $e');
@@ -97,7 +90,7 @@ class MechanicWalletProvider extends ChangeNotifier {
   Future<void> checkWalletPinStatus() async {
     try {
       final pinStatus = await _repository.checkPinStatus();
-      _hasWallet = pinStatus.hasWallet;
+      _hasWallet = true;
       _hasPin = pinStatus.hasPin;
       notifyListeners();
     } catch (e) {

@@ -10,6 +10,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_priority_package_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_deposit_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_withdraw_screen.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_shell_screen.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 
 enum _WalletSection { wallet, income }
 
@@ -61,9 +63,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
-    if (!provider.hasWallet) {
-      return _buildNoWalletView(provider);
-    }
+
     // Check PIN setup state
     if (provider.hasPin == null) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -339,59 +339,68 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
             }),
           ),
           const SizedBox(height: 28),
-          _buildNumericKeypad(onKeyTap: (val) async {
-            if (_enteredPin.length < 6) {
-              setState(() {
-                _enteredPin.add(val);
-              });
-            }
-            if (_enteredPin.length == 6) {
-              final pinStr = _enteredPin.join();
-              if (_pinSetupStep == 'enter') {
-                _tempPin = pinStr;
+          _buildNumericKeypad(
+            onKeyTap: (val) async {
+              if (_enteredPin.length < 6) {
                 setState(() {
-                  _pinSetupStep = 'confirm';
-                  _enteredPin.clear();
+                  _enteredPin.add(val);
                 });
-              } else {
-                if (pinStr == _tempPin) {
-                  final ok = await provider.setupWalletPin(pinStr);
-                  if (ok) {
-                    setState(() {
-                      _enteredPin.clear();
-                      _tempPin = '';
-                      _pinSetupStep = 'enter';
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Thiết lập mã PIN thành công.')),
-                    );
+              }
+              if (_enteredPin.length == 6) {
+                final pinStr = _enteredPin.join();
+                if (_pinSetupStep == 'enter') {
+                  _tempPin = pinStr;
+                  setState(() {
+                    _pinSetupStep = 'confirm';
+                    _enteredPin.clear();
+                  });
+                } else {
+                  if (pinStr == _tempPin) {
+                    final ok = await provider.setupWalletPin(pinStr);
+                    if (ok) {
+                      setState(() {
+                        _enteredPin.clear();
+                        _tempPin = '';
+                        _pinSetupStep = 'enter';
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Thiết lập mã PIN thành công.')),
+                      );
+                    } else {
+                      setState(() {
+                        _enteredPin.clear();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(provider.errorMessage ?? 'Không thiết lập được mã PIN.')),
+                      );
+                    }
                   } else {
                     setState(() {
                       _enteredPin.clear();
+                      _pinSetupStep = 'enter';
+                      _tempPin = '';
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(provider.errorMessage ?? 'Không thiết lập được mã PIN.')),
+                      const SnackBar(content: Text('Mã PIN xác nhận không trùng khớp. Vui lòng nhập lại.')),
                     );
                   }
-                } else {
-                  setState(() {
-                    _enteredPin.clear();
-                    _pinSetupStep = 'enter';
-                    _tempPin = '';
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mã PIN xác nhận không trùng khớp. Vui lòng nhập lại.')),
-                  );
                 }
               }
-            }
-          }, onBackspace: () {
-            if (_enteredPin.isNotEmpty) {
-              setState(() {
-                _enteredPin.removeLast();
-              });
-            }
-          }),
+            },
+            onBackspace: () {
+              if (_enteredPin.isNotEmpty) {
+                setState(() {
+                  _enteredPin.removeLast();
+                });
+              }
+            },
+            onBack: () {
+              final shellState = context.findAncestorStateOfType<MainShellScreenState>();
+              if (shellState != null) {
+                shellState.setTab(MainNavTab.orders);
+              }
+            },
+          ),
       ],
     );
   }
@@ -429,35 +438,44 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
             }),
           ),
           const SizedBox(height: 28),
-          _buildNumericKeypad(onKeyTap: (val) async {
-            if (_enteredPin.length < 6) {
-              setState(() {
-                _enteredPin.add(val);
-              });
-            }
-            if (_enteredPin.length == 6) {
-              final pinStr = _enteredPin.join();
-              final ok = await provider.verifyWalletPin(pinStr);
-              if (ok) {
+          _buildNumericKeypad(
+            onKeyTap: (val) async {
+              if (_enteredPin.length < 6) {
                 setState(() {
-                  _enteredPin.clear();
+                  _enteredPin.add(val);
                 });
-              } else {
-                setState(() {
-                  _enteredPin.clear();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Mã PIN không chính xác. Vui lòng nhập lại.')),
-                );
               }
-            }
-          }, onBackspace: () {
-            if (_enteredPin.isNotEmpty) {
-              setState(() {
-                _enteredPin.removeLast();
-              });
-            }
-          }),
+              if (_enteredPin.length == 6) {
+                final pinStr = _enteredPin.join();
+                final ok = await provider.verifyWalletPin(pinStr);
+                if (ok) {
+                  setState(() {
+                    _enteredPin.clear();
+                  });
+                } else {
+                  setState(() {
+                    _enteredPin.clear();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mã PIN không chính xác. Vui lòng nhập lại.')),
+                  );
+                }
+              }
+            },
+            onBackspace: () {
+              if (_enteredPin.isNotEmpty) {
+                setState(() {
+                  _enteredPin.removeLast();
+                });
+              }
+            },
+            onBack: () {
+              final shellState = context.findAncestorStateOfType<MainShellScreenState>();
+              if (shellState != null) {
+                shellState.setTab(MainNavTab.orders);
+              }
+            },
+          ),
       ],
     );
   }
@@ -466,6 +484,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   Widget _buildNumericKeypad({
     required Function(int) onKeyTap,
     required VoidCallback onBackspace,
+    VoidCallback? onBack,
   }) {
     final keySize = ((MediaQuery.sizeOf(context).width - 80) / 3).clamp(56.0, 68.0);
     final rowGap = keySize >= 64 ? 12.0 : 8.0;
@@ -488,7 +507,16 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            SizedBox(width: keySize, height: keySize),
+            onBack != null
+                ? SizedBox(
+                    width: keySize,
+                    height: keySize,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
+                      onPressed: onBack,
+                    ),
+                  )
+                : SizedBox(width: keySize, height: keySize),
             _buildKeypadButton(
               value: 0,
               size: keySize,
