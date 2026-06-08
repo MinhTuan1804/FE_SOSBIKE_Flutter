@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
-import 'package:fe_moblie_flutter/features/home/customer/presentation/widgets/blog_section.dart';
+
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/providers/home_provider.dart';
+
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
 
 class CustomerDashboardTab extends StatefulWidget {
@@ -22,7 +22,6 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeProvider>().fetchPosts();
       context.read<VehicleProvider>().fetchMyVehicles();
     });
   }
@@ -30,7 +29,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
   @override
   Widget build(BuildContext context) {
     final appConfig = context.watch<AppConfigProvider>().config;
-    final homeProvider = context.watch<HomeProvider>();
+
     if (_showFindMechanicSelection) {
       return _buildFindMechanicSelectionView();
     }
@@ -52,11 +51,6 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                       _showFindMechanicSelection = true;
                     });
                   },
-                ),
-                const SizedBox(height: 16),
-                BlogSection(
-                  isLoading: homeProvider.isLoading,
-                  posts: homeProvider.posts,
                 ),
                 const SizedBox(height: 16),
                 Row(
