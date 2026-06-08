@@ -12,6 +12,8 @@ class MechanicHistoryRepository {
   Future<MechanicCustomerHistoryPage> getCustomerHistory({
     int page = 1,
     int pageSize = 20,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
     try {
       final response = await _dioClient.dio.get(
@@ -19,12 +21,17 @@ class MechanicHistoryRepository {
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
+          if (startDate != null)
+            'startDate': startDate.toUtc().toIso8601String(),
+          if (endDate != null)
+            'endDate': endDate.toUtc().toIso8601String(),
         },
       );
       if (response.data is! Map) {
         throw const FormatException('History response is invalid.');
       }
-      return MechanicCustomerHistoryPage.fromJson(Map<String, dynamic>.from(response.data));
+      return MechanicCustomerHistoryPage.fromJson(
+          Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

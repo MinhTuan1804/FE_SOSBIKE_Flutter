@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
@@ -85,29 +86,26 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Đặt lịch bảo dưỡng button
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Đặt lịch bảo dưỡng thành công!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 20),
-                    label: const Text(
-                      'Đặt lịch bảo dưỡng',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC02020),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  // Đặt lịch bảo dưỡng button — coming soon
+                  ComingSoonTapBlocker(
+                    featureName: 'Đặt lịch bảo dưỡng',
+                    message: 'Tính năng đặt lịch bảo dưỡng định kỳ đang trong quá trình mở rộng.',
+                    child: ElevatedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 20),
+                      label: const Text(
+                        'Đặt lịch bảo dưỡng',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      shadowColor: Colors.redAccent.withValues(alpha: 0.3),
-                      elevation: 6,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFC02020),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        shadowColor: Colors.redAccent.withValues(alpha: 0.3),
+                        elevation: 6,
+                      ),
                     ),
                   ),
                 ],

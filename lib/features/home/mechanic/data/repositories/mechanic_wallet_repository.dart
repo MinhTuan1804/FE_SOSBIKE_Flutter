@@ -108,10 +108,33 @@ class MechanicWalletRepository {
     }
   }
 
-  Future<bool> checkPinStatus() async {
+  Future<({bool hasWallet, bool hasPin})> checkPinStatus() async {
     try {
       final response = await _dioClient.dio.get('/wallet/pin-status');
-      return response.data['hasPin'] ?? false;
+      final data = response.data;
+      if (data is Map) {
+        final map = Map<String, dynamic>.from(data);
+        return (
+          hasWallet: map['hasWallet'] == true,
+          hasPin: map['hasPin'] == true,
+        );
+      }
+      return (hasWallet: true, hasPin: false);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return (hasWallet: false, hasPin: false);
+      }
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<MechanicWalletData> createWallet() async {
+    try {
+      final response = await _dioClient.dio.post(ApiEndpoints.mechanicWallet);
+      if (response.data is! Map) {
+        throw const FormatException('Create wallet response is invalid.');
+      }
+      return MechanicWalletData.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

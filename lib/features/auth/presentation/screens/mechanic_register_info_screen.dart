@@ -14,6 +14,8 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_h
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_layout.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
+import 'package:fe_moblie_flutter/core/data/models/vietnam_address_selection.dart';
+import 'package:fe_moblie_flutter/core/widgets/vietnam_address_picker.dart';
 
 /// Đăng ký thợ — chỉ thu thập thông tin cơ bản tối thiểu.
 /// Chuyên môn, khu vực, ảnh xác thực, ngân hàng → hoàn thiện sau trong app.
@@ -36,8 +38,8 @@ class _MechanicRegisterInfoScreenState
     extends State<MechanicRegisterInfoScreen> {
   final _nameCtrl = TextEditingController();
   final _cccdCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  VietnamAddressSelection _addressSelection = const VietnamAddressSelection();
   DateTime? _dob;
   XFile? _portrait;
 
@@ -45,7 +47,6 @@ class _MechanicRegisterInfoScreenState
   void dispose() {
     _nameCtrl.dispose();
     _cccdCtrl.dispose();
-    _addressCtrl.dispose();
     _emailCtrl.dispose();
     super.dispose();
   }
@@ -74,12 +75,15 @@ class _MechanicRegisterInfoScreenState
   void _onContinue() {
     final name = _nameCtrl.text.trim();
     final cccd = _cccdCtrl.text.trim();
-    final address = _addressCtrl.text.trim();
+    final address = _addressSelection.formattedFullAddress.trim();
 
     if (name.length < 2) return _snack('Vui lòng nhập họ và tên');
     if (cccd.length < 9) return _snack('CCCD/CMND không hợp lệ');
     if (_dob == null) return _snack('Vui lòng chọn ngày sinh');
-    if (address.length < 5) return _snack('Vui lòng nhập địa chỉ hiện tại');
+    if (!_addressSelection.hasProvince) return _snack('Vui lòng chọn tỉnh/thành phố');
+    if (!_addressSelection.hasDistrict) return _snack('Vui lòng chọn quận/huyện');
+    if (!_addressSelection.hasWard) return _snack('Vui lòng chọn phường/xã');
+    if (address.length < 8) return _snack('Vui lòng nhập đầy đủ địa chỉ');
 
     final draft = MechanicRegisterDraft(
       phoneNumber: widget.phoneNumber,
@@ -230,8 +234,11 @@ class _MechanicRegisterInfoScreenState
           ),
         ),
         const SizedBox(height: 16),
-        _field('Địa chỉ hiện tại', _addressCtrl,
-            hint: 'Số nhà, phường, quận, tỉnh...', required: true),
+        VietnamAddressPicker(
+          sectionTitle: 'Địa chỉ hiện tại *',
+          style: VietnamAddressPickerStyle.filled,
+          onChanged: (value) => setState(() => _addressSelection = value),
+        ),
         _field('Email (tuỳ chọn)', _emailCtrl,
             hint: 'example@gmail.com', email: true),
 

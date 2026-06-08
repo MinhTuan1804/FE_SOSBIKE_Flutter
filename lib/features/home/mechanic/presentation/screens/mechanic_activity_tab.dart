@@ -7,7 +7,10 @@ enum _ActivitySection { schedule, notifications }
 
 /// Tab **Bảo Trì → Hoạt Động** — Đặt lịch + Thông báo (Figma).
 class MechanicActivityTab extends StatefulWidget {
-  const MechanicActivityTab({super.key});
+  const MechanicActivityTab({super.key, this.previewOnly = false});
+
+  /// Xem preview dưới [ComingSoonOverlay] — không hiện dialog nhắc lịch.
+  final bool previewOnly;
 
   @override
   State<MechanicActivityTab> createState() => _MechanicActivityTabState();
@@ -26,7 +29,9 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
   void initState() {
     super.initState();
     _selectedDay = DateTime(2026, 3, 18);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowReminder());
+    if (!widget.previewOnly) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowReminder());
+    }
   }
 
   void _maybeShowReminder() {
