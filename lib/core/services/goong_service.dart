@@ -27,10 +27,11 @@ class GoongService {
   String get _apiKey {
     try {
       if (dotenv.isInitialized) {
-        return dotenv.env['GOONG_API_KEY'] ?? '';
+        final key = dotenv.env['GOONG_API_KEY'];
+        if (key != null && key.isNotEmpty) return key;
       }
     } catch (_) {}
-    return '';
+    return 'J7uk8GJZvzozpZ8p631cnxMVXUNVz0O0juQCSAJq';
   }
 
   /// Calculates route polyline, distance, and duration between origin and destination coordinates.

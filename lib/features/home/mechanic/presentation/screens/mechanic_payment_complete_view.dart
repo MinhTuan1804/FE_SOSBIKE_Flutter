@@ -7,6 +7,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_re
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_title_bar.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_stepper.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_home_button.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 
 class MechanicPaymentCompleteView extends StatefulWidget {
   const MechanicPaymentCompleteView({
@@ -27,7 +29,7 @@ class MechanicPaymentCompleteView extends StatefulWidget {
 class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteView> {
   static final _currencyFormat = NumberFormat('#,##0', 'vi_VN');
 
-  String _selectedMethod = 'CASH'; // 'QR', 'CASH', 'TRANSFER'
+  String _selectedMethod = 'CASH'; // 'CASH', 'TRANSFER'
   OrderQuoteDto? _quote;
   bool _isLoading = true;
   bool _isSettling = false;
@@ -46,12 +48,78 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
   void initState() {
     super.initState();
     _loadOrderQuote();
+    context.read<RescueProvider>().addListener(_onRescueStatusChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final rescue = context.read<RescueProvider>();
+        if (rescue.activeOrderStatus?.toUpperCase() == 'PAID') {
+          if (!_isSettled) {
+            _handleAutoSettledOnline();
+          }
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    try {
+      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
+    } catch (_) {}
     _amountCtrl.dispose();
     super.dispose();
+  }
+
+  void _onRescueStatusChanged() {
+    if (!mounted) return;
+    final rescue = context.read<RescueProvider>();
+    if (rescue.activeOrderStatus?.toUpperCase() == 'PAID') {
+      if (!_isSettled) {
+        _handleAutoSettledOnline();
+      }
+    }
+  }
+
+  Future<void> _handleAutoSettledOnline() async {
+    setState(() {
+      _isSettling = true;
+      _errorMessage = null;
+    });
+
+    final repairProvider = context.read<MechanicRepairProvider>();
+    final walletProvider = context.read<MechanicWalletProvider>();
+    final rescueProvider = context.read<RescueProvider>();
+
+    if (_quote == null) {
+      final quote = await repairProvider.getQuote(widget.orderId);
+      if (quote != null) {
+        _quote = quote;
+      }
+    }
+
+    final gross = _quote?.totalAmount ?? 0.0;
+    final commission = gross * 0.2;
+    final net = gross - commission;
+
+    await walletProvider.load(force: true);
+
+    if (mounted) {
+      setState(() {
+        _isSettling = false;
+        _isSettled = true;
+        _selectedMethod = 'TRANSFER';
+        _grossAmount = gross;
+        _commissionAmount = commission;
+        _netAmount = net;
+        _walletBalanceAfter = walletProvider.data?.balance.toDouble() ?? 0.0;
+      });
+
+      // Clear active order state
+      await repairProvider.clearActiveOrderState();
+
+      // Clear rescue status
+      rescueProvider.clearActiveOrderStatus();
+    }
   }
 
   Future<void> _loadOrderQuote() async {
@@ -322,12 +390,6 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
         Row(
           children: [
             _buildMethodButton(
-              method: 'QR',
-              label: 'QR PayOS',
-              icon: Icons.qr_code_scanner_rounded,
-              color: const Color(0xFF2563EB),
-            ),
-            _buildMethodButton(
               method: 'CASH',
               label: 'Tiền mặt',
               icon: Icons.payments_rounded,
@@ -337,15 +399,14 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
               method: 'TRANSFER',
               label: 'Chuyển khoản',
               icon: Icons.account_balance_rounded,
-              color: const Color(0xFFD97706),
+              color: const Color(0xFF2563EB),
             ),
           ],
         ),
         const SizedBox(height: 24),
         // Selected method details area
         if (_selectedMethod == 'CASH') _buildCashSection(quoteTotal),
-        if (_selectedMethod == 'QR') _buildQrSection(),
-        if (_selectedMethod == 'TRANSFER') _buildTransferSection(quoteTotal),
+        if (_selectedMethod == 'TRANSFER') _buildTransferSection(),
       ],
     );
   }
@@ -407,79 +468,72 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
     );
   }
 
-  Widget _buildQrSection() {
+  Widget _buildTransferSection() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 48),
-          const SizedBox(height: 12),
-          const Text(
-            'Chờ khách quét mã QR PayOS',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1F2937)),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Khách hàng sẽ quét mã QR được tạo tự động trên màn hình của họ để thanh toán qua PayOS. App thợ sẽ tự động hoàn thành khi thanh toán thành công.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.4, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: _loadOrderQuote,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF2563EB)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Kiểm tra trạng thái', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTransferSection(double quoteTotal) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Row(
+          const SizedBox(height: 8),
+          Stack(
+            alignment: Alignment.center,
             children: [
-              Icon(Icons.account_balance_wallet_rounded, color: Color(0xFFD97706), size: 28),
-              SizedBox(width: 8),
-              Text(
-                'Khách chuyển khoản trực tiếp',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1F2937)),
+              SizedBox(
+                width: 72,
+                height: 72,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                ),
+              ),
+              Icon(
+                Icons.qr_code_2_rounded,
+                size: 36,
+                color: Colors.blue.shade600,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
           const Text(
-            'Nếu khách muốn chuyển khoản qua ngân hàng, bạn có thể cho khách quét tài khoản ngân hàng liên kết trong ví của bạn. Sau khi nhận được tiền vào tài khoản thực tế, bấm nút xác nhận.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.4, fontWeight: FontWeight.w500),
+            'Chờ khách hàng thanh toán',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Khách hàng quét mã QR PayOS hoặc chuyển khoản ngân hàng trên ứng dụng của họ.\n'
+            'Hệ thống sẽ tự động quyết toán và cộng tiền vào ví của bạn ngay khi giao dịch thành công.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _isSettling ? null : () => _settleCashFlow(quoteTotal), // settle transfer as cash from ledger perspective
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD97706),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          const Divider(height: 24),
+          TextButton.icon(
+            onPressed: _isLoading ? null : _loadOrderQuote,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text(
+              'Kiểm tra lại trạng thái',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
-            child: _isSettling
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Xác nhận đã nhận chuyển khoản', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue.shade600,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
           ),
         ],
       ),
@@ -518,7 +572,13 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
             ),
           ),
           const Divider(height: 32),
-          _receiptRow('Mã đơn hàng', '#${widget.orderId.substring(0, 8).toUpperCase()}', isBold: true),
+          _receiptRow(
+            'Mã đơn hàng',
+            widget.orderId.length >= 8
+                ? '#${widget.orderId.substring(0, 8).toUpperCase()}'
+                : '#${widget.orderId.toUpperCase()}',
+            isBold: true,
+          ),
           _receiptRow('Phương thức', _selectedMethod == 'CASH' ? 'Tiền mặt' : _selectedMethod == 'QR' ? 'QR PayOS' : 'Chuyển khoản'),
           const Divider(height: 24),
           const Text(

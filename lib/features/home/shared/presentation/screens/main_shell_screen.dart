@@ -242,12 +242,38 @@ class MainShellScreenState extends State<MainShellScreen> {
 
     if (!mounted) return;
     final quoteSent = _isQuoteSentPhase(repair.activeOrder?.status);
+
+    IncomingRescueRequest? incomingReq;
+    if (repair.activeOrder != null) {
+      incomingReq = IncomingRescueRequest(
+        customerName: repair.activeOrder!.customerName ?? 'Khách hàng',
+        address: repair.activeOrder!.requestAddress,
+        fullAddress: repair.activeOrder!.requestAddress,
+        distanceMeters: 0,
+        serviceTypeLabel: 'LƯU ĐỘNG',
+        phoneNumber: '0987654321',
+        latitude: repair.activeOrder!.customerLatitude,
+        longitude: repair.activeOrder!.customerLongitude,
+      );
+
+      final rescue = context.read<RescueProvider>();
+      if (repair.activeOrder!.customerLatitude != null && repair.activeOrder!.customerLongitude != null) {
+        rescue.setActiveCustomerCoords(
+          repair.activeOrder!.customerLatitude!,
+          repair.activeOrder!.customerLongitude!,
+        );
+      }
+    }
+
     setState(() {
       _selectedRepairItems = selected;
       _sessionSpareParts = spareParts;
       _orderFlow = step;
       _tab = MainNavTab.orders;
       _quoteSent = quoteSent;
+      if (incomingReq != null) {
+        _activeIncomingRequest = incomingReq;
+      }
     });
   }
 
@@ -365,6 +391,12 @@ class MainShellScreenState extends State<MainShellScreen> {
               _orderFlow = _MechanicOrderFlow.repair;
             });
             rescue.clearActiveOrderStatus();
+          }
+        } else if (rescue.activeOrderStatus == 'PAID') {
+          if (_orderFlow != _MechanicOrderFlow.complete) {
+            setState(() {
+              _orderFlow = _MechanicOrderFlow.complete;
+            });
           }
         } else if (rescue.activeOrderStatus == 'CANCELLED') {
           setState(() {

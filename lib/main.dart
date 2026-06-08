@@ -55,7 +55,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await dotenv.load(fileName: kIsWeb ? "assets/.env" : ".env");
+    await dotenv.load(fileName: "assets/.env");
   } catch (e) {
     debugPrint('Warning: Could not load .env file: $e');
   }

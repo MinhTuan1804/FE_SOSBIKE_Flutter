@@ -27,12 +27,16 @@ class ActiveMechanicOrderDto {
     required this.status,
     required this.requestAddress,
     this.customerName,
+    this.customerLatitude,
+    this.customerLongitude,
   });
 
   final String orderId;
   final String status;
   final String requestAddress;
   final String? customerName;
+  final double? customerLatitude;
+  final double? customerLongitude;
 
   factory ActiveMechanicOrderDto.fromJson(Map<String, dynamic> json) {
     return ActiveMechanicOrderDto(
@@ -40,6 +44,8 @@ class ActiveMechanicOrderDto {
       status: json['status'] as String? ?? '',
       requestAddress: json['requestAddress'] as String? ?? '',
       customerName: json['customerName'] as String?,
+      customerLatitude: json['customerLatitude'] != null ? (json['customerLatitude'] as num).toDouble() : null,
+      customerLongitude: json['customerLongitude'] != null ? (json['customerLongitude'] as num).toDouble() : null,
     );
   }
 }
