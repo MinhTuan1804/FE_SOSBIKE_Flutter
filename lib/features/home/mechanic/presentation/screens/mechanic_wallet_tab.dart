@@ -96,13 +96,15 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
       );
     }
     final wallet = data ?? MechanicWalletData.sample;
+    final topPadding = MediaQuery.paddingOf(context).top;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
-          child: Text(
+        Container(
+          color: AppColors.primary,
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 16),
+          child: const Text(
             'Ví, Thu Nhập',
             style: TextStyle(
               color: Colors.white,
@@ -112,6 +114,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: _SectionToggle(

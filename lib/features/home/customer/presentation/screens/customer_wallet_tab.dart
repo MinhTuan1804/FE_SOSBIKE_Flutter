@@ -32,12 +32,15 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
     final membership = context.watch<MembershipProvider>();
     final subscription = membership.currentSubscription;
 
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 0),
-          child: Text(
+        Container(
+          color: AppColors.primary,
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 16),
+          child: const Text(
             'Thanh toán',
             style: TextStyle(
               color: Colors.white,
