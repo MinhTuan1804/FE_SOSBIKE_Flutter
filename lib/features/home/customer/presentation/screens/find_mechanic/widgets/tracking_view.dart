@@ -1,10 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/screens/chat_detail_screen.dart';
 import 'package:intl/intl.dart';
 
 class TrackingView extends StatefulWidget {
@@ -138,6 +139,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMechanicProfileCard(
+          orderId: rescue.currentOrderId ?? '',
           avatarUrl: match['mechanicAvatarUrl'] as String?,
           name: mechanicName,
           subtitle: '$vehicleModel - $licensePlate',
@@ -156,7 +158,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         Row(
           children: [
             Text(
-              'ÄÃ¡nh giÃ¡ $rating',
+              'Ä Ã¡nh giÃ¡ $rating',
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(width: 6),
@@ -171,7 +173,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         const SizedBox(height: 16),
         _buildPriceRow('PhÃ­ di chuyá»ƒn (${distanceKm.toStringAsFixed(1)} km)', '$formattedFeeÄ‘'),
         const SizedBox(height: 8),
-        _buildPriceRow('PhÃ­ ná»n táº£ng', '$feeRate%'),
+        _buildPriceRow('PhÃ­ ná» n táº£ng', '$feeRate%'),
         const SizedBox(height: 24),
         _buildPrimaryButton(
           text: 'Há»§y Ä‘áº·t thá»£',
@@ -183,7 +185,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     );
   }
 
-  // 2. ARRIVED (Thá»£ Ä‘Ã£ Ä‘áº¿n nÆ¡i - Äang kiá»ƒm tra xe)
+  // 2. ARRIVED (Thá»£ Ä‘Ã£ Ä‘áº¿n nÆ¡i - Ä ang kiá»ƒm tra xe)
   Widget _buildArrivedView(BuildContext context, RescueProvider rescue) {
     final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
     final match = rescue.matchedMechanic ?? {};
@@ -197,10 +199,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMechanicProfileCard(
+          orderId: rescue.currentOrderId ?? '',
           avatarUrl: match['mechanicAvatarUrl'] as String?,
           name: mechanicName,
           subtitle: '$vehicleModel - $licensePlate',
-          badgeText: 'ÄÃ£ Ä‘áº¿n nÆ¡i',
+          badgeText: 'Đã đến nơi',
           badgeColor: Colors.green,
         ),
         const SizedBox(height: 20),
@@ -815,6 +818,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
   // Common Header/Card Helper Widgets
   Widget _buildMechanicProfileCard({
+    required String orderId,
     required String? avatarUrl,
     required String name,
     required String subtitle,
@@ -907,6 +911,30 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.white24,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChatDetailScreen(
+                      orderId: orderId,
+                      title: name,
+                      avatarUrl: avatarUrl,
+                    ),
+                  ),
+                );
+              },
+              customBorder: const CircleBorder(),
+              child: const SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
               ),
             ),
           ),
