@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -125,6 +123,13 @@ class AuthRepository {
     String? bankAccountNumber,
     String? bankAccountHolder,
     XFile? avatarFile,
+    XFile? cccdFrontFile,
+    XFile? cccdBackFile,
+    XFile? certificateFile,
+    XFile? vehiclePhotoFile,
+    XFile? vehicleRegistrationFile,
+    XFile? vehicleInsuranceFile,
+    XFile? driverLicenseFile,
     String? avatarUrl,
     String? cccdFrontUrl,
     String? cccdBackUrl,
@@ -150,6 +155,15 @@ class AuthRepository {
         if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
         if (bankAccountHolder != null) 'bankAccountHolder': bankAccountHolder,
         if (avatarFile != null) 'avatar': await _multipartFromXFile(avatarFile, 'avatar.jpg'),
+        if (cccdFrontFile != null) 'cccdFront': await _multipartFromXFile(cccdFrontFile, 'cccd_front.jpg'),
+        if (cccdBackFile != null) 'cccdBack': await _multipartFromXFile(cccdBackFile, 'cccd_back.jpg'),
+        if (certificateFile != null) 'certificate': await _multipartFromXFile(certificateFile, 'certificate.jpg'),
+        if (vehiclePhotoFile != null) 'vehiclePhoto': await _multipartFromXFile(vehiclePhotoFile, 'vehicle.jpg'),
+        if (vehicleRegistrationFile != null)
+          'vehicleRegistration': await _multipartFromXFile(vehicleRegistrationFile, 'registration.jpg'),
+        if (vehicleInsuranceFile != null)
+          'vehicleInsurance': await _multipartFromXFile(vehicleInsuranceFile, 'insurance.jpg'),
+        if (driverLicenseFile != null) 'driverLicense': await _multipartFromXFile(driverLicenseFile, 'license.jpg'),
         if (avatarUrl != null) 'avatarUrl': avatarUrl,
         if (cccdFrontUrl != null) 'cccdFrontUrl': cccdFrontUrl,
         if (cccdBackUrl != null) 'cccdBackUrl': cccdBackUrl,
@@ -182,12 +196,10 @@ class AuthRepository {
     String? email,
     String? currentAddress,
     String? referralCode,
-    File? avatarFile,
+    XFile? avatarFile,
     String? oldAvatarUrl,
   }) async {
     try {
-      final uploadedAvatarUrl =
-          avatarFile != null ? await _uploadAvatarToFirebase(avatarFile, oldAvatarUrl) : null;
       final formData = FormData.fromMap({
         'fullName': fullName,
         'dateOfBirth': dateOfBirth.toIso8601String(),
@@ -195,32 +207,37 @@ class AuthRepository {
         if (email != null) 'email': email,
         if (currentAddress != null) 'currentAddress': currentAddress,
         if (referralCode != null) 'referralCode': referralCode,
-        if (uploadedAvatarUrl != null) 'avatarUrl': uploadedAvatarUrl,
+        if (avatarFile != null) 'avatar': await _multipartFromXFile(avatarFile, 'avatar.jpg'),
       });
 
-      await _dioClient.dio.put(
+      final response = await _dioClient.dio.put(
         ApiEndpoints.updateProfile,
         data: formData,
       );
-      return uploadedAvatarUrl;
+      final data = response.data;
+      if (data is Map && data['avatarUrl'] != null) {
+        return data['avatarUrl'] as String;
+      }
+      return null;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
   }
 
-  Future<String> _uploadAvatarToFirebase(File avatarFile, String? oldAvatarUrl) async {
+  Future<String> _uploadAvatarToFirebase(XFile avatarFile, String? oldAvatarUrl) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw StateError('Người dùng chưa đăng nhập Firebase.');
     }
 
-    final rawExt = avatarFile.path.contains('.') ? avatarFile.path.split('.').last : 'jpg';
+    final rawExt = avatarFile.name.contains('.') ? avatarFile.name.split('.').last : 'jpg';
     final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
     final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
     final ref = FirebaseStorage.instance.ref().child('avatars/${user.uid}/$fileName');
+    final bytes = await avatarFile.readAsBytes();
 
-    await ref.putFile(
-      avatarFile,
+    await ref.putData(
+      bytes,
       SettableMetadata(contentType: 'image/$ext'),
     );
     final newUrl = await ref.getDownloadURL();
