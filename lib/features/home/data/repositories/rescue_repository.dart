@@ -123,4 +123,28 @@ class RescueRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<List<Map<String, dynamic>>> getNearbyWorkers({
+    required double latitude,
+    required double longitude,
+    double radiusKm = 5.0,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _dioClient.dio.get(
+        '/workers/nearby',
+        queryParameters: {
+          'latitude': latitude,
+          'longitude': longitude,
+          'radius_km': radiusKm,
+          'limit': limit,
+        },
+      );
+      return List<Map<String, dynamic>>.from(
+        (response.data as List).map((e) => Map<String, dynamic>.from(e)),
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

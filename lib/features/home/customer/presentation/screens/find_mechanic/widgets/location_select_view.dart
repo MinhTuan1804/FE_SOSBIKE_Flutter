@@ -7,6 +7,8 @@ import 'package:geocoding/geocoding.dart' as geo;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
 class LocationSelectView extends StatefulWidget {
   const LocationSelectView({
@@ -46,6 +48,8 @@ class _LocationSelectViewState extends State<LocationSelectView> {
 
   final Set<Marker> _markers = {};
   List<Map<String, dynamic>> _incidentLocations = [];
+  BitmapDescriptor? _workerIcon;
+  bool _isLoadingWorkers = false;
 
 
 
@@ -60,10 +64,23 @@ class _LocationSelectViewState extends State<LocationSelectView> {
     });
   }
 
+  Future<void> _loadWorkerMarkerIcon() async {
+    try {
+      _workerIcon = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(32, 32)),
+        'assets/images/onboarding/logo.png',
+      );
+    } catch (e) {
+      _workerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _updateLocations(_initialPosition);
+    _loadWorkerMarkerIcon().then((_) {
+      _fetchNearbyWorkers(_initialPosition);
+    });
     _markers.add(
       Marker(
         markerId: const MarkerId('user_location'),
@@ -93,73 +110,113 @@ class _LocationSelectViewState extends State<LocationSelectView> {
     return 12742 * asin(sqrt(a));
   }
 
-  // Cập nhật danh sách các điểm xung quanh tâm bản đồ
-  void _updateLocations(LatLng center) {
-    // Tọa độ 4 điểm sự cố lân cận mô phỏng trong bán kính 200m
-    final incident1LatLng = LatLng(center.latitude + 0.0008, center.longitude - 0.0006); // ~90m
-    final incident2LatLng = LatLng(center.latitude - 0.0012, center.longitude + 0.0010); // ~150m
-    final incident3LatLng = LatLng(center.latitude + 0.0005, center.longitude + 0.0013); // ~140m
-    final incident4LatLng = LatLng(center.latitude - 0.0014, center.longitude - 0.0008); // ~170m
-
-    final tempIncidents = [
-      {
-        'title': 'Sự cố hỏng xích - Đang xác định vị trí...',
-        'latLng': incident1LatLng,
-        'type': 'incident_1',
-      },
-      {
-        'title': 'Bể bánh xe - Đang xác định vị trí...',
-        'latLng': incident2LatLng,
-        'type': 'incident_2',
-      },
-      {
-        'title': 'Chết máy đột ngột - Đang xác định vị trí...',
-        'latLng': incident3LatLng,
-        'type': 'incident_3',
-      },
-      {
-        'title': 'Thủng lốp xe - Đang xác định vị trí...',
-        'latLng': incident4LatLng,
-        'type': 'incident_4',
-      },
-    ];
-
-    setState(() {
-      // Giữ lại các điểm tự chọn (không có trường 'type')
-      final customItems = _incidentLocations.where((item) {
-        return item['type'] == null;
-      }).toList();
-      _incidentLocations = [...customItems, ...tempIncidents];
-      
-      // Giới hạn danh sách tối đa 5 phần tử (1 GPS hiện tại ở đầu + 4 lân cận)
-      if (_incidentLocations.length > 5) {
-        _incidentLocations = _incidentLocations.sublist(0, 5);
-      }
-    });
-
-    // Dùng Smart Mock Geocoder trực tiếp cho các sự cố giả lập để tiết kiệm số lượng request Goong API
-    final address1 = _getSmartMockAddress(incident1LatLng);
-    _updateIncidentTitle('incident_1', 'Sự cố hỏng xích - $address1');
-
-    final address2 = _getSmartMockAddress(incident2LatLng);
-    _updateIncidentTitle('incident_2', 'Bể bánh xe - $address2');
-
-    final address3 = _getSmartMockAddress(incident3LatLng);
-    _updateIncidentTitle('incident_3', 'Chết máy đột ngột - $address3');
-
-    final address4 = _getSmartMockAddress(incident4LatLng);
-    _updateIncidentTitle('incident_4', 'Thủng lốp xe - $address4');
-  }
-
-  void _updateIncidentTitle(String type, String newTitle) {
+  void _updateMarkers() {
     if (!mounted) return;
     setState(() {
+      _markers.clear();
+      
+      // 1. Add user location marker
+      LatLng userPos = _initialPosition;
+      if (_incidentLocations.isNotEmpty) {
+        final selected = _incidentLocations[_selectedItemIndex < _incidentLocations.length ? _selectedItemIndex : 0];
+        userPos = selected['latLng'] as LatLng;
+      }
+      
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('user_location'),
+          position: userPos,
+          infoWindow: const InfoWindow(
+            title: 'Vị trí cứu hộ',
+          ),
+        ),
+      );
+
+      // 2. Add worker markers
       for (var item in _incidentLocations) {
-        if (item['type'] == type) {
-          item['title'] = newTitle;
+        if (item['type'] == 'worker') {
+          final latLng = item['latLng'] as LatLng;
+          final String title = item['title'] as String;
+          final String snippet = item['subtitle'] as String? ?? '';
+          final wData = item['workerData'] as Map<String, dynamic>?;
+          final String workerId = wData?['mechanicId']?.toString() ?? title;
+
+          _markers.add(
+            Marker(
+              markerId: MarkerId('worker_$workerId'),
+              position: latLng,
+              icon: _workerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+              infoWindow: InfoWindow(
+                title: title,
+                snippet: snippet,
+              ),
+              onTap: () {
+                final index = _incidentLocations.indexOf(item);
+                if (index != -1 && mounted) {
+                  setState(() {
+                    _selectedItemIndex = index;
+                    _selectedAddress = title;
+                  });
+                  _mapController?.animateCamera(
+                    CameraUpdate.newLatLng(latLng),
+                  );
+                }
+              },
+            ),
+          );
         }
       }
     });
+  }
+
+  Future<void> _fetchNearbyWorkers(LatLng center) async {
+    if (_isLoadingWorkers) return;
+    setState(() {
+      _isLoadingWorkers = true;
+    });
+
+    try {
+      final rescueProvider = Provider.of<RescueProvider>(context, listen: false);
+      final workers = await rescueProvider.getNearbyWorkers(
+        center.latitude,
+        center.longitude,
+        radiusKm: 5.0,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        // Remove old workers from list
+        _incidentLocations.removeWhere((item) => item['type'] == 'worker');
+
+        // Map real workers from API
+        final workerItems = workers.map((w) {
+          final lat = w['latitude'] != null ? (w['latitude'] as num).toDouble() : 0.0;
+          final lng = w['longitude'] != null ? (w['longitude'] as num).toDouble() : 0.0;
+          return {
+            'title': 'Thợ: ${w['fullName'] ?? 'Sửa xe'} (${w['rating'] ?? 5.0}★)',
+            'subtitle': '${w['vehicleModel'] ?? 'N/A'} - ${w['licensePlate'] ?? 'N/A'} (${w['distanceKm'] ?? 0.0}km)',
+            'latLng': LatLng(lat, lng),
+            'type': 'worker',
+            'workerData': w,
+          };
+        }).toList();
+
+        // Keep only custom user selected locations (type is null) and append new workers
+        final customItems = _incidentLocations.where((item) => item['type'] == null).toList();
+        _incidentLocations = [...customItems, ...workerItems];
+      });
+
+      _updateMarkers();
+    } catch (e) {
+      debugPrint('Lỗi khi tìm thợ xung quanh: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingWorkers = false;
+        });
+      }
+    }
   }
 
   // Tìm kiếm địa chỉ bằng Google Geocoding API hoặc Fallback Offline thông minh
@@ -205,8 +262,10 @@ class _LocationSelectViewState extends State<LocationSelectView> {
               _addToHistory(query);
             });
             _highlightLocation(latLng);
+            _fetchNearbyWorkers(latLng);
           }
           return;
+
         }
       }
     } catch (e) {
@@ -254,7 +313,9 @@ class _LocationSelectViewState extends State<LocationSelectView> {
           _addToHistory(query);
         });
         _highlightLocation(latLng);
+        _fetchNearbyWorkers(latLng);
       }
+
     } else {
       if (mounted) {
         setState(() {
@@ -272,26 +333,30 @@ class _LocationSelectViewState extends State<LocationSelectView> {
       'latLng': position,
     };
 
-    // Loại bỏ bất kỳ phần tử nào trùng tiêu đề hoặc trùng tọa độ cũ
-    _incidentLocations.removeWhere((item) => item['title'] == address);
+    // Lấy các thợ hiện tại đang lưu trong list để không bị mất khi insert custom location
+    final workerItems = _incidentLocations.where((item) => item['type'] == 'worker').toList();
+
+    // Loại bỏ các custom location trùng tên hoặc toạ độ
+    _incidentLocations.removeWhere((item) => item['type'] != 'worker' && item['title'] == address);
     
     // Đảm bảo phần tử Index 0 luôn là vị trí hiện tại (GPS) nếu đã được tải
-    if (_incidentLocations.isNotEmpty && _incidentLocations.first['type'] == null && _incidentLocations.first['title'] == _selectedAddress) {
-      // Vị trí GPS hiện tại đang ở đầu, chèn vào ngay sau nó (Index 1)
-      _incidentLocations.insert(1, newIncident);
+    final customItems = _incidentLocations.where((item) => item['type'] != 'worker').toList();
+    if (customItems.isNotEmpty && customItems.first['title'] == _selectedAddress) {
+      customItems.insert(1, newIncident);
     } else {
-      // Chèn lên đầu
-      _incidentLocations.insert(0, newIncident);
+      customItems.insert(0, newIncident);
     }
 
-    // Giới hạn danh sách tối đa 5 phần tử: 1 GPS hiện tại + 4 lân cận
-    if (_incidentLocations.length > 5) {
-      _incidentLocations = _incidentLocations.sublist(0, 5);
-    }
+    // Giới hạn danh sách các điểm tự chọn tối đa 2 phần tử để tránh quá dài
+    final limitedCustom = customItems.take(2).toList();
+    
+    // Ghép lại với danh sách thợ
+    _incidentLocations = [...limitedCustom, ...workerItems];
     
     _selectedItemIndex = _incidentLocations.indexWhere((item) => item['title'] == address);
     if (_selectedItemIndex == -1) _selectedItemIndex = 0;
   }
+
 
   // Smart Mock Geocoder: Dùng để sinh địa chỉ tiếng Việt cực kỳ thực tế xung quanh TP.HCM khi cả hai dịch vụ geocoding đều lỗi (ví dụ do lỗi Billing của API Key)
   String _getSmartMockAddress(LatLng latLng) {
@@ -476,8 +541,9 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         setState(() {
           _deviceLocation = latLng;
           _selectedItemIndex = 0;
-          _updateLocations(latLng);
+          _fetchNearbyWorkers(latLng);
           _isLoadingAddress = true;
+
           _selectedAddress = 'Đang xác định địa chỉ...';
         });
 
@@ -558,6 +624,8 @@ class _LocationSelectViewState extends State<LocationSelectView> {
                 _selectedAddress = 'Đang xác định địa chỉ...';
               });
               _highlightLocation(position);
+              _fetchNearbyWorkers(position);
+
               
               _reverseGeocode(position).then((address) {
                 if (mounted) {
@@ -1063,13 +1131,14 @@ class LocationDetailsPanel extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       LocationItemTile(
-                        icon: Icons.warning_amber_rounded,
-                        iconColor: isSelected ? Colors.amber[800]! : Colors.grey,
+                        icon: item['type'] == 'worker' ? Icons.person : Icons.my_location,
+                        iconColor: isSelected ? AppColors.primary : Colors.grey,
                         title: item['title'] as String,
                         distance: distanceStr,
                         isSelected: isSelected,
                         onTap: () => onItemTap(index, itemLatLng, item['title'] as String),
                       ),
+
                       if (index < items.length - 1)
                         const Divider(height: 1, indent: 64),
                     ],

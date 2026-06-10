@@ -318,6 +318,23 @@ class RescueProvider extends ChangeNotifier {
 
   // --- Customer Actions ---
 
+  Future<List<Map<String, dynamic>>> getNearbyWorkers(
+    double lat,
+    double lon, {
+    double radiusKm = 5.0,
+  }) async {
+    try {
+      return await _repository.getNearbyWorkers(
+        latitude: lat,
+        longitude: lon,
+        radiusKm: radiusKm,
+      );
+    } catch (e) {
+      debugPrint('Error getting nearby workers in provider: $e');
+      return [];
+    }
+  }
+
   Future<bool> createRescueOrder({
     required double latitude,
     required double longitude,
