@@ -48,7 +48,7 @@ class RescueProvider extends ChangeNotifier {
     _routeUpdateTimer = null;
     _goongApiCallCount = 0;
 
-    // Call 1: Immediate fetch
+    // Call Goong Directions API only once at the beginning
     await fetchGoongRoute(
       custLat: custLat,
       custLng: custLng,
@@ -57,68 +57,81 @@ class RescueProvider extends ChangeNotifier {
       force: true,
     );
     _goongApiCallCount = 1;
+  }
 
-    final durationMins = _goongDurationMins;
-    if (durationMins == null || durationMins <= 0) {
-      debugPrint('[Goong] Duration is null or 0, cannot schedule periodic route updates.');
+  void setActiveCustomerCoords(double lat, double lng) {
+    _activeCustomerLatitude = lat;
+    _activeCustomerLongitude = lng;
+    if (_isRouteStillNeeded && _mechanicLatitude != null && _mechanicLongitude != null) {
+      _startRouteTracking(
+        custLat: lat,
+        custLng: lng,
+        mechLat: _mechanicLatitude!,
+        mechLng: _mechanicLongitude!,
+      );
+    }
+    notifyListeners();
+  }
+
+  void _updateRemainingEtaLocally(double mechLat, double mechLng) {
+    if (_activeRoutePoints.isEmpty) {
+      final double? custLat = _matchedMechanic != null ? _customerLatitude : _activeCustomerLatitude;
+      final double? custLng = _matchedMechanic != null ? _customerLongitude : _activeCustomerLongitude;
+      if (custLat != null && custLng != null) {
+        fetchGoongRoute(
+          custLat: custLat,
+          custLng: custLng,
+          mechLat: mechLat,
+          mechLng: mechLng,
+          force: true,
+        ).catchError((e) {
+          debugPrint('[Goong Fallback] Failed to fetch fallback route: $e');
+        });
+      }
       return;
     }
 
-    // Interval duration = (duration in minutes * 60) / 3 in seconds
-    final int intervalSeconds = ((durationMins * 60) / 3).round().clamp(60, 3600);
-    debugPrint('[Goong] Initial duration: $durationMins mins. Scheduling updates every $intervalSeconds seconds.');
+    try {
+      int closestIndex = 0;
+      double minDistance = double.infinity;
 
-    _routeUpdateTimer = Timer.periodic(Duration(seconds: intervalSeconds), (timer) async {
-      if (!_isRouteStillNeeded || _goongApiCallCount >= 3) {
-        debugPrint('[Goong] Stopping route updates. Call count: $_goongApiCallCount, Status: $_activeOrderStatus');
-        _routeUpdateTimer?.cancel();
-        _routeUpdateTimer = null;
-        return;
-      }
-
-      // Get latest coordinates
-      double? currentCustLat;
-      double? currentCustLng;
-      double? currentMechLat;
-      double? currentMechLng;
-
-      if (_matchedMechanic != null) {
-        // Customer side
-        currentCustLat = _customerLatitude;
-        currentCustLng = _customerLongitude;
-        currentMechLat = _matchedMechanic!['mechanicLatitude'] != null
-            ? (_matchedMechanic!['mechanicLatitude'] as num).toDouble()
-            : null;
-        currentMechLng = _matchedMechanic!['mechanicLongitude'] != null
-            ? (_matchedMechanic!['mechanicLongitude'] as num).toDouble()
-            : null;
-      } else {
-        // Mechanic side
-        currentCustLat = _activeCustomerLatitude;
-        currentCustLng = _activeCustomerLongitude;
-        currentMechLat = _mechanicLatitude;
-        currentMechLng = _mechanicLongitude;
-      }
-
-      if (currentCustLat != null &&
-          currentCustLng != null &&
-          currentMechLat != null &&
-          currentMechLng != null) {
-        debugPrint('[Goong] Fetching periodic route update. Call count before fetch: $_goongApiCallCount');
-        await fetchGoongRoute(
-          custLat: currentCustLat,
-          custLng: currentCustLng,
-          mechLat: currentMechLat,
-          mechLng: currentMechLng,
-          force: true,
+      for (int i = 0; i < _activeRoutePoints.length; i++) {
+        final dist = _calculateHaversineDistance(
+          mechLat,
+          mechLng,
+          _activeRoutePoints[i].latitude,
+          _activeRoutePoints[i].longitude,
         );
-        _goongApiCallCount++;
-        if (_goongApiCallCount >= 3) {
-          _routeUpdateTimer?.cancel();
-          _routeUpdateTimer = null;
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestIndex = i;
         }
       }
-    });
+
+      // Truncate passed points and snap the polyline start to the mechanic's current location
+      final List<LatLng> sublisted = _activeRoutePoints.sublist(closestIndex);
+      if (sublisted.isNotEmpty) {
+        sublisted[0] = LatLng(mechLat, mechLng);
+      }
+      _activeRoutePoints = sublisted;
+
+      double remainingDistance = 0.0;
+      for (int i = 0; i < _activeRoutePoints.length - 1; i++) {
+        remainingDistance += _calculateHaversineDistance(
+          _activeRoutePoints[i].latitude,
+          _activeRoutePoints[i].longitude,
+          _activeRoutePoints[i + 1].latitude,
+          _activeRoutePoints[i + 1].longitude,
+        );
+      }
+
+      _goongDistanceKm = remainingDistance;
+      // Motorcycle average speed of 25 km/h -> 2.4 minutes per km
+      _goongDurationMins = (remainingDistance * 2.4).round().clamp(1, 120);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[Goong ETA] Local calculation error: $e');
+    }
   }
 
   // Common State
@@ -155,6 +168,7 @@ class RescueProvider extends ChangeNotifier {
   bool _isOnline = false;
   Map<String, dynamic>? _incomingRequest;
   Timer? _locationTimer;
+  StreamSubscription<Position>? _geolocatorSubscription;
   double? _mechanicLatitude;
   double? _mechanicLongitude;
 
@@ -192,14 +206,10 @@ class RescueProvider extends ChangeNotifier {
       return;
     }
 
-    // Nếu không force và chưa đủ 2 phút (120s) kể từ lần gọi cuối, dùng ước tính Haversine cục bộ
+    // Nếu không force và chưa đủ 10 giây kể từ lần gọi cuối, bỏ qua để tránh gọi trùng lặp quá nhanh
     if (!force && _lastGoongRouteFetchTime != null) {
       final diff = DateTime.now().difference(_lastGoongRouteFetchTime!);
-      if (diff < const Duration(minutes: 2)) {
-        final distance = _calculateHaversineDistance(custLat, custLng, mechLat, mechLng);
-        _goongDistanceKm = distance * 1.25;
-        _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
-        notifyListeners();
+      if (diff < const Duration(seconds: 10)) {
         return;
       }
     }
@@ -299,17 +309,8 @@ class RescueProvider extends ChangeNotifier {
         }
         // Chỉ cập nhật khoảng cách/ETA khi thợ còn đang di chuyển (ACCEPTED)
         // Sau khi thợ đã đến (ARRIVED+) không cần tính nữa
-        if (_isRouteStillNeeded && _customerLatitude != null && _customerLongitude != null) {
-          // Ước tính khoảng cách đường bộ qua đường chim bay (x1.25) thay vì gọi API Direction
-          final distance = _calculateHaversineDistance(
-            _customerLatitude!,
-            _customerLongitude!,
-            lat,
-            lng,
-          );
-          _goongDistanceKm = distance * 1.25; // Nhân hệ số uốn khúc đường bộ
-          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60); // Ước tính 3 phút/km
-          notifyListeners();
+        if (_isRouteStillNeeded) {
+          _updateRemainingEtaLocally(lat, lng);
         }
       }
     });
@@ -565,6 +566,8 @@ class RescueProvider extends ChangeNotifier {
 
   void updateMechanicLocation(double latitude, double longitude) {
     if (!_isOnline) return;
+    // OPTIMIZATION: Skip HTTP PUT database write when busy on an active rescue order
+    if (_currentOrderId != null) return;
     _repository.updateMechanicLocation(latitude, longitude).catchError((e) {
       debugPrint('Failed to update mechanic location: $e');
     });
@@ -614,18 +617,8 @@ class RescueProvider extends ChangeNotifier {
       
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, position.latitude, position.longitude);
-        // Chỉ tính khoảng cách/ETA khi thợ còn đang di chuyển đến khách
-        // Khi đã ARRIVED hoặc sau đó, không cần cập nhật ETA nữa
-        if (_isRouteStillNeeded && _activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          final distance = _calculateHaversineDistance(
-            _activeCustomerLatitude!,
-            _activeCustomerLongitude!,
-            position.latitude,
-            position.longitude,
-          );
-          _goongDistanceKm = distance * 1.25;
-          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
-          notifyListeners();
+        if (_isRouteStillNeeded) {
+          _updateRemainingEtaLocally(position.latitude, position.longitude);
         }
       }
     } catch (e) {
@@ -637,34 +630,62 @@ class RescueProvider extends ChangeNotifier {
 
       if (_currentOrderId != null) {
         _locationService.sendLocation(_currentOrderId!, 10.762622, 106.660172);
-        if (_isRouteStillNeeded && _activeCustomerLatitude != null && _activeCustomerLongitude != null) {
-          final distance = _calculateHaversineDistance(
-            _activeCustomerLatitude!,
-            _activeCustomerLongitude!,
-            10.762622,
-            106.660172,
-          );
-          _goongDistanceKm = distance * 1.25;
-          _goongDurationMins = (_goongDistanceKm! * 3).round().clamp(1, 60);
-          notifyListeners();
+        if (_isRouteStillNeeded) {
+          _updateRemainingEtaLocally(10.762622, 106.660172);
         }
       }
     }
   }
 
-  void _startLocationUpdates() {
-    _locationTimer?.cancel();
+  Future<void> _startLocationUpdates() async {
+    _stopLocationUpdates();
     // Update location immediately upon going online
-    _syncCurrentLocation();
-    // Simulate updating location every 30 seconds
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _syncCurrentLocation();
-    });
+    await _syncCurrentLocation();
+
+    if (!_isOnline) return;
+
+    // Check if permission is granted before starting stream
+    final permission = await Geolocator.checkPermission();
+    final isAuthorized = permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+
+    if (isAuthorized) {
+      const locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Fire updates only when moved 10 meters (saves battery & network traffic)
+      );
+
+      _geolocatorSubscription = Geolocator.getPositionStream(
+        locationSettings: locationSettings,
+      ).listen((Position position) {
+        if (!_isOnline) return;
+        _mechanicLatitude = position.latitude;
+        _mechanicLongitude = position.longitude;
+        notifyListeners();
+        updateMechanicLocation(position.latitude, position.longitude);
+
+        if (_currentOrderId != null) {
+          _locationService.sendLocation(_currentOrderId!, position.latitude, position.longitude);
+          if (_isRouteStillNeeded) {
+            _updateRemainingEtaLocally(position.latitude, position.longitude);
+          }
+        }
+      }, onError: (e) {
+        debugPrint('Geolocator stream error: $e');
+      });
+    } else {
+      // Fallback: If not authorized, use a periodic timer
+      _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        _syncCurrentLocation();
+      });
+    }
   }
 
   void _stopLocationUpdates() {
     _locationTimer?.cancel();
     _locationTimer = null;
+    _geolocatorSubscription?.cancel();
+    _geolocatorSubscription = null;
   }
 
   @override
@@ -674,6 +695,7 @@ class RescueProvider extends ChangeNotifier {
     _statusSub?.cancel();
     _locationSub?.cancel();
     _locationTimer?.cancel();
+    _geolocatorSubscription?.cancel();
     _routeUpdateTimer?.cancel();
     super.dispose();
   }

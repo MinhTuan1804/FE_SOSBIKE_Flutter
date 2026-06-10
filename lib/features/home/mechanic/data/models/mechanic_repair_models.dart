@@ -27,12 +27,16 @@ class ActiveMechanicOrderDto {
     required this.status,
     required this.requestAddress,
     this.customerName,
+    this.customerLatitude,
+    this.customerLongitude,
   });
 
   final String orderId;
   final String status;
   final String requestAddress;
   final String? customerName;
+  final double? customerLatitude;
+  final double? customerLongitude;
 
   factory ActiveMechanicOrderDto.fromJson(Map<String, dynamic> json) {
     return ActiveMechanicOrderDto(
@@ -40,6 +44,8 @@ class ActiveMechanicOrderDto {
       status: json['status'] as String? ?? '',
       requestAddress: json['requestAddress'] as String? ?? '',
       customerName: json['customerName'] as String?,
+      customerLatitude: json['customerLatitude'] != null ? (json['customerLatitude'] as num).toDouble() : null,
+      customerLongitude: json['customerLongitude'] != null ? (json['customerLongitude'] as num).toDouble() : null,
     );
   }
 }
@@ -69,11 +75,23 @@ class OrderQuoteDto {
     required this.orderId,
     required this.status,
     required this.lines,
+    this.totalAmount = 0.0,
+    this.travelFee = 0.0,
+    this.nightSurcharge = 0.0,
+    this.serviceTotal = 0.0,
+    this.partsTotal = 0.0,
+    this.repairFee = 0.0,
   });
 
   final String orderId;
   final String status;
   final List<OrderQuoteLineDto> lines;
+  final double totalAmount;
+  final double travelFee;
+  final double nightSurcharge;
+  final double serviceTotal;
+  final double partsTotal;
+  final double repairFee;
 
   factory OrderQuoteDto.fromJson(Map<String, dynamic> json) {
     final rawLines = json['lines'];
@@ -85,6 +103,12 @@ class OrderQuoteDto {
               .map((e) => OrderQuoteLineDto.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : const [],
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      travelFee: (json['travelFee'] as num?)?.toDouble() ?? 0.0,
+      nightSurcharge: (json['nightSurcharge'] as num?)?.toDouble() ?? 0.0,
+      serviceTotal: (json['serviceTotal'] as num?)?.toDouble() ?? 0.0,
+      partsTotal: (json['partsTotal'] as num?)?.toDouble() ?? 0.0,
+      repairFee: (json['repairFee'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

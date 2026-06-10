@@ -5,6 +5,9 @@ class MechanicDashboardData {
     required this.todayRating,
     required this.overallRating,
     required this.recentTrips,
+    this.todayRevenueCash = 0.0,
+    this.todayRevenueQr = 0.0,
+    this.todayRevenueTransfer = 0.0,
   });
 
   final double todayRevenue;
@@ -12,6 +15,9 @@ class MechanicDashboardData {
   final double todayRating;
   final double overallRating;
   final List<MechanicTripSummary> recentTrips;
+  final double todayRevenueCash;
+  final double todayRevenueQr;
+  final double todayRevenueTransfer;
 
   factory MechanicDashboardData.fromJson(Map<String, dynamic> json) {
     final trips = json['recentTrips'];
@@ -26,13 +32,16 @@ class MechanicDashboardData {
               .map((item) => MechanicTripSummary.fromJson(Map<String, dynamic>.from(item)))
               .toList()
           : const [],
+      todayRevenueCash: _toDouble(json['todayRevenueCash']),
+      todayRevenueQr: _toDouble(json['todayRevenueQr']),
+      todayRevenueTransfer: _toDouble(json['todayRevenueTransfer']),
     );
   }
 
   static double _toDouble(Object? value) {
-    if (value == null) return 0;
+    if (value == null) return 0.0;
     if (value is num) return value.toDouble();
-    return double.tryParse(value.toString()) ?? 0;
+    return double.tryParse(value.toString()) ?? 0.0;
   }
 
   static int _toInt(Object? value) {

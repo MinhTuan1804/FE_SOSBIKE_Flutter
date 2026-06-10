@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fe_moblie_flutter/core/data/models/vietnam_address_selection.dart';
+import 'package:fe_moblie_flutter/core/widgets/vietnam_address_picker.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,7 +22,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  late TextEditingController _addressController;
+  VietnamAddressSelection _addressSelection = const VietnamAddressSelection();
+  String? _initialAddress;
   
   DateTime? _dateOfBirth;
   String? _gender;
@@ -45,8 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     
     _nameController = TextEditingController(text: auth.displayName);
     _emailController = TextEditingController(text: auth.email ?? '');
-    _addressController = TextEditingController(text: auth.currentAddress ?? '');
-
+    _initialAddress = auth.currentAddress;
     // dateOfBirth getter returns 'dd/MM/yyyy'; parse it back to DateTime
     final dobStr = auth.dateOfBirth;
     if (dobStr != null && dobStr.isNotEmpty) {
@@ -65,7 +67,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -97,8 +98,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  String? _resolvedAddress() {
+    final formatted = _addressSelection.formattedFullAddress.trim();
+    if (formatted.isNotEmpty) return formatted;
+    final initial = _initialAddress?.trim();
+    return (initial == null || initial.isEmpty) ? null : initial;
+  }
+
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_dateOfBirth == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn ngày sinh')),
+      );
+      return;
+    }
 
     final auth = context.read<AuthProvider>();
     
@@ -107,7 +121,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       dateOfBirth: _dateOfBirth,
       gender: _gender ?? 'OTHER',
       email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-      currentAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      currentAddress: _resolvedAddress(),
       avatarFile: _avatarFile,
     );
 
@@ -218,8 +232,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Vui lòng nhập họ tên' : null,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Vui lòng nhập họ tên';
+                        }
+                        if (value.trim().length < 2) {
+                          return 'Họ và tên phải có ít nhất 2 ký tự';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 20),
 
@@ -294,15 +315,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 20),
                     
                     // Current Address
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: InputDecoration(
-                        labelText: 'Địa chỉ hiện tại',
-                        prefixIcon: const Icon(Icons.location_on_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+                    VietnamAddressPicker(
+                      sectionTitle: 'Địa chỉ hiện tại',
+                      style: VietnamAddressPickerStyle.outlined,
+                      initialAddress: _initialAddress,
+                      onChanged: (value) => setState(() => _addressSelection = value),
                     ),
                     const SizedBox(height: 40),
 

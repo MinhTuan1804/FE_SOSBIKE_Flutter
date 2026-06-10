@@ -6,6 +6,7 @@ enum MechanicPriorityTier { free, standard, premium }
 class MechanicCurrentSubscription {
   const MechanicCurrentSubscription({
     required this.hasActivePlan,
+    this.planId,
     this.planName = '',
     this.planTier = MechanicPriorityTier.free,
     this.price = 0,
@@ -19,6 +20,7 @@ class MechanicCurrentSubscription {
   });
 
   final bool hasActivePlan;
+  final int? planId;
   final String planName;
   final MechanicPriorityTier planTier;
   final double price;
@@ -46,6 +48,7 @@ class MechanicCurrentSubscription {
     final tierStr = (json['planTier']?.toString() ?? 'FREE').toUpperCase();
     return MechanicCurrentSubscription(
       hasActivePlan: json['hasActivePlan'] == true,
+      planId: (json['planId'] as num?)?.toInt(),
       planName: json['planName']?.toString() ?? '',
       planTier: tierStr == 'PREMIUM'
           ? MechanicPriorityTier.premium
@@ -73,6 +76,7 @@ class MechanicCurrentSubscription {
 
 class MechanicPriorityPlan {
   const MechanicPriorityPlan({
+    this.planId,
     required this.tier,
     required this.title,
     required this.headerTitle,
@@ -84,6 +88,7 @@ class MechanicPriorityPlan {
     this.priceValue = 0,
   });
 
+  final int? planId;
   final MechanicPriorityTier tier;
   final String title;
   final String headerTitle;
@@ -97,10 +102,95 @@ class MechanicPriorityPlan {
 
   static const tierLabels = ['MIỄN PHÍ', 'PHỔ THÔNG', 'CAO CẤP'];
 
+  static MechanicPriorityTier tierFromCode(String? code) {
+    switch (code?.toUpperCase()) {
+      case 'PREMIUM':
+        return MechanicPriorityTier.premium;
+      case 'STANDARD':
+        return MechanicPriorityTier.standard;
+      default:
+        return MechanicPriorityTier.free;
+    }
+  }
+
+  static String _formatVnd(num value) {
+    final s = value.round().toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return value <= 0 ? 'Free 0 VND' : '${buf.toString()} VND';
+  }
+
+  factory MechanicPriorityPlan.fromApi(Map<String, dynamic> json) {
+    final tier = tierFromCode(json['planTier']?.toString());
+    final price = (json['price'] as num?)?.toInt() ?? 0;
+    final days = (json['durationDays'] as num?)?.toInt() ?? 30;
+    final name = json['name']?.toString() ?? '';
+    final benefitsJson = json['benefits'] as List<dynamic>?;
+    final benefits = benefitsJson != null && benefitsJson.isNotEmpty
+        ? benefitsJson
+            .map((b) => (b as Map<String, dynamic>)['name']?.toString() ?? '')
+            .where((s) => s.isNotEmpty)
+            .toList()
+        : _defaultBenefits(tier, json['description']?.toString());
+
+    return MechanicPriorityPlan(
+      planId: (json['planId'] as num?)?.toInt(),
+      tier: tier,
+      title: tier == MechanicPriorityTier.free ? 'GÓI CƠ BẢN' : 'GÓI ƯU TIÊN',
+      headerTitle: tier == MechanicPriorityTier.free ? 'Thành viên' : 'Thợ ưu tiên',
+      priceLabel: _formatVnd(price),
+      periodLabel: days >= 365 ? '/ Năm' : '/ Tháng',
+      priceValue: price,
+      benefits: benefits,
+      style: _styleForTier(tier),
+      showUpgradeButton: price > 0,
+    );
+  }
+
+  static List<String> _defaultBenefits(MechanicPriorityTier tier, String? description) {
+    if (description != null && description.trim().isNotEmpty) {
+      return [description.trim()];
+    }
+    return switch (tier) {
+      MechanicPriorityTier.premium => const [
+          'Mọi quyền lợi gói phổ thông',
+          'Phí sàn giảm còn 5%',
+          'CRM chăm sóc khách ruột',
+        ],
+      MechanicPriorityTier.standard => const [
+          'Nhận đơn sớm hơn 10–15 giây',
+          'Phí sàn giảm còn 7%',
+          'Tích xanh chứng nhận',
+        ],
+      MechanicPriorityTier.free => const [
+          'Nhận đơn (tốc độ tiêu chuẩn)',
+          'Phí sàn 10% cho mọi đơn',
+        ],
+    };
+  }
+
+  static MechanicPriorityPlanStyle _styleForTier(MechanicPriorityTier tier) => switch (tier) {
+        MechanicPriorityTier.premium => MechanicPriorityPlanStyle.premium,
+        MechanicPriorityTier.standard => MechanicPriorityPlanStyle.standard,
+        MechanicPriorityTier.free => MechanicPriorityPlanStyle.free,
+      };
+
+  static List<MechanicPriorityPlan> sortByTier(List<MechanicPriorityPlan> items) {
+    int order(MechanicPriorityTier t) => switch (t) {
+          MechanicPriorityTier.free => 0,
+          MechanicPriorityTier.standard => 1,
+          MechanicPriorityTier.premium => 2,
+        };
+    return [...items]..sort((a, b) => order(a.tier).compareTo(order(b.tier)));
+  }
+
   static List<MechanicPriorityPlan> get plans => const [
         MechanicPriorityPlan(
           tier: MechanicPriorityTier.free,
-          title: 'GÓI CƠ BẢN',
+          title: 'GÓI CƠ BẢN (offline)',
           headerTitle: 'Thành viên',
           priceLabel: 'Free 0 VND',
           periodLabel: '/ Tháng',

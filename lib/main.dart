@@ -43,6 +43,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mecha
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_repair_repository.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_income_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
@@ -54,7 +55,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await dotenv.load(fileName: ".env");
+    await dotenv.load(fileName: "assets/.env");
   } catch (e) {
     debugPrint('Warning: Could not load .env file: $e');
   }
@@ -134,6 +135,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CustomerWalletProvider(customerWalletRepository)),
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
         ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicIncomeProvider(mechanicHistoryRepository)),
         ChangeNotifierProvider(create: (_) => MechanicWalletProvider(mechanicWalletRepository)),
         ChangeNotifierProvider(create: (_) => MechanicSubscriptionProvider(mechanicSubscriptionRepository)),
         ChangeNotifierProvider(create: (_) => MechanicRepairProvider(mechanicRepairRepository)),

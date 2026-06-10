@@ -10,6 +10,7 @@ class MechanicWalletProvider extends ChangeNotifier {
   MechanicWalletData? _data;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasWallet = true;
   bool? _hasPin;
   bool _isPinUnlocked = false;
 
@@ -17,12 +18,21 @@ class MechanicWalletProvider extends ChangeNotifier {
   DateTime? _endDate;
 
   MechanicWalletData? get data => _data;
+  bool get hasWallet => _hasWallet;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<MechanicWalletTransaction> get transactions => _data?.transactions ?? const [];
   List<MechanicWithdrawRequest> get withdrawRequests => _data?.withdrawRequests ?? const [];
   bool? get hasPin => _hasPin;
   bool get isPinUnlocked => _isPinUnlocked;
+
+  /// Tạo ví → PIN → liên kết ngân hàng: ẩn header/nav shell.
+  bool isInWalletSetupFlow({required bool hasBankLinked}) {
+    if (_hasPin == false) return true;
+    if (_hasPin == true && !_isPinUnlocked) return true;
+    if (_isPinUnlocked && !hasBankLinked) return true;
+    return false;
+  }
 
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
@@ -59,7 +69,14 @@ class MechanicWalletProvider extends ChangeNotifier {
         startDate: _startDate,
         endDate: _endDate,
       );
-      _hasPin = await _repository.checkPinStatus();
+      _hasWallet = true;
+      try {
+        final pinStatus = await _repository.checkPinStatus();
+        _hasPin = pinStatus.hasPin;
+      } catch (e) {
+        debugPrint('checkPinStatus failed: $e');
+        _hasPin = false;
+      }
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -72,13 +89,33 @@ class MechanicWalletProvider extends ChangeNotifier {
 
   Future<void> checkWalletPinStatus() async {
     try {
-      _hasPin = await _repository.checkPinStatus();
+      final pinStatus = await _repository.checkPinStatus();
+      _hasWallet = true;
+      _hasPin = pinStatus.hasPin;
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
     }
   }
 
+  Future<bool> createWallet() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _data = await _repository.createWallet();
+      _hasWallet = _data?.hasWallet ?? true;
+      _hasPin = false;
+      _isPinUnlocked = false;
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
   Future<bool> setupWalletPin(String pin) async {
     _isLoading = true;
     _errorMessage = null;

@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
+import 'package:fe_moblie_flutter/features/profile/data/models/user_profile_models.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
@@ -18,6 +19,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_order_history_tab.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
+import 'package:fe_moblie_flutter/features/membership/presentation/providers/membership_provider.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_app_header.dart';
 import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
@@ -26,6 +29,7 @@ import 'package:fe_moblie_flutter/features/notifications/presentation/screens/no
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
+import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 import 'package:fe_moblie_flutter/core/widgets/app_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_accept_order_screen.dart';
@@ -45,11 +49,17 @@ class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
   @override
-  State<MainShellScreen> createState() => _MainShellScreenState();
+  State<MainShellScreen> createState() => MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen> {
+class MainShellScreenState extends State<MainShellScreen> {
   MainNavTab _tab = MainNavTab.orders;
+
+  void setTab(MainNavTab tab) {
+    setState(() {
+      _tab = tab;
+    });
+  }
   _MechanicOrderFlow _orderFlow = _MechanicOrderFlow.none;
   List<MechanicRepairLineItem> _selectedRepairItems = const [];
   List<MechanicSessionSparePart> _sessionSpareParts = const [];
@@ -233,12 +243,38 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     if (!mounted) return;
     final quoteSent = _isQuoteSentPhase(repair.activeOrder?.status);
+
+    IncomingRescueRequest? incomingReq;
+    if (repair.activeOrder != null) {
+      incomingReq = IncomingRescueRequest(
+        customerName: repair.activeOrder!.customerName ?? 'Khách hàng',
+        address: repair.activeOrder!.requestAddress,
+        fullAddress: repair.activeOrder!.requestAddress,
+        distanceMeters: 0,
+        serviceTypeLabel: 'LƯU ĐỘNG',
+        phoneNumber: '0987654321',
+        latitude: repair.activeOrder!.customerLatitude,
+        longitude: repair.activeOrder!.customerLongitude,
+      );
+
+      final rescue = context.read<RescueProvider>();
+      if (repair.activeOrder!.customerLatitude != null && repair.activeOrder!.customerLongitude != null) {
+        rescue.setActiveCustomerCoords(
+          repair.activeOrder!.customerLatitude!,
+          repair.activeOrder!.customerLongitude!,
+        );
+      }
+    }
+
     setState(() {
       _selectedRepairItems = selected;
       _sessionSpareParts = spareParts;
       _orderFlow = step;
       _tab = MainNavTab.orders;
       _quoteSent = quoteSent;
+      if (incomingReq != null) {
+        _activeIncomingRequest = incomingReq;
+      }
     });
   }
 
@@ -357,6 +393,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
             });
             rescue.clearActiveOrderStatus();
           }
+        } else if (rescue.activeOrderStatus == 'PAID') {
+          if (_orderFlow != _MechanicOrderFlow.complete) {
+            setState(() {
+              _orderFlow = _MechanicOrderFlow.complete;
+            });
+          }
         } else if (rescue.activeOrderStatus == 'CANCELLED') {
           setState(() {
             _orderFlow = _MechanicOrderFlow.none;
@@ -396,13 +438,29 @@ class _MainShellScreenState extends State<MainShellScreen> {
     super.dispose();
   }
 
+  bool _mechanicHasBankLinked(AuthProvider auth) {
+    final wallet = auth.profile?.wallet;
+    return wallet != null &&
+        (wallet.bankName?.isNotEmpty ?? false) &&
+        (wallet.bankAccountNumber?.isNotEmpty ?? false) &&
+        (wallet.bankAccountHolder?.isNotEmpty ?? false);
+  }
+
+  bool _isMechanicWalletOnboarding(AuthProvider auth, MechanicWalletProvider walletProv) {
+    if (auth.userType == 'CUSTOMER' || _tab != MainNavTab.wallet) return false;
+    return walletProv.isInWalletSetupFlow(hasBankLinked: _mechanicHasBankLinked(auth));
+  }
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final walletProv = context.watch<MechanicWalletProvider>();
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final navH = MainBottomNavBar.totalHeight(bottomPad);
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
-    final showMainHeader = !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !inOrderFlow;
+    final inWalletSetup = _isMechanicWalletOnboarding(auth, walletProv);
+    final hideShellChrome = inOrderFlow || inWalletSetup;
+    final showMainHeader =
+        !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !hideShellChrome;
     final unreadNotificationCount = context.watch<NotificationProvider>().unreadCount;
 
     final rescueProvider = context.watch<RescueProvider>();
@@ -451,7 +509,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             Expanded(child: _buildTabStack(navH)),
           ],
         ),
-        if (!inOrderFlow)
+        if (!hideShellChrome)
           Positioned(
             left: 0,
             right: 0,
@@ -467,10 +525,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     context.read<MechanicHistoryProvider>().load(force: true);
                     unawaited(context.read<MechanicRepairProvider>().loadActiveOrder());
                   }
-                  if (t == MainNavTab.wallet && auth.userType != 'CUSTOMER') {
-                    final walletProv = context.read<MechanicWalletProvider>();
-                    walletProv.lockWallet();
-                    walletProv.load(force: true);
+                  if (t == MainNavTab.history && auth.userType == 'CUSTOMER') {
+                    context.read<CustomerHistoryProvider>().load(force: true);
+                  }
+                  if (t == MainNavTab.wallet) {
+                    if (auth.userType == 'CUSTOMER') {
+                      context.read<MembershipProvider>().load();
+                    } else {
+                      final walletProv = context.read<MechanicWalletProvider>();
+                      walletProv.lockWallet();
+                      walletProv.load(force: true);
+                    }
                   }
                 },
                 userType: auth.userType,
@@ -486,6 +551,131 @@ class _MainShellScreenState extends State<MainShellScreen> {
       backgroundColor: const Color(0xFF8B1A1A),
       body: AppBackground(child: shellBody),
     );
+  }
+
+  Future<void> _checkApprovalStatus(BuildContext context, AuthProvider auth) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+
+    final profile = await auth.fetchMyProfile(silent: true);
+
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+
+    if (profile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Không kiểm tra được trạng thái. Vui lòng thử lại.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    final isVerified = profile.mechanic?.isVerified ?? false;
+    if (isVerified) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          icon: const Icon(Icons.verified_rounded, color: Colors.green, size: 40),
+          title: const Text('Đã được duyệt!'),
+          content: const Text(
+            'Tài khoản thợ của bạn đã được admin phê duyệt.\n'
+            'Bạn có thể bắt đầu nhận đơn ngay bây giờ.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Bắt đầu', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final missing = _missingMechanicProfileItems(profile);
+    final message = missing.isEmpty
+        ? 'Hồ sơ của bạn đã đủ thông tin và đang chờ admin SOSBIKE phê duyệt.\n'
+            'Thường mất 1–2 ngày làm việc.'
+        : 'Hồ sơ chưa đủ thông tin. Vui lòng bổ sung:\n\n'
+            '${missing.map((item) => '• $item').join('\n')}';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Icon(
+          missing.isEmpty ? Icons.hourglass_top_rounded : Icons.assignment_late_outlined,
+          color: missing.isEmpty ? Colors.orange : AppColors.primary,
+          size: 40,
+        ),
+        title: Text(missing.isEmpty ? 'Đang chờ duyệt' : 'Hồ sơ chưa đủ'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+          if (missing.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MechanicSetupProfileScreen(),
+                  ),
+                ).then((_) => auth.fetchMyProfile(silent: true));
+              },
+              child: const Text(
+                'Hoàn thiện hồ sơ',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<String> _missingMechanicProfileItems(UserProfileDto profile) {
+    final mech = profile.mechanic;
+    final wallet = profile.wallet;
+    final missing = <String>[];
+
+    if (mech == null) {
+      missing.add('Hồ sơ thợ');
+      return missing;
+    }
+
+    bool hasUrl(String? url) => url != null && url.trim().isNotEmpty;
+
+    if (!hasUrl(mech.cccdFrontUrl)) missing.add('CCCD mặt trước');
+    if (!hasUrl(mech.cccdBackUrl)) missing.add('CCCD mặt sau');
+    if (!hasUrl(profile.avatarUrl)) missing.add('Ảnh chân dung');
+    if (mech.vehicleModel == null || mech.vehicleModel!.trim().isEmpty) {
+      missing.add('Mẫu xe');
+    }
+    if (mech.licensePlate.trim().isEmpty) missing.add('Biển số xe');
+    if (mech.driverLicenseNumber == null || mech.driverLicenseNumber!.trim().isEmpty) {
+      missing.add('Số GPLX');
+    }
+    if (!hasUrl(mech.vehicleRegistrationUrl)) missing.add('Đăng ký xe (cà vẹt)');
+    if (!hasUrl(mech.driverLicenseUrl)) missing.add('Ảnh bằng lái xe');
+
+    final bankOk = wallet != null &&
+        (wallet.bankName?.trim().isNotEmpty ?? false) &&
+        (wallet.bankAccountNumber?.trim().isNotEmpty ?? false) &&
+        (wallet.bankAccountHolder?.trim().isNotEmpty ?? false);
+    if (!bankOk) missing.add('Tài khoản ngân hàng');
+
+    return missing;
   }
 
   Widget _buildLockoutScreen(BuildContext context, AuthProvider auth) {
@@ -562,17 +752,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  showDialog<void>(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                  );
-                  await auth.fetchMyProfile();
-                  if (context.mounted) {
-                    Navigator.pop(context); // dismiss loader
-                  }
-                },
+                onPressed: () => _checkApprovalStatus(context, auth),
                 icon: const Icon(Icons.refresh_rounded, color: Colors.white),
                 label: const Text(
                   'Kiểm tra trạng thái duyệt',
@@ -639,9 +819,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Widget _buildTabStack(double navH) {
     final auth = context.watch<AuthProvider>();
+    final walletProv = context.watch<MechanicWalletProvider>();
     final appConfig = context.watch<AppConfigProvider>().config;
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
-    final contentBottomPad = inOrderFlow ? 0.0 : navH * 0.35;
+    final inWalletSetup = _isMechanicWalletOnboarding(auth, walletProv);
+    final hideShellChrome = inOrderFlow || inWalletSetup;
+    final contentBottomPad = hideShellChrome ? 0.0 : navH * 0.35;
 
     final rescueProvider = context.watch<RescueProvider>();
     final reqMap = rescueProvider.incomingRequest;
@@ -709,7 +892,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
         ],
-        if (auth.userType != 'CUSTOMER' && _orderFlow == _MechanicOrderFlow.none && appConfig.flags.sosEnabled)
+        if (auth.userType != 'CUSTOMER' &&
+            _orderFlow == _MechanicOrderFlow.none &&
+            !inWalletSetup &&
+            appConfig.flags.sosEnabled)
           Positioned(
             right: -2,
             bottom: navH + 8,
@@ -774,6 +960,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             onCompleteRepair: _completeRepairFlow,
           ),
         _MechanicOrderFlow.complete => MechanicPaymentCompleteView(
+            orderId: repairProvider.activeOrderId ?? '',
             onFinish: _finishOrderFlow,
             onGoHome: _goHomeFromFlow,
           ),
@@ -793,7 +980,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
           : const MechanicWalletTab(),
       MainNavTab.maintenance => userType == 'CUSTOMER'
           ? const NotificationsTabScreen()
-          : const MechanicActivityTab(),
+          : const ComingSoonOverlay(
+              featureName: 'Bảo trì & Hoạt động',
+              message: 'Đặt lịch bảo dưỡng và quản lý hoạt động cho thợ đang được phát triển.',
+              child: MechanicActivityTab(previewOnly: true),
+            ),
     };
   }
 }

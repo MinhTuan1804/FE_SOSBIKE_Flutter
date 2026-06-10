@@ -10,6 +10,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_priority_package_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_deposit_screen.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_withdraw_screen.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/screens/main_shell_screen.dart';
+import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main_bottom_nav_bar.dart';
 
 enum _WalletSection { wallet, income }
 
@@ -61,6 +63,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
+
     // Check PIN setup state
     if (provider.hasPin == null) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -84,6 +87,14 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
         walletProfile.bankAccountHolder != null &&
         walletProfile.bankAccountHolder!.isNotEmpty;
 
+    if (!hasBank) {
+      return ColoredBox(
+        color: Colors.white,
+        child: SafeArea(
+          child: _buildBankSetupView(auth),
+        ),
+      );
+    }
     final wallet = data ?? MechanicWalletData.sample;
 
     return Column(
@@ -117,9 +128,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
             ),
             child: _section == _WalletSection.income
                 ? const MechanicIncomeTab()
-                : !hasBank
-                    ? _buildBankSetupView(auth)
-                    : RefreshIndicator(
+                : RefreshIndicator(
                       color: AppColors.primary,
                       onRefresh: provider.refresh,
                       child: ListView(
@@ -185,6 +194,110 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
     );
   }
 
+  Widget _buildNoWalletView(MechanicWalletProvider provider) {
+    return ColoredBox(
+      color: Colors.white,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: AppColors.primary,
+                      size: 52,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Chưa có ví SOSBIKE',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Tạo ví để nhận thanh toán đơn cứu hộ, nạp tiền và rút tiền về tài khoản ngân hàng.',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.45),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: provider.isLoading
+                          ? null
+                          : () async {
+                              final ok = await provider.createWallet();
+                              if (!mounted) return;
+                              if (ok) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Đã tạo ví thành công!')),
+                                );
+                              } else if (provider.errorMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(provider.errorMessage!)),
+                                );
+                              }
+                            },
+                      icon: provider.isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.add_card_rounded),
+                      label: Text(provider.isLoading ? 'Đang tạo ví...' : 'Tạo ví SOSBIKE'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+        ),
+      ),
+    );
+  }
+
+  double _bottomNavReserve(BuildContext context) {
+    return MediaQuery.paddingOf(context).bottom + 16;
+  }
+
+  Widget _buildPinPadScaffold({required List<Widget> children}) {
+    final navReserve = _bottomNavReserve(context);
+    return Container(
+      color: const Color(0xFF8B1A1A),
+      child: SafeArea(
+        child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, navReserve),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - navReserve),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: children,
+              ),
+            ),
+          );
+        },
+        ),
+      ),
+    );
+  }
   // ── PIN Setup Screen ───────────────────────────────────────────────────────
   Widget _buildPinSetupView(MechanicWalletProvider provider) {
     final titleText = _pinSetupStep == 'enter'
@@ -194,26 +307,21 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
         ? 'Vui lòng thiết lập mã PIN 6 số để bảo mật ví của bạn.'
         : 'Nhập lại mã PIN vừa thiết lập để xác nhận.';
 
-    return Container(
-      color: const Color(0xFF8B1A1A),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.security_outlined, color: Colors.white, size: 64),
-          const SizedBox(height: 24),
+    return _buildPinPadScaffold(
+      children: [
+          const Icon(Icons.security_outlined, color: Colors.white, size: 56),
+          const SizedBox(height: 16),
           Text(
             titleText,
             style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             subtitleText,
             style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          // PIN indicator dots
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(6, (index) {
@@ -230,85 +338,89 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
               );
             }),
           ),
-          const SizedBox(height: 48),
-          _buildNumericKeypad(onKeyTap: (val) async {
-            if (_enteredPin.length < 6) {
-              setState(() {
-                _enteredPin.add(val);
-              });
-            }
-            if (_enteredPin.length == 6) {
-              final pinStr = _enteredPin.join();
-              if (_pinSetupStep == 'enter') {
-                _tempPin = pinStr;
+          const SizedBox(height: 28),
+          _buildNumericKeypad(
+            onKeyTap: (val) async {
+              if (_enteredPin.length < 6) {
                 setState(() {
-                  _pinSetupStep = 'confirm';
-                  _enteredPin.clear();
+                  _enteredPin.add(val);
                 });
-              } else {
-                if (pinStr == _tempPin) {
-                  final ok = await provider.setupWalletPin(pinStr);
-                  if (ok) {
-                    setState(() {
-                      _enteredPin.clear();
-                      _tempPin = '';
-                      _pinSetupStep = 'enter';
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Thiết lập mã PIN thành công.')),
-                    );
+              }
+              if (_enteredPin.length == 6) {
+                final pinStr = _enteredPin.join();
+                if (_pinSetupStep == 'enter') {
+                  _tempPin = pinStr;
+                  setState(() {
+                    _pinSetupStep = 'confirm';
+                    _enteredPin.clear();
+                  });
+                } else {
+                  if (pinStr == _tempPin) {
+                    final ok = await provider.setupWalletPin(pinStr);
+                    if (ok) {
+                      setState(() {
+                        _enteredPin.clear();
+                        _tempPin = '';
+                        _pinSetupStep = 'enter';
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Thiết lập mã PIN thành công.')),
+                      );
+                    } else {
+                      setState(() {
+                        _enteredPin.clear();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(provider.errorMessage ?? 'Không thiết lập được mã PIN.')),
+                      );
+                    }
                   } else {
                     setState(() {
                       _enteredPin.clear();
+                      _pinSetupStep = 'enter';
+                      _tempPin = '';
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(provider.errorMessage ?? 'Không thiết lập được mã PIN.')),
+                      const SnackBar(content: Text('Mã PIN xác nhận không trùng khớp. Vui lòng nhập lại.')),
                     );
                   }
-                } else {
-                  setState(() {
-                    _enteredPin.clear();
-                    _pinSetupStep = 'enter';
-                    _tempPin = '';
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mã PIN xác nhận không trùng khớp. Vui lòng nhập lại.')),
-                  );
                 }
               }
-            }
-          }, onBackspace: () {
-            if (_enteredPin.isNotEmpty) {
-              setState(() {
-                _enteredPin.removeLast();
-              });
-            }
-          }),
-        ],
-      ),
+            },
+            onBackspace: () {
+              if (_enteredPin.isNotEmpty) {
+                setState(() {
+                  _enteredPin.removeLast();
+                });
+              }
+            },
+            onBack: () {
+              final shellState = context.findAncestorStateOfType<MainShellScreenState>();
+              if (shellState != null) {
+                shellState.setTab(MainNavTab.orders);
+              }
+            },
+          ),
+      ],
     );
   }
 
   // ── PIN Unlock / Entry Screen ──────────────────────────────────────────────
   Widget _buildPinUnlockView(MechanicWalletProvider provider) {
-    return Container(
-      color: const Color(0xFF8B1A1A),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 64),
-          const SizedBox(height: 24),
+    return _buildPinPadScaffold(
+      children: [
+          const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 56),
+          const SizedBox(height: 16),
           const Text(
             'Nhập mã PIN',
             style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             'Vui lòng nhập mã PIN ví gồm 6 chữ số.',
             style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(6, (index) {
@@ -325,38 +437,46 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
               );
             }),
           ),
-          const SizedBox(height: 48),
-          _buildNumericKeypad(onKeyTap: (val) async {
-            if (_enteredPin.length < 6) {
-              setState(() {
-                _enteredPin.add(val);
-              });
-            }
-            if (_enteredPin.length == 6) {
-              final pinStr = _enteredPin.join();
-              final ok = await provider.verifyWalletPin(pinStr);
-              if (ok) {
+          const SizedBox(height: 28),
+          _buildNumericKeypad(
+            onKeyTap: (val) async {
+              if (_enteredPin.length < 6) {
                 setState(() {
-                  _enteredPin.clear();
+                  _enteredPin.add(val);
                 });
-              } else {
-                setState(() {
-                  _enteredPin.clear();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Mã PIN không chính xác. Vui lòng nhập lại.')),
-                );
               }
-            }
-          }, onBackspace: () {
-            if (_enteredPin.isNotEmpty) {
-              setState(() {
-                _enteredPin.removeLast();
-              });
-            }
-          }),
-        ],
-      ),
+              if (_enteredPin.length == 6) {
+                final pinStr = _enteredPin.join();
+                final ok = await provider.verifyWalletPin(pinStr);
+                if (ok) {
+                  setState(() {
+                    _enteredPin.clear();
+                  });
+                } else {
+                  setState(() {
+                    _enteredPin.clear();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mã PIN không chính xác. Vui lòng nhập lại.')),
+                  );
+                }
+              }
+            },
+            onBackspace: () {
+              if (_enteredPin.isNotEmpty) {
+                setState(() {
+                  _enteredPin.removeLast();
+                });
+              }
+            },
+            onBack: () {
+              final shellState = context.findAncestorStateOfType<MainShellScreenState>();
+              if (shellState != null) {
+                shellState.setTab(MainNavTab.orders);
+              }
+            },
+          ),
+      ],
     );
   }
 
@@ -364,36 +484,49 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   Widget _buildNumericKeypad({
     required Function(int) onKeyTap,
     required VoidCallback onBackspace,
+    VoidCallback? onBack,
   }) {
+    final keySize = ((MediaQuery.sizeOf(context).width - 80) / 3).clamp(56.0, 68.0);
+    final rowGap = keySize >= 64 ? 12.0 : 8.0;
     return Column(
       children: [
         for (var row = 0; row < 3; row++) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              for (var col = 1; col <= 3; col++) ...[
+              for (var col = 1; col <= 3; col++)
                 _buildKeypadButton(
                   value: row * 3 + col,
+                  size: keySize,
                   onTap: () => onKeyTap(row * 3 + col),
                 ),
-              ]
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: rowGap),
         ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            const SizedBox(width: 72, height: 72), // Empty placeholder
+            onBack != null
+                ? SizedBox(
+                    width: keySize,
+                    height: keySize,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
+                      onPressed: onBack,
+                    ),
+                  )
+                : SizedBox(width: keySize, height: keySize),
             _buildKeypadButton(
               value: 0,
+              size: keySize,
               onTap: () => onKeyTap(0),
             ),
             SizedBox(
-              width: 72,
-              height: 72,
+              width: keySize,
+              height: keySize,
               child: IconButton(
-                icon: const Icon(Icons.backspace_outlined, color: Colors.white, size: 26),
+                icon: Icon(Icons.backspace_outlined, color: Colors.white, size: keySize * 0.36),
                 onPressed: onBackspace,
               ),
             ),
@@ -403,10 +536,14 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
     );
   }
 
-  Widget _buildKeypadButton({required int value, required VoidCallback onTap}) {
+  Widget _buildKeypadButton({
+    required int value,
+    required double size,
+    required VoidCallback onTap,
+  }) {
     return Container(
-      width: 72,
-      height: 72,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white24, width: 1.5),
@@ -420,7 +557,11 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           child: Center(
             child: Text(
               '$value',
-              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: size * 0.38,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -431,7 +572,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   // ── Bank Setup Form View ───────────────────────────────────────────────────
   Widget _buildBankSetupView(AuthProvider auth) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.paddingOf(context).bottom + 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

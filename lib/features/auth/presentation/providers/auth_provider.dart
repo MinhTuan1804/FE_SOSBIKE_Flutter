@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -341,7 +340,7 @@ class AuthProvider extends ChangeNotifier {
     String? email,
     String? referralCode,
     String? currentAddress,
-    File? avatarFile,
+    XFile? avatarFile,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -428,6 +427,13 @@ class AuthProvider extends ChangeNotifier {
     String? bankAccountNumber,
     String? bankAccountHolder,
     XFile? avatarFile,
+    XFile? cccdFrontFile,
+    XFile? cccdBackFile,
+    XFile? certificateFile,
+    XFile? vehiclePhotoFile,
+    XFile? vehicleRegistrationFile,
+    XFile? vehicleInsuranceFile,
+    XFile? driverLicenseFile,
     String? avatarUrl,
     String? cccdFrontUrl,
     String? cccdBackUrl,
@@ -456,6 +462,13 @@ class AuthProvider extends ChangeNotifier {
         bankAccountNumber: bankAccountNumber,
         bankAccountHolder: bankAccountHolder,
         avatarFile: avatarFile,
+        cccdFrontFile: cccdFrontFile,
+        cccdBackFile: cccdBackFile,
+        certificateFile: certificateFile,
+        vehiclePhotoFile: vehiclePhotoFile,
+        vehicleRegistrationFile: vehicleRegistrationFile,
+        vehicleInsuranceFile: vehicleInsuranceFile,
+        driverLicenseFile: driverLicenseFile,
         avatarUrl: avatarUrl,
         cccdFrontUrl: cccdFrontUrl,
         cccdBackUrl: cccdBackUrl,
@@ -488,19 +501,27 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String> uploadFileToFirebase(File file, String folder) async {
+  bool get _useBackendFileUpload => kIsWeb || Firebase.apps.isEmpty;
+
+  Future<String> uploadFileToFirebase(XFile file, String folder) async {
+    if (_useBackendFileUpload) {
+      throw StateError('Firebase Storage không khả dụng trên web.');
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw StateError('Người dùng chưa đăng nhập Firebase.');
     }
 
-    final rawExt = file.path.contains('.') ? file.path.split('.').last : 'jpg';
+    final rawExt = file.name.contains('.') ? file.name.split('.').last : 'jpg';
     final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
-    final fileName = '${folder.replaceAll('/', '_')}_${DateTime.now().microsecondsSinceEpoch}_${file.path.hashCode}.$ext';
+    final fileName =
+        '${folder.replaceAll('/', '_')}_${DateTime.now().microsecondsSinceEpoch}_${file.name.hashCode}.$ext';
     final ref = FirebaseStorage.instance.ref().child('$folder/${user.uid}/$fileName');
+    final bytes = await file.readAsBytes();
 
-    await ref.putFile(
-      file,
+    await ref.putData(
+      bytes,
       SettableMetadata(contentType: 'image/$ext'),
     );
     return await ref.getDownloadURL();
@@ -565,87 +586,68 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final address = '${district.trim()}, ${province.trim()}';
+
+      if (_useBackendFileUpload) {
+        return saveMyProfile(
+          fullName: displayName,
+          currentAddress: address,
+          bankName: bankName,
+          bankAccountNumber: bankAccountNumber,
+          bankAccountHolder: bankAccountHolder,
+          vehicleModel: vehicleModel,
+          vehicleGeneration: vehicleGeneration,
+          licensePlate: licensePlate,
+          driverLicenseNumber: driverLicenseNumber,
+          avatarFile: portrait,
+          cccdFrontFile: cccdFront,
+          cccdBackFile: cccdBack,
+          certificateFile: certificate,
+          vehiclePhotoFile: vehiclePhoto,
+          vehicleRegistrationFile: vehicleRegistration,
+          vehicleInsuranceFile: vehicleInsurance,
+          driverLicenseFile: driverLicense,
+          color: color,
+        );
+      }
+
       final List<Map<String, dynamic>> uploads = [];
       if (portrait != null) {
-        uploads.add({
-          'file': File(portrait.path),
-          'folder': 'avatars',
-          'key': 'portrait',
-        });
+        uploads.add({'file': portrait, 'folder': 'avatars', 'key': 'portrait'});
       }
       if (cccdFront != null) {
-        uploads.add({
-          'file': File(cccdFront.path),
-          'folder': 'documents',
-          'key': 'cccdFront',
-        });
+        uploads.add({'file': cccdFront, 'folder': 'documents', 'key': 'cccdFront'});
       }
       if (cccdBack != null) {
-        uploads.add({
-          'file': File(cccdBack.path),
-          'folder': 'documents',
-          'key': 'cccdBack',
-        });
+        uploads.add({'file': cccdBack, 'folder': 'documents', 'key': 'cccdBack'});
       }
       if (certificate != null) {
-        uploads.add({
-          'file': File(certificate.path),
-          'folder': 'documents',
-          'key': 'certificate',
-        });
+        uploads.add({'file': certificate, 'folder': 'documents', 'key': 'certificate'});
       }
       if (vehiclePhoto != null) {
-        uploads.add({
-          'file': File(vehiclePhoto.path),
-          'folder': 'vehicles',
-          'key': 'vehiclePhoto',
-        });
+        uploads.add({'file': vehiclePhoto, 'folder': 'vehicles', 'key': 'vehiclePhoto'});
       }
       if (vehicleRegistration != null) {
-        uploads.add({
-          'file': File(vehicleRegistration.path),
-          'folder': 'documents',
-          'key': 'vehicleRegistration',
-        });
+        uploads.add({'file': vehicleRegistration, 'folder': 'documents', 'key': 'vehicleRegistration'});
       }
       if (vehicleInsurance != null) {
-        uploads.add({
-          'file': File(vehicleInsurance.path),
-          'folder': 'documents',
-          'key': 'vehicleInsurance',
-        });
+        uploads.add({'file': vehicleInsurance, 'folder': 'documents', 'key': 'vehicleInsurance'});
       }
       if (driverLicense != null) {
-        uploads.add({
-          'file': File(driverLicense.path),
-          'folder': 'documents',
-          'key': 'driverLicense',
-        });
+        uploads.add({'file': driverLicense, 'folder': 'documents', 'key': 'driverLicense'});
       }
 
       final Map<String, String> uploadedUrls = {};
       if (uploads.isNotEmpty) {
         final results = await Future.wait(
-          uploads.map((item) => uploadFileToFirebase(item['file'] as File, item['folder'] as String)),
+          uploads.map((item) => uploadFileToFirebase(item['file'] as XFile, item['folder'] as String)),
         );
-        for (int i = 0; i < uploads.length; i++) {
-          final key = uploads[i]['key'] as String;
-          uploadedUrls[key] = results[i];
+        for (var i = 0; i < uploads.length; i++) {
+          uploadedUrls[uploads[i]['key'] as String] = results[i];
         }
       }
 
-      final portraitUrl = uploadedUrls['portrait'];
-      final cccdFrontUrl = uploadedUrls['cccdFront'];
-      final cccdBackUrl = uploadedUrls['cccdBack'];
-      final certificateUrl = uploadedUrls['certificate'];
-      final vehiclePhotoUrl = uploadedUrls['vehiclePhoto'];
-      final vehicleRegistrationUrl = uploadedUrls['vehicleRegistration'];
-      final vehicleInsuranceUrl = uploadedUrls['vehicleInsurance'];
-      final driverLicenseUrl = uploadedUrls['driverLicense'];
-
-      final address = '${district.trim()}, ${province.trim()}';
-
-      final success = await saveMyProfile(
+      return saveMyProfile(
         fullName: displayName,
         currentAddress: address,
         bankName: bankName,
@@ -655,18 +657,16 @@ class AuthProvider extends ChangeNotifier {
         vehicleGeneration: vehicleGeneration,
         licensePlate: licensePlate,
         driverLicenseNumber: driverLicenseNumber,
-        avatarUrl: portraitUrl,
-        cccdFrontUrl: cccdFrontUrl,
-        cccdBackUrl: cccdBackUrl,
-        certificateUrl: certificateUrl,
-        vehiclePhotoUrl: vehiclePhotoUrl,
-        vehicleRegistrationUrl: vehicleRegistrationUrl,
-        vehicleInsuranceUrl: vehicleInsuranceUrl,
-        driverLicenseUrl: driverLicenseUrl,
+        avatarUrl: uploadedUrls['portrait'],
+        cccdFrontUrl: uploadedUrls['cccdFront'],
+        cccdBackUrl: uploadedUrls['cccdBack'],
+        certificateUrl: uploadedUrls['certificate'],
+        vehiclePhotoUrl: uploadedUrls['vehiclePhoto'],
+        vehicleRegistrationUrl: uploadedUrls['vehicleRegistration'],
+        vehicleInsuranceUrl: uploadedUrls['vehicleInsurance'],
+        driverLicenseUrl: uploadedUrls['driverLicense'],
         color: color,
       );
-
-      return success;
     } catch (e, st) {
       debugPrint('setupMechanicProfile error: $e\n$st');
       _errorMessage = errorMessageFrom(e);
@@ -684,7 +684,13 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       if (draft.portraitFile != null) {
-        final portraitUrl = await uploadFileToFirebase(File(draft.portraitFile!.path), 'avatars');
+        if (_useBackendFileUpload) {
+          return saveMyProfile(
+            fullName: displayName,
+            avatarFile: draft.portraitFile,
+          );
+        }
+        final portraitUrl = await uploadFileToFirebase(draft.portraitFile!, 'avatars');
         await saveMyProfile(
           fullName: displayName,
           avatarUrl: portraitUrl,

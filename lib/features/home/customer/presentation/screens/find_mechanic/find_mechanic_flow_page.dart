@@ -228,6 +228,12 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
         ),
       };
 
+      if (_flowMapController != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fitBounds(custLat, custLng, mechLat!, mechLng!);
+        });
+      }
+
       return GoogleMap(
         initialCameraPosition: CameraPosition(
           target: customerLatLng,

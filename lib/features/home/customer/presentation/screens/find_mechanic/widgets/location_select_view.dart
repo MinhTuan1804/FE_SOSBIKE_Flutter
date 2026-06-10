@@ -32,10 +32,11 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   String get _goongApiKey {
     try {
       if (dotenv.isInitialized) {
-        return dotenv.env['GOONG_API_KEY'] ?? '';
+        final key = dotenv.env['GOONG_API_KEY'];
+        if (key != null && key.isNotEmpty) return key;
       }
     } catch (_) {}
-    return '';
+    return 'J7uk8GJZvzozpZ8p631cnxMVXUNVz0O0juQCSAJq';
   }
 
   int _selectedItemIndex = 0;

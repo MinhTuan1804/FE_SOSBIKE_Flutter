@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_priority_models.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
@@ -22,26 +25,57 @@ class _MechanicSubscriptionCheckoutScreenState
     extends State<MechanicSubscriptionCheckoutScreen> {
   _CheckoutStep _step = _CheckoutStep.confirm;
   _PaymentMethod _method = _PaymentMethod.wallet;
+  String? _failureMessage;
 
-  // Giả lập số dư ví (sau khi nối BE sẽ lấy từ provider)
-  final int _walletBalance = 9_372_000;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MechanicWalletProvider>().load(force: true);
+    });
+  }
+
+  int get _walletBalance =>
+      context.watch<MechanicWalletProvider>().data?.balance ?? 0;
 
   bool get _canPay {
+    if (widget.plan.planId == null) return false;
     if (_method == _PaymentMethod.wallet) {
       return _walletBalance >= widget.plan.priceValue;
     }
-    return true;
+    return false;
   }
 
   Future<void> _confirmPayment() async {
-    setState(() => _step = _CheckoutStep.processing);
+    if (widget.plan.planId == null) {
+      setState(() {
+        _failureMessage = 'Gói chưa được đồng bộ từ máy chủ.';
+        _step = _CheckoutStep.failure;
+      });
+      return;
+    }
 
-    // TODO: gọi API POST /api/mechanics/me/subscription/register
-    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      _step = _CheckoutStep.processing;
+      _failureMessage = null;
+    });
 
-    // Mock: luôn thành công nếu ví đủ tiền
-    if (mounted) {
-      setState(() => _step = _canPay ? _CheckoutStep.success : _CheckoutStep.failure);
+    final subProv = context.read<MechanicSubscriptionProvider>();
+    final ok = await subProv.subscribe(
+      planId: widget.plan.planId!,
+      paymentMethod: 'WALLET',
+    );
+
+    if (!mounted) return;
+
+    if (ok) {
+      await context.read<MechanicWalletProvider>().refresh();
+      setState(() => _step = _CheckoutStep.success);
+    } else {
+      setState(() {
+        _failureMessage = subProv.error ?? 'Thanh toán thất bại.';
+        _step = _CheckoutStep.failure;
+      });
     }
   }
 
@@ -61,7 +95,7 @@ class _MechanicSubscriptionCheckoutScreenState
       ),
       child: switch (_step) {
         _CheckoutStep.confirm => _ConfirmScreen(
-            key: const ValueKey('confirm'),
+            key: ValueKey('confirm-${_walletBalance}'),
             plan: widget.plan,
             walletBalance: _walletBalance,
             selectedMethod: _method,
@@ -82,6 +116,7 @@ class _MechanicSubscriptionCheckoutScreenState
             key: const ValueKey('failure'),
             plan: widget.plan,
             isSuccess: false,
+            message: _failureMessage,
             onRetry: () => setState(() => _step = _CheckoutStep.confirm),
             onDone: () => Navigator.of(context).pop(false),
           ),
@@ -541,12 +576,14 @@ class _ResultScreen extends StatefulWidget {
     super.key,
     required this.plan,
     required this.isSuccess,
+    this.message,
     this.onRetry,
     required this.onDone,
   });
 
   final MechanicPriorityPlan plan;
   final bool isSuccess;
+  final String? message;
   final VoidCallback? onRetry;
   final VoidCallback onDone;
 
@@ -639,7 +676,8 @@ class _ResultScreenState extends State<_ResultScreen>
                 child: Text(
                   isSuccess
                       ? 'Bạn đã kích hoạt ${widget.plan.title} thành công.\nQuyền lợi có hiệu lực ngay lập tức.'
-                      : 'Không thể hoàn tất thanh toán.\nVui lòng kiểm tra lại số dư hoặc thử lại.',
+                      : (widget.message ??
+                          'Không thể hoàn tất thanh toán.\nVui lòng kiểm tra lại số dư hoặc thử lại.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),

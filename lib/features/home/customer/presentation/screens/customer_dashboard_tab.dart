@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
-import 'package:fe_moblie_flutter/features/home/customer/presentation/widgets/blog_section.dart';
+import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
+
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
-import 'package:fe_moblie_flutter/features/home/presentation/providers/home_provider.dart';
+
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
-import 'package:fe_moblie_flutter/features/danger_warning/presentation/screens/danger_warning_screen.dart';
-import 'package:fe_moblie_flutter/features/share_route/presentation/screens/share_route_screen.dart';
-import 'package:fe_moblie_flutter/features/booking/presentation/screens/booking_screen.dart';
-import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_shop/find_shop_flow_page.dart';
 
 class CustomerDashboardTab extends StatefulWidget {
   const CustomerDashboardTab({super.key});
@@ -25,7 +22,6 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeProvider>().fetchPosts();
       context.read<VehicleProvider>().fetchMyVehicles();
     });
   }
@@ -33,7 +29,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
   @override
   Widget build(BuildContext context) {
     final appConfig = context.watch<AppConfigProvider>().config;
-    final homeProvider = context.watch<HomeProvider>();
+
     if (_showFindMechanicSelection) {
       return _buildFindMechanicSelectionView();
     }
@@ -57,52 +53,45 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                   },
                 ),
                 const SizedBox(height: 16),
-                BlogSection(
-                  isLoading: homeProvider.isLoading,
-                  posts: homeProvider.posts,
-                ),
-                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
-                      child: _ActionCard(
-                        customIcon: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFBF2121), width: 2),
-                          ),
-                          child: Icon(Icons.error, color: Colors.red[400], size: 28),
-                        ),
-                        title: 'Cảnh báo nguy hiểm',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const PageLoader(child: DangerWarningScreen()),
+                      child: ComingSoonTapBlocker(
+                        featureName: 'Cảnh báo nguy hiểm',
+                        message:
+                            'Tính năng cảnh báo cung đường nguy hiểm sẽ sớm được tích hợp.',
+                        child: _ActionCard(
+                          customIcon: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFBF2121), width: 2),
                             ),
-                          );
-                        },
+                            child: Icon(Icons.error, color: Colors.red[400], size: 28),
+                          ),
+                          title: 'Cảnh báo nguy hiểm',
+                          onTap: () {},
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _ActionCard(
-                        customIcon: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFBF2121), width: 2),
-                          ),
-                          child: Icon(Icons.location_on, color: Colors.red[400], size: 28),
-                        ),
-                        title: 'Chia sẻ lộ trình',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const PageLoader(child: ShareRouteScreen()),
+                      child: ComingSoonTapBlocker(
+                        featureName: 'Chia sẻ lộ trình',
+                        message:
+                            'Tính năng chia sẻ lộ trình với bạn bè sẽ sớm được ra mắt.',
+                        child: _ActionCard(
+                          customIcon: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFBF2121), width: 2),
                             ),
-                          );
-                        },
+                            child: Icon(Icons.location_on, color: Colors.red[400], size: 28),
+                          ),
+                          title: 'Chia sẻ lộ trình',
+                          onTap: () {},
+                        ),
                       ),
                     ),
                   ],
@@ -199,28 +188,26 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Đặt lịch button
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const PageLoader(child: BookingScreen()),
+                        // Đặt lịch button — coming soon
+                        ComingSoonTapBlocker(
+                          featureName: 'Đặt lịch',
+                          message: 'Tính năng đặt lịch bảo dưỡng định kỳ đang trong quá trình mở rộng.',
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF8B1A1A),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: const BorderSide(color: Colors.white),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF8B1A1A),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              side: const BorderSide(color: Colors.white),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                              minimumSize: const Size(100, 36),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                            minimumSize: const Size(100, 36),
-                          ),
-                          child: const Text(
-                            'Đặt lịch',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            child: const Text(
+                              'Đặt lịch',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                       ],
@@ -274,23 +261,16 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
           ),
           const SizedBox(height: 24),
 
-          // Card 2: Tìm Tiệm
-          _buildSelectionCard(
-            assetPath: 'assets/images/found_mechanic/tim_tiem.png',
-            title: 'Tìm Tiệm',
-            buttonText: 'Đi Ngay',
-            onTap: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => const PageLoader(child: FindShopFlowPage()),
-                ),
-              ).then((_) {
-                // Return to dashboard when exiting the flow
-                setState(() {
-                  _showFindMechanicSelection = false;
-                });
-              });
-            },
+          // Card 2: Tìm Tiệm — coming soon
+          ComingSoonTapBlocker(
+            featureName: 'Tìm Tiệm',
+            message: 'Tính năng tìm tiệm sửa xe gần bạn đang trong quá trình mở rộng.',
+            child: _buildSelectionCard(
+              assetPath: 'assets/images/found_mechanic/tim_tiem.png',
+              title: 'Tìm Tiệm',
+              buttonText: 'Đi Ngay',
+              onTap: () {},
+            ),
           ),
 
           // Bottom padding to avoid nav bar overlap

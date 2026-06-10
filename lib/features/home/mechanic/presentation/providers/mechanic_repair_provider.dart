@@ -296,9 +296,6 @@ class MechanicRepairProvider extends ChangeNotifier {
         orderId,
         lines: _buildLines(selectedServices, spareParts),
       );
-      _activeOrderId = null;
-      _activeOrder = null;
-      await MechanicOrderFlowStore.clear();
       return true;
     } catch (e) {
       _errorMessage = errorMessageFrom(e);
@@ -306,6 +303,39 @@ class MechanicRepairProvider extends ChangeNotifier {
     } finally {
       _isSubmitting = false;
       notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>?> settleCashOrder(double amount) async {
+    await loadActiveOrder();
+    final orderId = _orderIdOrError;
+    if (orderId == null) return null;
+
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _repository.settleCashOrder(orderId, amount);
+      _activeOrderId = null;
+      _activeOrder = null;
+      await MechanicOrderFlowStore.clear();
+      return res;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return null;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<OrderQuoteDto?> getQuote(String orderId) async {
+    try {
+      return await _repository.getQuote(orderId);
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return null;
     }
   }
 }

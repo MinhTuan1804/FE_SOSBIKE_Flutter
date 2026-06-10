@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 
 class ShareRouteScreen extends StatefulWidget {
   const ShareRouteScreen({super.key});
@@ -51,7 +52,11 @@ class _ShareRouteScreenState extends State<ShareRouteScreen> {
     final topPadding = MediaQuery.paddingOf(context).top;
     final screenHeight = MediaQuery.sizeOf(context).height;
 
-    return Scaffold(
+    return ComingSoonOverlay(
+      featureName: 'Chia sẻ lộ trình',
+      message: 'Tính năng chia sẻ lộ trình với bạn bè sẽ sớm được ra mắt.',
+      blockInteraction: true,
+      child: Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
@@ -208,6 +213,7 @@ class _ShareRouteScreenState extends State<ShareRouteScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -256,30 +262,24 @@ class _ShareRouteScreenState extends State<ShareRouteScreen> {
             ),
           ),
 
-          // Send Button
-          ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Đã gửi lộ trình cho ${contact.name}!'),
-                  backgroundColor: AppColors.primary,
+          // Send Button — coming soon
+          ComingSoonTapBlocker(
+            featureName: 'Chia sẻ lộ trình',
+            message: 'Tính năng chia sẻ lộ trình với bạn bè sẽ sớm được ra mắt.',
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC02020),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC02020),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                minimumSize: const Size(60, 36),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              minimumSize: const Size(60, 36),
-            ),
-            child: const Text(
-              'Gửi',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+              child: const Text(
+                'Gửi',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ),
