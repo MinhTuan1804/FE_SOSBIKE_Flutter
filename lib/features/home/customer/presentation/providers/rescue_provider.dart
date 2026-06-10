@@ -108,14 +108,15 @@ class RescueProvider extends ChangeNotifier {
         }
       }
 
-      double remainingDistance = _calculateHaversineDistance(
-        mechLat,
-        mechLng,
-        _activeRoutePoints[closestIndex].latitude,
-        _activeRoutePoints[closestIndex].longitude,
-      );
+      // Truncate passed points and snap the polyline start to the mechanic's current location
+      final List<LatLng> sublisted = _activeRoutePoints.sublist(closestIndex);
+      if (sublisted.isNotEmpty) {
+        sublisted[0] = LatLng(mechLat, mechLng);
+      }
+      _activeRoutePoints = sublisted;
 
-      for (int i = closestIndex; i < _activeRoutePoints.length - 1; i++) {
+      double remainingDistance = 0.0;
+      for (int i = 0; i < _activeRoutePoints.length - 1; i++) {
         remainingDistance += _calculateHaversineDistance(
           _activeRoutePoints[i].latitude,
           _activeRoutePoints[i].longitude,
@@ -167,6 +168,7 @@ class RescueProvider extends ChangeNotifier {
   bool _isOnline = false;
   Map<String, dynamic>? _incomingRequest;
   Timer? _locationTimer;
+  StreamSubscription<Position>? _geolocatorSubscription;
   double? _mechanicLatitude;
   double? _mechanicLongitude;
 
@@ -564,6 +566,8 @@ class RescueProvider extends ChangeNotifier {
 
   void updateMechanicLocation(double latitude, double longitude) {
     if (!_isOnline) return;
+    // OPTIMIZATION: Skip HTTP PUT database write when busy on an active rescue order
+    if (_currentOrderId != null) return;
     _repository.updateMechanicLocation(latitude, longitude).catchError((e) {
       debugPrint('Failed to update mechanic location: $e');
     });
@@ -633,19 +637,55 @@ class RescueProvider extends ChangeNotifier {
     }
   }
 
-  void _startLocationUpdates() {
-    _locationTimer?.cancel();
+  Future<void> _startLocationUpdates() async {
+    _stopLocationUpdates();
     // Update location immediately upon going online
-    _syncCurrentLocation();
-    // Simulate updating location every 30 seconds
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _syncCurrentLocation();
-    });
+    await _syncCurrentLocation();
+
+    if (!_isOnline) return;
+
+    // Check if permission is granted before starting stream
+    final permission = await Geolocator.checkPermission();
+    final isAuthorized = permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+
+    if (isAuthorized) {
+      const locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Fire updates only when moved 10 meters (saves battery & network traffic)
+      );
+
+      _geolocatorSubscription = Geolocator.getPositionStream(
+        locationSettings: locationSettings,
+      ).listen((Position position) {
+        if (!_isOnline) return;
+        _mechanicLatitude = position.latitude;
+        _mechanicLongitude = position.longitude;
+        notifyListeners();
+        updateMechanicLocation(position.latitude, position.longitude);
+
+        if (_currentOrderId != null) {
+          _locationService.sendLocation(_currentOrderId!, position.latitude, position.longitude);
+          if (_isRouteStillNeeded) {
+            _updateRemainingEtaLocally(position.latitude, position.longitude);
+          }
+        }
+      }, onError: (e) {
+        debugPrint('Geolocator stream error: $e');
+      });
+    } else {
+      // Fallback: If not authorized, use a periodic timer
+      _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        _syncCurrentLocation();
+      });
+    }
   }
 
   void _stopLocationUpdates() {
     _locationTimer?.cancel();
     _locationTimer = null;
+    _geolocatorSubscription?.cancel();
+    _geolocatorSubscription = null;
   }
 
   @override
@@ -655,6 +695,7 @@ class RescueProvider extends ChangeNotifier {
     _statusSub?.cancel();
     _locationSub?.cancel();
     _locationTimer?.cancel();
+    _geolocatorSubscription?.cancel();
     _routeUpdateTimer?.cancel();
     super.dispose();
   }

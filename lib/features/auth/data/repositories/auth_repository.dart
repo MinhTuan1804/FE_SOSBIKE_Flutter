@@ -92,7 +92,6 @@ class AuthRepository {
     try {
       final response = await _dioClient.dio.get(
         ApiEndpoints.userMe,
-        options: Options(extra: {'skipAuthLogout': true}),
       );
       return UserResponseDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -104,7 +103,6 @@ class AuthRepository {
     try {
       final response = await _dioClient.dio.get(
         ApiEndpoints.userMe,
-        options: Options(extra: {'skipAuthLogout': true}),
       );
       return UserProfileDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
