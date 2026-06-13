@@ -95,6 +95,7 @@ class _MechanicWithdrawScreenState extends State<MechanicWithdrawScreen> {
       return;
     }
 
+    if (!mounted) return;
     final provider = context.read<MechanicWalletProvider>();
     final success = await provider.withdraw(_amount, otpToken: otpToken);
 
@@ -672,15 +673,15 @@ class _OtpScreenState extends State<_OtpScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFFFB74D)),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        const Icon(Icons.developer_mode_rounded,
+                        Icon(Icons.developer_mode_rounded,
                             color: Color(0xFFE65100), size: 18),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Text('Môi trường DEV',
                                   style: TextStyle(
                                       fontSize: 11,
@@ -1074,12 +1075,12 @@ class _LinkBankSheetState extends State<_LinkBankSheet> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Bank name dropdown
-                  _SheetLabel(label: 'Ngân hàng'),
+                  const _SheetLabel(label: 'Ngân hàng'),
                   const SizedBox(height: 6),
                   _buildDropdown(),
                   const SizedBox(height: 14),
 
-                  _SheetLabel(label: 'Số tài khoản'),
+                  const _SheetLabel(label: 'Số tài khoản'),
                   const SizedBox(height: 6),
                   _buildField(
                     ctrl: _accountCtrl,
@@ -1089,7 +1090,7 @@ class _LinkBankSheetState extends State<_LinkBankSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  _SheetLabel(label: 'Tên chủ tài khoản'),
+                  const _SheetLabel(label: 'Tên chủ tài khoản'),
                   const SizedBox(height: 6),
                   _buildField(
                     ctrl: _holderCtrl,

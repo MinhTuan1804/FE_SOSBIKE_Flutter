@@ -151,7 +151,7 @@ class MechanicFoundView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Thợ đang di chuyển (${vehicleModel})',
+                      'Thợ đang di chuyển ($vehicleModel)',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -187,8 +187,8 @@ class MechanicFoundView extends StatelessWidget {
                     style: const TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    '${formattedFee}đ',
-                    style: TextStyle(
+                    '$formattedFeeđ',
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -206,7 +206,7 @@ class MechanicFoundView extends StatelessWidget {
                   ),
                   Text(
                     '$feeRate%',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -231,7 +231,7 @@ class MechanicFoundView extends StatelessWidget {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.grey,
                       shape: BoxShape.circle,
                     ),
@@ -310,7 +310,7 @@ class MechanicFoundView extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
             onPressed: onBack,
           ),
         ),

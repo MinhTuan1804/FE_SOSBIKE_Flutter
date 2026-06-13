@@ -38,13 +38,6 @@ class _MechanicSubscriptionCheckoutScreenState
   int get _walletBalance =>
       context.watch<MechanicWalletProvider>().data?.balance ?? 0;
 
-  bool get _canPay {
-    if (widget.plan.planId == null) return false;
-    if (_method == _PaymentMethod.wallet) {
-      return _walletBalance >= widget.plan.priceValue;
-    }
-    return false;
-  }
 
   Future<void> _confirmPayment() async {
     if (widget.plan.planId == null) {
@@ -95,7 +88,7 @@ class _MechanicSubscriptionCheckoutScreenState
       ),
       child: switch (_step) {
         _CheckoutStep.confirm => _ConfirmScreen(
-            key: ValueKey('confirm-${_walletBalance}'),
+            key: ValueKey('confirm-$_walletBalance'),
             plan: widget.plan,
             walletBalance: _walletBalance,
             selectedMethod: _method,
@@ -365,19 +358,19 @@ class _ConfirmScreen extends StatelessWidget {
                           color: const Color(0xFFFF4444).withValues(alpha: 0.4),
                         ),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.warning_amber_rounded,
                             color: Color(0xFFFF6B6B),
                             size: 16,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Số dư ví không đủ. Vui lòng nạp thêm hoặc chọn phương thức khác.',
                               style: TextStyle(
-                                color: const Color(0xFFFF6B6B),
+                                color: Color(0xFFFF6B6B),
                                 fontSize: 12,
                               ),
                             ),
@@ -398,7 +391,7 @@ class _ConfirmScreen extends StatelessWidget {
                     value: plan.periodLabel.replaceAll('/', '').trim(),
                   ),
                   _OrderSummaryRow(label: 'Giá gốc', value: plan.priceLabel),
-                  _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
+                  const _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Divider(color: Color(0xFF3A1A1A)),
@@ -458,12 +451,12 @@ class _ConfirmScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.lock_outline_rounded, size: 16),
-                  const SizedBox(width: 8),
-                  const Text(
+                  Icon(Icons.lock_outline_rounded, size: 16),
+                  SizedBox(width: 8),
+                  Text(
                     'Xác nhận thanh toán',
                     style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                   ),
@@ -663,7 +656,7 @@ class _ResultScreenState extends State<_ResultScreen>
                 opacity: _fadeAnim,
                 child: Text(
                   isSuccess ? 'Đăng ký thành công!' : 'Thanh toán thất bại',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,

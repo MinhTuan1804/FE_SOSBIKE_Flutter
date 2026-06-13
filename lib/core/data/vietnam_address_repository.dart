@@ -99,7 +99,7 @@ class VietnamAddressRepository {
     if (province == null) return VietnamAddressSelection(streetDetail: raw.trim());
 
     final used = <String>{
-      if (province != null) province.name,
+      province.name,
       if (district != null) district.name,
       if (ward != null) ward.name,
     };

@@ -47,7 +47,7 @@ class GoongService {
       return GoongRouteData.empty;
     }
 
-    final url = 'https://rsapi.goong.io/Direction';
+    const url = 'https://rsapi.goong.io/Direction';
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         url,

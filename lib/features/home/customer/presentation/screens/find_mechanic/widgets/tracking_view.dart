@@ -372,7 +372,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             ),
             Text(
               '$formattedTotalÄ‘',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 20,
@@ -523,7 +523,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             ),
             Text(
               '$formattedTotalÄ‘',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 22,
@@ -783,7 +783,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Tá»•ng thanh toÃ¡n', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text('$formattedTotalÄ‘', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
+                  Text('$formattedTotalÄ‘', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
                 ],
               ),
             ],
@@ -1064,13 +1064,13 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrContent)}',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
-                      return Center(
+                      return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.primary),
-                            const SizedBox(height: 4),
-                            const Text(
+                            SizedBox(height: 4),
+                            Text(
                               'Lá»—i táº£i QR',
                               style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
                             ),
@@ -1089,7 +1089,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                       );
                     },
                   )
-                : Icon(Icons.qr_code, size: 100, color: AppColors.primary),
+                : const Icon(Icons.qr_code, size: 100, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
           _buildBankInfoRow('NgÃ¢n hÃ ng', bankName),

@@ -120,16 +120,18 @@ class _CustomerSubscriptionCheckoutScreenState
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_step == _CheckoutStep.processing) return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (_step == _CheckoutStep.processing) return;
         final navigator = Navigator.of(context);
         await _handlePop();
         if (_step == _CheckoutStep.success || _step == _CheckoutStep.failure) {
           navigator.pop(_step == _CheckoutStep.success);
-          return false;
+        } else {
+          navigator.pop();
         }
-        return true;
       },
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -436,7 +438,7 @@ class _ConfirmView extends StatelessWidget {
                     value: plan.billingLabel,
                   ),
                   _OrderSummaryRow(label: 'Giá gốc', value: '${_formatMoney(plan.price)}đ'),
-                  _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
+                  const _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Divider(color: Color(0xFF3A1A1A)),
@@ -471,7 +473,7 @@ class _ConfirmView extends StatelessWidget {
           height: 50,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.primary, const Color(0xFFB81818)]),
+              gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFFB81818)]),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
@@ -1448,7 +1450,7 @@ class _PlanStyle {
     const ascii = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd'
         'AAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD';
     var result = value;
-    final length = vietnamese.length < ascii.length ? vietnamese.length : ascii.length;
+    const length = vietnamese.length < ascii.length ? vietnamese.length : ascii.length;
     for (var i = 0; i < length; i++) {
       result = result.replaceAll(vietnamese[i], ascii[i]);
     }

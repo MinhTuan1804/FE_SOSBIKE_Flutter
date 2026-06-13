@@ -176,7 +176,7 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     if (_step == FindMechanicStep.locationSelect) {
       return Container(
         color: Colors.white,
-        child: Center(
+        child: const Center(
           child: CircularProgressIndicator(
             color: AppColors.primary,
             strokeWidth: 3,

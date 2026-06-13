@@ -103,7 +103,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   // Thuật toán Haversine tính khoảng cách (trả về km)
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const p = 0.017453292519943295;
-    final c = cos;
+    const c = cos;
     final a = 0.5 - c((lat2 - lat1) * p)/2 + 
           c(lat1 * p) * c(lat2 * p) * 
           (1 - c((lon2 - lon1) * p))/2;
@@ -741,7 +741,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
             onPressed: onBack,
           ),
         ),
@@ -902,7 +902,7 @@ class _AddressSearchOverlayState extends State<AddressSearchOverlay> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        Icon(Icons.search, color: AppColors.primary, size: 20),
+                        const Icon(Icons.search, color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
@@ -963,7 +963,7 @@ class _AddressSearchOverlayState extends State<AddressSearchOverlay> {
                 ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.red[50],
-                    child: Icon(Icons.my_location, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.my_location, color: AppColors.primary, size: 20),
                   ),
                   title: const Text(
                     'Lấy vị trí hiện tại',

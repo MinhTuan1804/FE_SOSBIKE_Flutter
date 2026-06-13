@@ -268,7 +268,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     // Gender
                     DropdownButtonFormField<String>(
-                      value: _gender,
+                      initialValue: _gender,
                       decoration: InputDecoration(
                         labelText: 'Giới tính',
                         prefixIcon: const Icon(Icons.transgender),

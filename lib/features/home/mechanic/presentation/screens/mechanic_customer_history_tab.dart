@@ -209,7 +209,7 @@ class _InProgressOrderCard extends StatelessWidget {
               const Spacer(),
               Text(
                 _statusLabel,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,

@@ -75,10 +75,10 @@ class MechanicAcceptOrderView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
@@ -86,7 +86,7 @@ class MechanicAcceptOrderView extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     'Đang chờ khách hàng xác nhận...',
                     style: TextStyle(

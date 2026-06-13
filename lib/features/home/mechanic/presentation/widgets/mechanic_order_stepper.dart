@@ -18,7 +18,7 @@ class MechanicOrderStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = MechanicOrderSteps.items;
+    const steps = MechanicOrderSteps.items;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

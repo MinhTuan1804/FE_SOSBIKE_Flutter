@@ -86,8 +86,7 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
                                 break;
                               }
                             }
-                            if (targetPlan == null) {
-                              targetPlan = CustomerMembershipPlan(
+                            targetPlan ??= CustomerMembershipPlan(
                                 planId: membership.pendingSession!.planId,
                                 name: membership.pendingSession!.planName,
                                 targetAudience: 'B2C',
@@ -98,9 +97,8 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
                                 isCurrentPlan: false,
                                 benefits: const [],
                               );
-                            }
 
-                            final ok = await Navigator.push<bool>(
+                            await Navigator.push<bool>(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CustomerSubscriptionCheckoutScreen(

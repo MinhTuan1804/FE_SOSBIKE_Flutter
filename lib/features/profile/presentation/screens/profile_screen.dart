@@ -177,12 +177,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 24),
 
                 // 2. Phần Thông tin cá nhân
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Thông tin cá nhân',
                         style: TextStyle(
                           fontSize: 18,
@@ -259,12 +259,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // ── SECTION: Hồ sơ & Giấy tờ thợ (luôn hiển thị với mechanic) ──
                 if (auth.userType?.toUpperCase() == 'MECHANIC') ...[
                   const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Hồ sơ & Giấy tờ thợ',
                           style: TextStyle(
                             fontSize: 18,
@@ -1237,13 +1237,13 @@ class _VehiclePhotoPlaceholder extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 180,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF1C1C1E),
-            const Color(0xFF2C2C2E),
+            Color(0xFF1C1C1E),
+            Color(0xFF2C2C2E),
           ],
         ),
       ),

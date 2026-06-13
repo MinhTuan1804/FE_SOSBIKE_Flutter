@@ -22,7 +22,6 @@ class MechanicOrderMapBackground extends StatefulWidget {
   /// >1 = hiển thị nhiều vùng bản đồ hơn (zoom out), vẫn phủ kín khung.
   final double zoomOutFactor;
 
-  static const _mapAsset = 'assets/images/main/map_card.png';
 
   @override
   State<MechanicOrderMapBackground> createState() => _MechanicOrderMapBackgroundState();

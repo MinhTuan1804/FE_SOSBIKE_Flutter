@@ -136,9 +136,9 @@ class _MechanicRegisterInfoScreenState
             color: const Color(0xFFF0F4FF),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Row(
+          child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Icon(Icons.info_outline_rounded,
                   size: 15, color: Color(0xFF3B82F6)),
               SizedBox(width: 8),

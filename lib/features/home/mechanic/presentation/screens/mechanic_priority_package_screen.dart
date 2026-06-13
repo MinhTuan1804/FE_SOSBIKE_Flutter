@@ -179,16 +179,17 @@ class _MechanicPriorityPackageScreenState extends State<MechanicPriorityPackageS
 
     if (isSwitch) {
       final ok = await _confirmSwitchPlan(context: context, current: sub, target: plan);
-      if (!ok || !mounted) return;
+      if (!ok || !context.mounted) return;
     }
 
+    if (!context.mounted) return;
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
         builder: (_) => MechanicSubscriptionCheckoutScreen(plan: plan),
         fullscreenDialog: true,
       ),
     );
-    if (result == true && mounted) {
+    if (result == true && context.mounted) {
       context.read<MechanicSubscriptionProvider>().refresh();
     }
   }

@@ -197,83 +197,6 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
     );
   }
 
-  Widget _buildNoWalletView(MechanicWalletProvider provider) {
-    return ColoredBox(
-      color: Colors.white,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: AppColors.primary,
-                      size: 52,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chưa có ví SOSBIKE',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Tạo ví để nhận thanh toán đơn cứu hộ, nạp tiền và rút tiền về tài khoản ngân hàng.',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.45),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: provider.isLoading
-                          ? null
-                          : () async {
-                              final ok = await provider.createWallet();
-                              if (!mounted) return;
-                              if (ok) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Đã tạo ví thành công!')),
-                                );
-                              } else if (provider.errorMessage != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(provider.errorMessage!)),
-                                );
-                              }
-                            },
-                      icon: provider.isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.add_card_rounded),
-                      label: Text(provider.isLoading ? 'Đang tạo ví...' : 'Tạo ví SOSBIKE'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-        ),
-      ),
-    );
-  }
 
   double _bottomNavReserve(BuildContext context) {
     return MediaQuery.paddingOf(context).bottom + 16;
@@ -321,7 +244,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           const SizedBox(height: 8),
           Text(
             subtitleText,
-            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -361,6 +284,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                   if (pinStr == _tempPin) {
                     final ok = await provider.setupWalletPin(pinStr);
                     if (ok) {
+                      if (!mounted) return;
                       setState(() {
                         _enteredPin.clear();
                         _tempPin = '';
@@ -370,6 +294,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                         const SnackBar(content: Text('Thiết lập mã PIN thành công.')),
                       );
                     } else {
+                      if (!mounted) return;
                       setState(() {
                         _enteredPin.clear();
                       });
@@ -421,7 +346,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           const SizedBox(height: 8),
           Text(
             'Vui lòng nhập mã PIN ví gồm 6 chữ số.',
-            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
           ),
           const SizedBox(height: 24),
           Row(
@@ -456,6 +381,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                     _enteredPin.clear();
                   });
                 } else {
+                  if (!mounted) return;
                   setState(() {
                     _enteredPin.clear();
                   });
@@ -582,7 +508,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.account_balance_outlined, color: AppColors.primary, size: 48),
@@ -606,7 +532,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _bankName,
+            initialValue: _bankName,
             isExpanded: true,
             decoration: _dropDeco('Chọn ngân hàng nhận tiền'),
             items: _kBanks
@@ -909,7 +835,7 @@ class _ToggleChip extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
@@ -1308,8 +1234,8 @@ class _WithdrawRequestTile extends StatelessWidget {
                 ),
                 if (req.status.toUpperCase() == 'PENDING') ...[
                   const SizedBox(height: 4),
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.access_time_rounded, size: 11, color: Color(0xFFD97706)),
                       SizedBox(width: 4),
                       Text(

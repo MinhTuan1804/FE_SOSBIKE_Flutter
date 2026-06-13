@@ -62,15 +62,15 @@ class ShopListView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
+                  const Positioned(
                     top: 180,
                     left: 80,
-                    child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+                    child: Icon(Icons.location_on, color: Colors.red, size: 40),
                   ),
-                  Positioned(
+                  const Positioned(
                     top: 240,
                     right: 60,
-                    child: const Icon(Icons.location_on, color: Colors.red, size: 34),
+                    child: Icon(Icons.location_on, color: Colors.red, size: 34),
                   ),
                   // Search Bar Floating on Map
                   Positioned(

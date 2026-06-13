@@ -688,7 +688,7 @@ class MainShellScreenState extends State<MainShellScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -714,7 +714,7 @@ class MainShellScreenState extends State<MainShellScreen> {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -926,7 +926,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           ),
         _MechanicOrderFlow.inspect => MechanicInspectVehicleView(
             key: ValueKey(
-              'inspect-${_quoteSent}-${_selectedRepairItems.map((e) => e.id).join('-')}-${_sessionSpareParts.length}',
+              'inspect-$_quoteSent-${_selectedRepairItems.map((e) => e.id).join('-')}-${_sessionSpareParts.length}',
             ),
             initialItems: repairProvider.services,
             preselectedItems: _selectedRepairItems,
@@ -1018,8 +1018,8 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = const Color(0xFF22C55E); // Green
-    final inactiveColor = const Color(0xFF9CA3AF); // Gray
+    const activeColor = Color(0xFF22C55E); // Green
+    const inactiveColor = Color(0xFF9CA3AF); // Gray
     final dotColor = widget.isActive ? activeColor : inactiveColor;
 
     return SizedBox(

@@ -156,7 +156,7 @@ class MainAppHeader extends StatelessWidget {
                         shape: BoxShape.circle,
                         
                       ),
-                      child: IconButton(onPressed: (){}, icon: Icon(Icons.location_on, color: AppColors.primary, size: 30)),
+                      child: IconButton(onPressed: (){}, icon: const Icon(Icons.location_on, color: AppColors.primary, size: 30)),
                     )
                   : FittedBox(
                       fit: BoxFit.scaleDown,

@@ -134,7 +134,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                     ),
                   ),
 
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   // Right side: Maintenance Info
                   Expanded(
                     flex: 5,
@@ -158,7 +158,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 16),
 
-                        _MaintenanceItem(
+                        const _MaintenanceItem(
                           icon: Icons.water_drop,
                           iconColor: Colors.red,
                           title: 'Dầu động cơ',
@@ -168,7 +168,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 12),
 
-                        _MaintenanceItem(
+                        const _MaintenanceItem(
                           icon: Icons.adjust,
                           iconColor: Colors.green,
                           title: 'Má phanh',
@@ -178,7 +178,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 12),
 
-                        _MaintenanceItem(
+                        const _MaintenanceItem(
                           icon: Icons.tire_repair,
                           iconColor: Colors.green,
                           title: 'Lốp xe',
@@ -426,7 +426,7 @@ class _SosBanner extends StatelessWidget {
             right: 20,
             child: Text(
               brandName,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
                 fontWeight: FontWeight.w900,

@@ -536,9 +536,9 @@ class _MechanicSetupProfileScreenState
               border: Border.all(
                   color: const Color(0xFFFFCC02), width: 0.8),
             ),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Icon(Icons.info_outline_rounded,
                     size: 15, color: Color(0xFFE65100)),
                 SizedBox(width: 8),
@@ -734,9 +734,9 @@ class _MechanicSetupProfileScreenState
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFFEF5350), width: 0.8),
             ),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Icon(Icons.warning_amber_rounded,
                     size: 16, color: Color(0xFFC62828)),
                 SizedBox(width: 8),
@@ -792,8 +792,8 @@ class _StatusBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFFFB74D), width: 0.8),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Icon(Icons.hourglass_top_rounded,
               size: 16, color: Color(0xFFE65100)),
           SizedBox(width: 8),

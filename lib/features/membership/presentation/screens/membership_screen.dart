@@ -551,7 +551,7 @@ class _AutoRenewSwitch extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: color,
+          activeThumbColor: color,
         ),
         const SizedBox(width: 8),
         const Text(
@@ -797,7 +797,7 @@ String _normalize(String value) {
   const ascii = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd'
       'AAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD';
   var result = value;
-  final length = vietnamese.length < ascii.length ? vietnamese.length : ascii.length;
+  const length = vietnamese.length < ascii.length ? vietnamese.length : ascii.length;
   for (var i = 0; i < length; i++) {
     result = result.replaceAll(vietnamese[i], ascii[i]);
   }

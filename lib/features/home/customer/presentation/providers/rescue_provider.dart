@@ -24,7 +24,6 @@ class RescueProvider extends ChangeNotifier {
 
   final GoongService _goongService = GoongService();
   DateTime? _lastGoongRouteFetchTime;
-  int _goongApiCallCount = 0;
   Timer? _routeUpdateTimer;
 
   // Active Mechanic Order Coords for dynamic routing on mechanic side
@@ -46,7 +45,6 @@ class RescueProvider extends ChangeNotifier {
   }) async {
     _routeUpdateTimer?.cancel();
     _routeUpdateTimer = null;
-    _goongApiCallCount = 0;
 
     // Call Goong Directions API only once at the beginning
     await fetchGoongRoute(
@@ -56,7 +54,6 @@ class RescueProvider extends ChangeNotifier {
       mechLng: mechLng,
       force: true,
     );
-    _goongApiCallCount = 1;
   }
 
   void setActiveCustomerCoords(double lat, double lng) {

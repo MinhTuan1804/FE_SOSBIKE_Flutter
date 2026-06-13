@@ -197,9 +197,9 @@ class _ErrorCard extends StatelessWidget {
         children: [
           Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 36),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Không tải được dữ liệu',
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
                 color: Color(0xFF111827)),
@@ -780,14 +780,6 @@ class _DailyBarPainter extends CustomPainter {
     if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
     if (v >= 1000) return '${(v / 1000).round()}K';
     return '$v';
-  }
-
-  void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {
-    final builder = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: ui.TextDirection.ltr,
-    )..layout();
-    builder.paint(canvas, offset);
   }
 
   void _drawTextCentered(

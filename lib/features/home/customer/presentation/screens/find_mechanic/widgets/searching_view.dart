@@ -24,9 +24,9 @@ class SearchingView extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 // Inner concentric pulse rings
-                _PulseRing(delay: 0),
-                _PulseRing(delay: 1),
-                _PulseRing(delay: 2),
+                const _PulseRing(delay: 0),
+                const _PulseRing(delay: 1),
+                const _PulseRing(delay: 2),
                 // Custom scooter graphic
                 Container(
                   width: 180,
@@ -36,7 +36,7 @@ class SearchingView extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(12),
-                  child: Icon(Icons.two_wheeler, color: AppColors.primary, size: 90),
+                  child: const Icon(Icons.two_wheeler, color: AppColors.primary, size: 90),
                 ),
               ],
             ),
