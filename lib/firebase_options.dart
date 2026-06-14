@@ -20,19 +20,19 @@ class DefaultFirebaseOptions {
 
   /// Cần thêm app Web trên Firebase Console để bật Firebase Auth trên web.
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDb4RZNDNs0lOIk0_3hJw5L5M8J8sULy14',
-    appId: '1:835951049167:web:0000000000000000000000',
-    messagingSenderId: '835951049167',
-    projectId: 'sosbike-7b6bb',
-    authDomain: 'sosbike-7b6bb.firebaseapp.com',
-    storageBucket: 'sosbike-7b6bb.firebasestorage.app',
+    apiKey: 'AIzaSyDY7Evj6Ui4JGxbGOduxUqRBOBJaOByDXI',
+    appId: '1:965904830002:web:placeholder',
+    messagingSenderId: '965904830002',
+    projectId: 'sosbike-4d6dc',
+    authDomain: 'sosbike-4d6dc.firebaseapp.com',
+    storageBucket: 'sosbike-4d6dc.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDb4RZNDNs0lOIk0_3hJw5L5M8J8sULy14',
-    appId: '1:835951049167:android:f7dde8482558f70100faba',
-    messagingSenderId: '835951049167',
-    projectId: 'sosbike-7b6bb',
-    storageBucket: 'sosbike-7b6bb.firebasestorage.app',
+    apiKey: 'AIzaSyDY7Evj6Ui4JGxbGOduxUqRBOBJaOByDXI',
+    appId: '1:965904830002:android:c92b3fea7b680cb80d762b',
+    messagingSenderId: '965904830002',
+    projectId: 'sosbike-4d6dc',
+    storageBucket: 'sosbike-4d6dc.firebasestorage.app',
   );
 }
