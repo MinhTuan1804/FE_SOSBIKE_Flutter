@@ -1,4 +1,4 @@
-package com.example.fe_moblie_flutter
+package com.sosbike.app
 
 import io.flutter.embedding.android.FlutterActivity
 
