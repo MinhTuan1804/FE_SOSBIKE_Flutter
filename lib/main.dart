@@ -47,6 +47,8 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_subscription_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_service_offering_repository.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_service_offering_provider.dart';
 import 'package:fe_moblie_flutter/features/profile/data/repositories/vehicle_repository.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
 import 'package:fe_moblie_flutter/firebase_options.dart';
@@ -92,6 +94,7 @@ void main() async {
   final mechanicWalletRepository = MechanicWalletRepository(dioClient);
   final mechanicSubscriptionRepository = MechanicSubscriptionRepository(dioClient);
   final mechanicRepairRepository = MechanicRepairRepository(dioClient);
+  final mechanicServiceOfferingRepository = MechanicServiceOfferingRepository(dioClient);
   final vehicleRepository = VehicleRepository(dioClient);
   final backendOtpService = BackendOtpService(dioClient);
   final chatRepository = ChatRepository(dioClient);
@@ -139,6 +142,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MechanicWalletProvider(mechanicWalletRepository)),
         ChangeNotifierProvider(create: (_) => MechanicSubscriptionProvider(mechanicSubscriptionRepository)),
         ChangeNotifierProvider(create: (_) => MechanicRepairProvider(mechanicRepairRepository)),
+        ChangeNotifierProvider(create: (_) => MechanicServiceOfferingProvider(mechanicServiceOfferingRepository)),
         ChangeNotifierProvider(create: (_) => VehicleProvider(vehicleRepository)),
       ],
       child: const MyApp(),
