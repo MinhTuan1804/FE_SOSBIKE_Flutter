@@ -62,6 +62,8 @@ class ApiEndpoints {
   static const String mechanicWalletDeposit = '/mechanics/me/wallet/deposit';
   static const String mechanicWalletWithdraw = '/mechanics/me/wallet/withdraw';
   static const String mechanicRepairServices = '/mechanics/me/repair/services';
+  static const String mechanicMyServices = '/mechanics/me/services';
+  static String mechanicMyService(int mechanicServiceId) => '/mechanics/me/services/$mechanicServiceId';
   static const String mechanicSpareParts = '/mechanics/me/spare-parts';
   static const String mechanicActiveOrder = '/mechanics/me/orders/active';
   static const String mechanicDevSimulateAccept = '/mechanics/me/orders/dev-simulate-accept';

@@ -13,7 +13,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/
 import 'package:fe_moblie_flutter/features/home/mechanic/data/local/mechanic_order_flow_store.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_customer_history_tab.dart';
-import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_activity_tab.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_services_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
@@ -29,7 +29,6 @@ import 'package:fe_moblie_flutter/features/notifications/presentation/screens/no
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
-import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 import 'package:fe_moblie_flutter/core/widgets/app_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_accept_order_screen.dart';
@@ -980,11 +979,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           : const MechanicWalletTab(),
       MainNavTab.maintenance => userType == 'CUSTOMER'
           ? const NotificationsTabScreen()
-          : const ComingSoonOverlay(
-              featureName: 'Bảo trì & Hoạt động',
-              message: 'Đặt lịch bảo dưỡng và quản lý hoạt động cho thợ đang được phát triển.',
-              child: MechanicActivityTab(previewOnly: true),
-            ),
+          : const MechanicServicesTab(),
     };
   }
 }
