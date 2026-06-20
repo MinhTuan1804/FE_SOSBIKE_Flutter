@@ -13,7 +13,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/
 import 'package:fe_moblie_flutter/features/home/mechanic/data/local/mechanic_order_flow_store.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_customer_history_tab.dart';
-import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_services_tab.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_activity_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
@@ -896,7 +896,7 @@ class MainShellScreenState extends State<MainShellScreen> {
             appConfig.flags.sosEnabled)
           Positioned(
             right: -2,
-            bottom: navH + 8,
+            bottom: navH + 24,
             child: _SosFab(
               isActive: rescueProvider.incomingRequest != null,
               onPressed: _openIncomingRequest,
@@ -978,7 +978,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           : const MechanicWalletTab(),
       MainNavTab.maintenance => userType == 'CUSTOMER'
           ? const NotificationsTabScreen()
-          : const MechanicServicesTab(),
+          : const MechanicActivityTab(previewOnly: false),
     };
   }
 }

@@ -8,7 +8,9 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/
 
 /// Tab **Dịch vụ** — thợ đăng ký dịch vụ riêng, chờ admin duyệt.
 class MechanicServicesTab extends StatefulWidget {
-  const MechanicServicesTab({super.key});
+  const MechanicServicesTab({super.key, this.isLightTheme = false});
+
+  final bool isLightTheme;
 
   @override
   State<MechanicServicesTab> createState() => _MechanicServicesTabState();
@@ -43,10 +45,10 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Dịch vụ của tôi',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: widget.isLightTheme ? const Color(0xFF111827) : Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                     ),
@@ -54,7 +56,10 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
                   const SizedBox(height: 6),
                   Text(
                     'Đăng ký dịch vụ riêng. Sau khi admin duyệt, bạn có thể dùng trong báo giá sửa chữa.',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
+                    style: TextStyle(
+                      color: widget.isLightTheme ? const Color(0xFF4B5563) : Colors.white.withValues(alpha: 0.75),
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -83,8 +88,12 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
             ),
           ),
           if (provider.isLoading && provider.items.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: Colors.white)),
+            SliverFillRemaining(
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: widget.isLightTheme ? AppColors.primary : Colors.white,
+                ),
+              ),
             )
           else if (provider.items.isEmpty)
             SliverFillRemaining(
@@ -93,7 +102,9 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
                 child: Text(
                   'Chưa có dịch vụ nào.\nNhấn "Thêm dịch vụ mới" để đăng ký.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                  style: TextStyle(
+                    color: widget.isLightTheme ? const Color(0xFF6B7280) : Colors.white.withValues(alpha: 0.6),
+                  ),
                 ),
               ),
             )
@@ -107,6 +118,7 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
                   item: provider.items[index],
                   money: _money,
                   date: _date,
+                  isLightTheme: widget.isLightTheme,
                   onDelete: provider.isSubmitting
                       ? null
                       : () => _confirmDelete(context, provider.items[index].mechanicServiceId),
@@ -281,12 +293,14 @@ class _ServiceCard extends StatelessWidget {
     required this.money,
     required this.date,
     this.onDelete,
+    this.isLightTheme = false,
   });
 
   final MechanicServiceOfferingDto item;
   final NumberFormat money;
   final DateFormat date;
   final VoidCallback? onDelete;
+  final bool isLightTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -299,9 +313,20 @@ class _ServiceCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: isLightTheme ? Colors.white : Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: isLightTheme ? const Color(0xFFE5E7EB) : Colors.white.withValues(alpha: 0.1),
+        ),
+        boxShadow: isLightTheme
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,7 +337,11 @@ class _ServiceCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.serviceName,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: isLightTheme ? const Color(0xFF111827) : Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               Container(
@@ -332,18 +361,30 @@ class _ServiceCard extends StatelessWidget {
           ),
           if (item.description != null && item.description!.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(item.description!, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+            Text(
+              item.description!,
+              style: TextStyle(
+                color: isLightTheme ? const Color(0xFF4B5563) : Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
+            ),
           ],
           const SizedBox(height: 8),
           Text(
             'Gửi lúc ${date.format(item.requestedAt.toLocal())}',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+            style: TextStyle(
+              color: isLightTheme ? const Color(0xFF9CA3AF) : Colors.white.withValues(alpha: 0.5),
+              fontSize: 12,
+            ),
           ),
           if (item.isRejected && item.rejectionReason != null) ...[
             const SizedBox(height: 8),
             Text(
               'Lý do: ${item.rejectionReason}',
-              style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
+              style: TextStyle(
+                color: isLightTheme ? const Color(0xFFDC2626) : const Color(0xFFFF8A80),
+                fontSize: 12,
+              ),
             ),
           ],
           if (!item.isApproved && onDelete != null) ...[
@@ -354,7 +395,9 @@ class _ServiceCard extends StatelessWidget {
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: const Text('Xóa'),
-                style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF8A80)),
+                style: TextButton.styleFrom(
+                  foregroundColor: isLightTheme ? const Color(0xFFDC2626) : const Color(0xFFFF8A80),
+                ),
               ),
             ),
           ],

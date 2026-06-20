@@ -948,7 +948,11 @@ class _EmailLinkVerificationDialogState extends State<EmailLinkVerificationDialo
   @override
   void initState() {
     super.initState();
-    _sendLink();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _sendLink();
+      }
+    });
   }
 
   @override

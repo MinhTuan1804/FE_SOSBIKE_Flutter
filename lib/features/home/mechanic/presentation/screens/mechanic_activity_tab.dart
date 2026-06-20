@@ -2,8 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_activity_models.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_services_tab.dart';
 
-enum _ActivitySection { schedule, notifications }
+enum _ActivitySection { schedule, notifications, services }
 
 /// Tab **Bảo Trì → Hoạt Động** — Đặt lịch + Thông báo (Figma).
 class MechanicActivityTab extends StatefulWidget {
@@ -65,12 +66,14 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
-          child: Text(
+        Padding(
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 10),
+          child: const Text(
             'Hoạt Động',
             style: TextStyle(
               color: Colors.white,
@@ -99,16 +102,18 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: _section == _ActivitySection.schedule
-                ? _ScheduleSection(
-                    focusedMonth: _focusedMonth,
-                    selectedDay: _selectedDay,
-                    appointments: _appointments,
-                    onMonthChanged: (month) => setState(() => _focusedMonth = month),
-                    onDaySelected: (day) => setState(() => _selectedDay = day),
-                    selectedAppointment: _appointmentForDay(_selectedDay),
-                  )
-                : _NotificationsSection(items: _notifications),
+            child: switch (_section) {
+              _ActivitySection.schedule => _ScheduleSection(
+                  focusedMonth: _focusedMonth,
+                  selectedDay: _selectedDay,
+                  appointments: _appointments,
+                  onMonthChanged: (month) => setState(() => _focusedMonth = month),
+                  onDaySelected: (day) => setState(() => _selectedDay = day),
+                  selectedAppointment: _appointmentForDay(_selectedDay),
+                ),
+              _ActivitySection.notifications => _NotificationsSection(items: _notifications),
+              _ActivitySection.services => const MechanicServicesTab(isLightTheme: true),
+            },
           ),
         ),
       ],
@@ -133,12 +138,20 @@ class _SectionToggle extends StatelessWidget {
             onTap: () => onChanged(_ActivitySection.schedule),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: _ToggleChip(
             label: 'Thông báo',
             selected: section == _ActivitySection.notifications,
             onTap: () => onChanged(_ActivitySection.notifications),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _ToggleChip(
+            label: 'Dịch vụ',
+            selected: section == _ActivitySection.services,
+            onTap: () => onChanged(_ActivitySection.services),
           ),
         ),
       ],
