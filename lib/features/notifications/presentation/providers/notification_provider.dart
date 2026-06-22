@@ -9,6 +9,10 @@ import 'package:fe_moblie_flutter/features/notifications/data/services/notificat
 class NotificationProvider extends ChangeNotifier {
   NotificationProvider(this._repository, this._realtimeService);
 
+  static const Set<String> _incomingOrderNotificationTypes = {
+    'RESCUE_ORDER_CREATED',
+  };
+
   final NotificationRepository _repository;
   final NotificationRealtimeService _realtimeService;
 
@@ -26,6 +30,14 @@ class NotificationProvider extends ChangeNotifier {
   bool get isMarkingAllRead => _isMarkingAllRead;
   String? get errorMessage => _errorMessage;
   int get unreadCount => _unreadCount;
+  int get incomingOrderUnreadCount => _items
+      .where((item) => !item.isRead && _incomingOrderNotificationTypes.contains(item.notificationType.toUpperCase()))
+      .length;
+  List<NotificationItem> get incomingOrderNotifications => _items
+      .where((item) => _incomingOrderNotificationTypes.contains(item.notificationType.toUpperCase()))
+      .toList(growable: false);
+  bool isIncomingOrderNotification(NotificationItem item) =>
+      _incomingOrderNotificationTypes.contains(item.notificationType.toUpperCase());
 
   Future<void> load({bool unreadOnly = false}) async {
     _isLoading = true;

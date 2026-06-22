@@ -331,7 +331,8 @@ class _MechanicSetupProfileScreenState
               await auth.fetchMyProfile();
               if (context.mounted) {
                 Navigator.of(context).pop(); // dismiss loading dialog
-                final isVerified = auth.profile?.mechanic?.isVerified ?? false;
+                final mechanic = auth.profile?.mechanic;
+                final isVerified = mechanic?.verifiedAt != null || mechanic?.isVerified == true;
                 if (isVerified) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -780,7 +781,8 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final isVerified = auth.profile?.mechanic?.isVerified ?? false;
+    final mechanic = auth.profile?.mechanic;
+    final isVerified = mechanic?.verifiedAt != null || mechanic?.isVerified == true;
     if (isVerified) return const SizedBox.shrink();
 
     return Container(

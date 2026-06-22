@@ -1,9 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiEndpoints {
   /// Local BE mặc định khi dev; override bằng `--dart-define` hoặc `.env`.
-  static const String _localDevBaseUrl = 'https://api.sosbike.io.vn/api';
+  static const String _localDevBaseUrl = 'http://localhost:5200/api';
 
   static String get baseUrl {
     const fromDefine = String.fromEnvironment('API_BASE_URL');
@@ -16,7 +15,7 @@ class ApiEndpoints {
       }
     } catch (_) {}
 
-    return kDebugMode ? _localDevBaseUrl : _localDevBaseUrl;
+    return _localDevBaseUrl;
   }
 
   static const String login = '/Auth/login';

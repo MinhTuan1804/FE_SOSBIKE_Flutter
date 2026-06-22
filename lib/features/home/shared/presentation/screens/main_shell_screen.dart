@@ -459,7 +459,8 @@ class MainShellScreenState extends State<MainShellScreen> {
     final inWalletSetup = _isMechanicWalletOnboarding(auth, walletProv);
     final hideShellChrome = inOrderFlow || inWalletSetup;
     final showMainHeader = !hideShellChrome && _tab == MainNavTab.orders;
-    final unreadNotificationCount = context.watch<NotificationProvider>().unreadCount;
+    final notificationProvider = context.watch<NotificationProvider>();
+    final unreadNotificationCount = notificationProvider.incomingOrderUnreadCount;
 
     final rescueProvider = context.watch<RescueProvider>();
 

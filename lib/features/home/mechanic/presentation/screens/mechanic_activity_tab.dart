@@ -1,8 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_activity_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_services_tab.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_activity_notifications_section.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 
 enum _ActivitySection { schedule, notifications, services }
 
@@ -24,8 +28,6 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
   bool _reminderShown = false;
 
   final _appointments = MechanicAppointment.sample;
-  final _notifications = MechanicActivityNotification.sample;
-
   @override
   void initState() {
     super.initState();
@@ -67,6 +69,8 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
+    final notificationProvider = context.watch<NotificationProvider>();
+    final mechanicNotifications = _mechanicNotifications(notificationProvider.items);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,7 +115,10 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
                   onDaySelected: (day) => setState(() => _selectedDay = day),
                   selectedAppointment: _appointmentForDay(_selectedDay),
                 ),
-              _ActivitySection.notifications => _NotificationsSection(items: _notifications),
+              _ActivitySection.notifications => MechanicActivityNotificationsSection(
+                  items: mechanicNotifications,
+                  onRefresh: () => context.read<NotificationProvider>().refresh(),
+                ),
               _ActivitySection.services => const MechanicServicesTab(isLightTheme: true),
             },
           ),
@@ -563,6 +570,27 @@ class _AppointmentReminderDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+List<NotificationItem> _mechanicNotifications(List<NotificationItem> items) {
+  const relevantTypes = <String>{
+    'MECHANIC_PROFILE_SUBMITTED',
+    'MECHANIC_PROFILE_APPROVED',
+    'MECHANIC_PROFILE_REJECTED',
+    'MECHANIC_SERVICE_SUBMITTED',
+    'MECHANIC_SERVICE_APPROVED',
+    'MECHANIC_SERVICE_REJECTED',
+    'MAINTENANCE_REMINDER',
+    'ADMIN_ANNOUNCEMENT',
+    'SYSTEM_MAINTENANCE',
+    'WITHDRAW_REQUEST_CREATED',
+    'WITHDRAW_REQUEST_APPROVED',
+    'WITHDRAW_REQUEST_REJECTED',
+  };
+
+  return items
+      .where((item) => relevantTypes.contains(item.notificationType.toUpperCase()))
+      .toList(growable: false);
 }
 
 class _NotificationsSection extends StatelessWidget {

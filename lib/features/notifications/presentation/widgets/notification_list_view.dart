@@ -358,6 +358,12 @@ class _NotificationListViewState extends State<NotificationListView> {
         return 'Gói thành viên sắp hết hạn.';
       case 'MEMBERSHIP_AUTO_RENEW_DISABLED':
         return 'Đã tắt tự động gia hạn gói thành viên.';
+      case 'MECHANIC_PROFILE_SUBMITTED':
+        return 'Hồ sơ thợ của bạn đã được gửi lên admin để xem xét.';
+      case 'MECHANIC_PROFILE_APPROVED':
+        return 'Hồ sơ thợ của bạn đã được admin xác nhận.';
+      case 'MECHANIC_PROFILE_REJECTED':
+        return 'Hồ sơ thợ của bạn chưa được duyệt và cần bổ sung.';
       default:
         return _safeDisplayText(item.content);
     }
@@ -380,7 +386,7 @@ class _NotificationListViewState extends State<NotificationListView> {
 
   String _formatTime(DateTime? time) {
     if (time == null) return '';
-    return DateFormat('HH:mm dd/MM', 'vi').format(time);
+    return DateFormat('HH:mm dd/MM', 'vi').format(time.toLocal());
   }
 
   String _friendlyTypeLabel(String type) {
@@ -519,7 +525,7 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _styleFor(item.notificationType);
-    final time = item.createdAt == null ? '' : DateFormat('HH:mm dd/MM', 'vi').format(item.createdAt!);
+    final time = item.createdAt == null ? '' : DateFormat('HH:mm dd/MM', 'vi').format(item.createdAt!.toLocal());
 
     return InkWell(
       onTap: onTap,
@@ -668,6 +674,12 @@ _NotificationStyle _styleFor(String type) {
     case 'MEMBERSHIP_RENEWED':
     case 'MEMBERSHIP_AUTO_RENEW_DISABLED':
       return const _NotificationStyle(icon: Icons.card_membership_rounded, backgroundColor: Color(0xFF7E57C2));
+    case 'MECHANIC_PROFILE_SUBMITTED':
+      return const _NotificationStyle(icon: Icons.pending_actions_rounded, backgroundColor: Color(0xFFFF9800));
+    case 'MECHANIC_PROFILE_APPROVED':
+      return const _NotificationStyle(icon: Icons.verified_rounded, backgroundColor: Color(0xFF4CAF50));
+    case 'MECHANIC_PROFILE_REJECTED':
+      return const _NotificationStyle(icon: Icons.error_outline_rounded, backgroundColor: Color(0xFFE53935));
     default:
       return const _NotificationStyle(icon: Icons.notifications_rounded, backgroundColor: Color(0xFFC02020));
   }

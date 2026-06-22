@@ -35,7 +35,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final vehicleProvider = context.watch<VehicleProvider>();
-    final isVerified = auth.profile?.mechanic?.isVerified ?? false;
+    final mechanic = auth.profile?.mechanic;
+    final isVerified = mechanic?.verifiedAt != null || mechanic?.isVerified == true;
+    final isPendingMechanic = auth.userType?.toUpperCase() == 'MECHANIC' && !isVerified;
 
     return Scaffold(
       backgroundColor: _bgColor,
@@ -310,7 +312,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         title: Text(
-                          isVerified ? 'Hồ sơ đã được xác thực' : 'Hoàn thiện hồ sơ & Xác thực thợ',
+                          isVerified
+                              ? 'Hồ sơ đã được xác thực'
+                              : isPendingMechanic
+                                  ? 'Hồ sơ đang chờ admin duyệt'
+                                  : 'Hoàn thiện hồ sơ & Xác thực thợ',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -320,7 +326,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         subtitle: Text(
                           isVerified
                               ? 'Tài khoản của bạn đã được Admin SOSBIKE duyệt'
-                              : 'Khu vực hoạt động, ảnh CCCD, chứng chỉ nghề & ngân hàng',
+                              : isPendingMechanic
+                                  ? 'Hồ sơ đã gửi lên admin. Bạn có thể chỉnh sửa và bổ sung khi cần.'
+                                  : 'Khu vực hoạt động, ảnh CCCD, chứng chỉ nghề & ngân hàng',
                           style: TextStyle(
                             fontSize: 12,
                             color: isVerified ? Colors.green[400] : Colors.grey,
