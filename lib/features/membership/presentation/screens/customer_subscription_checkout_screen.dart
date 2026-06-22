@@ -35,6 +35,7 @@ class _CustomerSubscriptionCheckoutScreenState
   Timer? _timer;
   Duration _timeRemaining = const Duration(minutes: 15);
   bool _isExpired = false;
+  bool _canPop = false;
 
   @override
   void initState() {
@@ -121,12 +122,16 @@ class _CustomerSubscriptionCheckoutScreenState
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: _canPop,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (_step == _CheckoutStep.processing) return;
         final navigator = Navigator.of(context);
         await _handlePop();
+        setState(() {
+          _canPop = true;
+        });
+        if (!context.mounted) return;
         if (_step == _CheckoutStep.success || _step == _CheckoutStep.failure) {
           navigator.pop(_step == _CheckoutStep.success);
         } else {
