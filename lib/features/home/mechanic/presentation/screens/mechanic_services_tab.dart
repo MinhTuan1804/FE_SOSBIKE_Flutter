@@ -204,7 +204,7 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
       },
     );
 
-    if (ok != true || !mounted) {
+    if (ok != true || !context.mounted) {
       nameCtrl.dispose();
       feeCtrl.dispose();
       descCtrl.dispose();
@@ -222,7 +222,7 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
     feeCtrl.dispose();
     descCtrl.dispose();
 
-    if (!mounted) return;
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(success ? 'Đã gửi yêu cầu duyệt dịch vụ.' : (provider.errorMessage ?? 'Gửi thất bại')),
@@ -243,11 +243,11 @@ class _MechanicServicesTabState extends State<MechanicServicesTab> {
         ],
       ),
     );
-    if (yes != true || !mounted) return;
+    if (yes != true || !context.mounted) return;
 
     final provider = context.read<MechanicServiceOfferingProvider>();
     final success = await provider.delete(id);
-    if (!mounted) return;
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(success ? 'Đã xóa dịch vụ.' : (provider.errorMessage ?? 'Xóa thất bại')),
