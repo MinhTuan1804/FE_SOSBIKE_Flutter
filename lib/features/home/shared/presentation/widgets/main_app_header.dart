@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
 
 /// Header đỏ full width; vùng Trực tuyến kéo sát mép phải (Figma).
 class MainAppHeader extends StatelessWidget {
@@ -36,7 +37,7 @@ class MainAppHeader extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.only(top: top + 8, bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: AppConfig.current.ui.navbarHeaderColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(

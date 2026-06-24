@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
@@ -51,9 +52,7 @@ class _MechanicRegisterInfoScreenState
     super.dispose();
   }
 
-  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
-      );
+  void _snack(String msg) => AppAlert.showError(context, msg);
 
   Future<void> _pickPortrait() async {
     final f = await pickImageFromCameraOrGallery(context,

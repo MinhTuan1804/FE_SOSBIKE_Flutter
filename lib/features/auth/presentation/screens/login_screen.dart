@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,9 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success && mounted) {
       navigateToHome();
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProvider.errorMessage ?? 'Đăng nhập thất bại')),
-      );
+      AppAlert.showError(context, authProvider.errorMessage ?? 'Đăng nhập thất bại');
     }
   }
 

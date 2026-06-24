@@ -172,8 +172,13 @@ class MyApp extends StatelessWidget {
       locale: const Locale('vi', 'VN'),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: appConfig.ui.backgroundColor,
         useMaterial3: true,
+        appBarTheme: AppBarTheme(
+          backgroundColor: appConfig.ui.navbarHeaderColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
       ),
       home: const AuthGate(),
     );
