@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart' as geo;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
@@ -32,6 +33,13 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   String _selectedAddress = 'Vị trí hiện tại của bạn';
 
   String get _goongApiKey {
+    // 1. Try DB config first
+    try {
+      final dbKey = AppConfig.current.thirdParty.goongApiKey;
+      if (dbKey.isNotEmpty) return dbKey;
+    } catch (_) {}
+
+    // 2. Fallback to .env
     try {
       if (dotenv.isInitialized) {
         final key = dotenv.env['GOONG_API_KEY'];

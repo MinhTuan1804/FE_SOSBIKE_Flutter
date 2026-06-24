@@ -23,9 +23,11 @@ class AppConfigProvider extends ChangeNotifier {
 
     try {
       _config = await _repository.loadConfig();
+      AppConfig.current = _config;
     } catch (e) {
       _errorMessage = e.toString();
       _config = defaultAppConfig;
+      AppConfig.current = defaultAppConfig;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -34,6 +36,7 @@ class AppConfigProvider extends ChangeNotifier {
 
   void setLocalFallback(AppConfig config) {
     _config = config;
+    AppConfig.current = config;
     notifyListeners();
   }
 }

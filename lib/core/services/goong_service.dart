@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
 
 class GoongRouteData {
   const GoongRouteData({
@@ -25,6 +26,13 @@ class GoongService {
   final Dio _dio = Dio();
 
   String get _apiKey {
+    // 1. Try DB config first
+    try {
+      final dbKey = AppConfig.current.thirdParty.goongApiKey;
+      if (dbKey.isNotEmpty) return dbKey;
+    } catch (_) {}
+
+    // 2. Fallback to .env
     try {
       if (dotenv.isInitialized) {
         final key = dotenv.env['GOONG_API_KEY'];
