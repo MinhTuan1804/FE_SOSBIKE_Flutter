@@ -10,6 +10,7 @@ class MainAppHeader extends StatelessWidget {
     required this.isOnline,
     required this.onOnlineChanged,
     required this.userType,
+    this.showVipBadge = false,
     this.avatarUrl,
     this.onAvatarTap,
     this.onLocationTap,
@@ -19,6 +20,7 @@ class MainAppHeader extends StatelessWidget {
   final bool isOnline;
   final ValueChanged<bool> onOnlineChanged;
   final String? userType;
+  final bool showVipBadge;
   final String? avatarUrl;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onLocationTap;
@@ -74,33 +76,34 @@ class MainAppHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: -4,
-                      left: -4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFE01B), // Gold/Yellow
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.white, width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
+                    if (showVipBadge)
+                      Positioned(
+                        top: -4,
+                        left: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFE01B), // Gold/Yellow
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.white, width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'VIP',
+                            style: TextStyle(
+                              color: Color(0xFFC01515), // Red text
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
                             ),
-                          ],
-                        ),
-                        child: const Text(
-                          'VIP',
-                          style: TextStyle(
-                            color: Color(0xFFC01515), // Red text
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(width: 12),

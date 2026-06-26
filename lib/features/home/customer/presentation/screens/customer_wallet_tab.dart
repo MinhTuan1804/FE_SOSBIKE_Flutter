@@ -242,14 +242,16 @@ class _MembershipStatusCard extends StatelessWidget {
           if (active && subscription != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Hết hạn: ${dateFormat.format(subscription!.endDate.toLocal())}',
+              subscription!.price <= 0
+                  ? 'Hiệu lực: Vô thời hạn'
+                  : 'Hết hạn: ${dateFormat.format(subscription!.endDate.toLocal())}',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.88),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (subscription!.autoRenew)
+            if (subscription!.price > 0 && subscription!.autoRenew)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
