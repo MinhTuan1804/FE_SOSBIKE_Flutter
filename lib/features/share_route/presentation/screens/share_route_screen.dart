@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 
@@ -88,10 +89,13 @@ class _ShareRouteScreenState extends State<ShareRouteScreen> {
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop();
+                      },
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: 48,
+                        height: 48,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -152,19 +156,24 @@ class _ShareRouteScreenState extends State<ShareRouteScreen> {
                     // "Bạn muốn gửi đến ai?" Search bar mock
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFC02020),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Bạn muốn gửi đến ai?',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                        },
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Bạn muốn gửi đến ai?',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -267,15 +276,17 @@ class _ShareRouteScreenState extends State<ShareRouteScreen> {
             featureName: 'Chia sẻ lộ trình',
             message: 'Tính năng chia sẻ lộ trình với bạn bè sẽ sớm được ra mắt.',
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                HapticFeedback.lightImpact();
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC02020),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                minimumSize: const Size(60, 36),
+                minimumSize: const Size(64, 40),
               ),
               child: const Text(
                 'Gửi',

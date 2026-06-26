@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -53,8 +54,14 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: provider.refresh,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  provider.refresh();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size(120, 48),
+                ),
                 child: const Text('Thử lại'),
               ),
             ],
@@ -165,7 +172,7 @@ class _HistoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF9E1818).withValues(alpha: 0.92),
+        color: AppColors.primary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -210,7 +217,7 @@ class _HistoryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF6E1010),
+              color: AppColors.primaryDark,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -273,7 +280,7 @@ class _Avatar extends StatelessWidget {
       child: Container(
         width: 42,
         height: 42,
-        color: const Color(0xFF6E1010),
+        color: AppColors.primaryDark,
         child: url.isEmpty
             ? const Icon(Icons.person, color: Colors.white70)
             : CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, width: 42, height: 42),

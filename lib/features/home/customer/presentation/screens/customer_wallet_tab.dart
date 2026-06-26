@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -286,10 +287,13 @@ class _MembershipPlansBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF7A1010),
+      color: AppColors.primaryDark,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -444,9 +448,12 @@ class _PendingPaymentBanner extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                height: 30,
+                height: 48,
                 child: ElevatedButton(
-                  onPressed: onContinue,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onContinue();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

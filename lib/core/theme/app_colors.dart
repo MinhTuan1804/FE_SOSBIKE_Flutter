@@ -11,4 +11,10 @@ abstract final class AppColors {
   static const Color dotInactive = Color(0xFFB8C4CE);
   static const Color socialBorder = Color(0xFFE5E7EB);
   static const Color pinFill = Color(0xFFE8EAED);
+  
+  /// UI Utility Colors
+  static const Color greyLight = Color(0xFFF3F4F6);
+  static const Color focusBorder = Color(0xFF3B82F6);
+  static const Color error = Color(0xFFEF4444);
+  static const Color success = Color(0xFF10B981);
 }

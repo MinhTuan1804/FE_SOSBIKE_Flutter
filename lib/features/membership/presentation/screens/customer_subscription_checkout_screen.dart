@@ -265,7 +265,10 @@ class _ConfirmView extends StatelessWidget {
                     child: Row(
                       children: [
                         IconButton(
-                          onPressed: onBack,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            onBack();
+                          },
                           icon: const Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: Colors.white,
@@ -489,7 +492,10 @@ class _ConfirmView extends StatelessWidget {
               ],
             ),
             child: ElevatedButton(
-              onPressed: onConfirm,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onConfirm();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -543,6 +549,7 @@ class _PayOSQRView extends StatelessWidget {
   final VoidCallback onConfirm;
 
   Future<void> _copyText(BuildContext context, String text, String message) async {
+    HapticFeedback.lightImpact();
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -577,7 +584,10 @@ class _PayOSQRView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          onPressed: onBack,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            onBack();
+          },
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
         title: const Text(
@@ -792,6 +802,7 @@ class _PayOSQRView extends StatelessWidget {
                                 onPressed: isExpired
                                     ? null
                                     : () async {
+                                        HapticFeedback.lightImpact();
                                         final Uri url = Uri.parse(intent.checkoutUrl!);
                                         if (await canLaunchUrl(url)) {
                                           await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -855,7 +866,12 @@ class _PayOSQRView extends StatelessWidget {
         child: SizedBox(
           height: 48,
           child: ElevatedButton(
-            onPressed: isExpired ? null : onConfirm,
+            onPressed: isExpired
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                    onConfirm();
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -1167,7 +1183,10 @@ class _ResultViewState extends State<_ResultView>
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: widget.onRetry,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            widget.onRetry?.call();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -1183,7 +1202,10 @@ class _ResultViewState extends State<_ResultView>
                       width: double.infinity,
                       height: 48,
                       child: OutlinedButton(
-                        onPressed: widget.onDone,
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          widget.onDone();
+                        },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),

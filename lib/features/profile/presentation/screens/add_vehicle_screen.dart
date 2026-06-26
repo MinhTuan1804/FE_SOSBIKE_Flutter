@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -53,6 +54,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 leading: const Icon(Icons.camera_alt, color: AppColors.primary),
                 title: const Text('Chụp ảnh'),
                 onTap: () async {
+                  HapticFeedback.lightImpact();
                   Navigator.pop(context);
                   final pickedFile = await _picker.pickImage(source: ImageSource.camera);
                   if (pickedFile != null) {
@@ -66,6 +68,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 leading: const Icon(Icons.photo_library, color: AppColors.primary),
                 title: const Text('Chọn từ thư viện'),
                 onTap: () async {
+                  HapticFeedback.lightImpact();
                   Navigator.pop(context);
                   final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
                   if (pickedFile != null) {
@@ -143,7 +146,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     // Vehicle Photo
                     Center(
                       child: GestureDetector(
-                        onTap: _pickImage,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _pickImage();
+                        },
                         child: Container(
                           width: double.infinity,
                           height: 180,
@@ -255,11 +261,14 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     const SizedBox(height: 32),
 
                     ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _submit();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('LƯU THÔNG TIN XE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
@@ -56,7 +57,10 @@ class _NotificationsTabScreenState extends State<NotificationsTabScreen> {
                         : const Icon(Icons.done_all_rounded, color: Colors.white, size: 28),
                     onPressed: notifications.unreadCount == 0 || notifications.isMarkingAllRead
                         ? null
-                        : () => context.read<NotificationProvider>().markAllRead(),
+                        : () {
+                            HapticFeedback.lightImpact();
+                            context.read<NotificationProvider>().markAllRead();
+                          },
                     tooltip: 'Đánh dấu tất cả đã đọc',
                   )
                 else
@@ -71,6 +75,7 @@ class _NotificationsTabScreenState extends State<NotificationsTabScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       setState(() {
                         _activeTabIndex = 0;
                       });
@@ -78,12 +83,12 @@ class _NotificationsTabScreenState extends State<NotificationsTabScreen> {
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: _activeTabIndex == 0 ? const Color(0xFFC02020) : const Color(0xFFCCCCCC),
+                        color: _activeTabIndex == 0 ? AppColors.primary : const Color(0xFFCCCCCC),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           if (_activeTabIndex == 0)
                             BoxShadow(
-                              color: Colors.redAccent.withValues(alpha: 0.15),
+                              color: AppColors.primary.withValues(alpha: 0.15),
                               blurRadius: 6,
                               offset: const Offset(0, 3),
                             ),
@@ -106,6 +111,7 @@ class _NotificationsTabScreenState extends State<NotificationsTabScreen> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       setState(() {
                         _activeTabIndex = 1;
                       });
@@ -113,12 +119,12 @@ class _NotificationsTabScreenState extends State<NotificationsTabScreen> {
                     child: Container(
                       height: 48,
                       decoration: BoxDecoration(
-                        color: _activeTabIndex == 1 ? const Color(0xFFC02020) : const Color(0xFFCCCCCC),
+                        color: _activeTabIndex == 1 ? AppColors.primary : const Color(0xFFCCCCCC),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           if (_activeTabIndex == 1)
                             BoxShadow(
-                              color: Colors.redAccent.withValues(alpha: 0.15),
+                              color: AppColors.primary.withValues(alpha: 0.15),
                               blurRadius: 6,
                               offset: const Offset(0, 3),
                             ),

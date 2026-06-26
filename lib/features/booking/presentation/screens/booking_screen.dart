@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
@@ -91,19 +92,21 @@ class _BookingScreenState extends State<BookingScreen> {
                     featureName: 'Đặt lịch bảo dưỡng',
                     message: 'Tính năng đặt lịch bảo dưỡng định kỳ đang trong quá trình mở rộng.',
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                      },
                       icon: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 20),
                       label: const Text(
                         'Đặt lịch bảo dưỡng',
                         style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFC02020),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: AppColors.primary,
+                        minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        shadowColor: Colors.redAccent.withValues(alpha: 0.3),
+                        shadowColor: AppColors.primary.withValues(alpha: 0.3),
                         elevation: 6,
                       ),
                     ),
@@ -129,7 +132,7 @@ class _BookingScreenState extends State<BookingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF5A1212),
+        color: AppColors.primaryDark,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12, width: 1.5),
         boxShadow: [
@@ -189,7 +192,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC02020),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(

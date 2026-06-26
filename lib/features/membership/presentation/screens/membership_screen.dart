@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
@@ -45,7 +46,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
         title: const Text(
@@ -158,6 +162,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
     MembershipProvider provider,
     CustomerMembershipPlan plan,
   ) async {
+    HapticFeedback.lightImpact();
     if (plan.price <= 0) {
       final ok = await provider.subscribe(plan, autoRenew: false);
       if (!context.mounted) return;
@@ -205,6 +210,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
   }
 
   Future<void> _cancelRenewal(BuildContext context, MembershipProvider provider) async {
+    HapticFeedback.lightImpact();
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -550,7 +556,12 @@ class _AutoRenewSwitch extends StatelessWidget {
       children: [
         Switch(
           value: value,
-          onChanged: onChanged,
+          onChanged: onChanged == null
+              ? null
+              : (val) {
+                  HapticFeedback.lightImpact();
+                  onChanged!(val);
+                },
           activeThumbColor: color,
         ),
         const SizedBox(width: 8),
@@ -679,8 +690,14 @@ class _ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onRetry();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(120, 48),
+              ),
               child: const Text('Thử lại'),
             ),
           ],
@@ -760,7 +777,7 @@ class _PlanStyle {
       background: [Color(0xFFA5140D), Color(0xFF330909)],
       accent: Color(0xFFFFB45B),
       price: Color(0xFFFFC23A),
-      button: Color(0xFFF11116),
+      button: AppColors.primary,
       glow: Color(0xFFFF402E),
       pattern: Color(0xFFFF3226),
       icon: Icons.workspace_premium_rounded,

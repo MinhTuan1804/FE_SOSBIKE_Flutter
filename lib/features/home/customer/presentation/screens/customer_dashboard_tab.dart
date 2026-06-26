@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
+import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
 
@@ -65,7 +67,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFBF2121), width: 2),
+                              border: Border.all(color: AppColors.primary, width: 2),
                             ),
                             child: Icon(Icons.error, color: Colors.red[400], size: 28),
                           ),
@@ -85,7 +87,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFBF2121), width: 2),
+                              border: Border.all(color: AppColors.primary, width: 2),
                             ),
                             child: Icon(Icons.location_on, color: Colors.red[400], size: 28),
                           ),
@@ -195,14 +197,14 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                           child: ElevatedButton(
                             onPressed: () {},
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF8B1A1A),
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                                 side: const BorderSide(color: Colors.white),
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              minimumSize: const Size(100, 36),
+                              minimumSize: const Size(100, 48),
                             ),
                             child: const Text(
                               'Đặt lịch',
@@ -287,7 +289,10 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         height: 230,
         decoration: BoxDecoration(
@@ -350,9 +355,9 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                 bottom: 20,
                 right: 20,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC02020), // Vibrant red matching Figma brand red/button
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(30), // fully rounded pill
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.8),
@@ -443,14 +448,18 @@ class _SosBanner extends StatelessWidget {
             bottom: 16,
             right: 16,
             child: ElevatedButton.icon(
-              onPressed: onStart,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onStart();
+              },
               icon: const Icon(Icons.start, color: Colors.white, size: 20),
               label: const Text(
                 'Bắt đầu',
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB02A2A),
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(120, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                   side: const BorderSide(color: Colors.white54, width: 1.5),
@@ -479,7 +488,10 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         height: 100,
         decoration: BoxDecoration(
