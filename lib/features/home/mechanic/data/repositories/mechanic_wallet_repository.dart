@@ -25,7 +25,7 @@ class MechanicWalletRepository {
         queryParameters: queryParams,
       );
       if (response.data is! Map) {
-        throw const FormatException('Wallet response is invalid.');
+        throw const FormatException('Phản hồi thông tin ví không hợp lệ.');
       }
       return MechanicWalletData.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
@@ -132,7 +132,7 @@ class MechanicWalletRepository {
     try {
       final response = await _dioClient.dio.post(ApiEndpoints.mechanicWallet);
       if (response.data is! Map) {
-        throw const FormatException('Create wallet response is invalid.');
+        throw const FormatException('Phản hồi tạo ví không hợp lệ.');
       }
       return MechanicWalletData.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {

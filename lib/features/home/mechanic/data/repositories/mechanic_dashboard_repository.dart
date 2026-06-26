@@ -13,7 +13,7 @@ class MechanicDashboardRepository {
     try {
       final response = await _dioClient.dio.get(ApiEndpoints.mechanicDashboard);
       if (response.data is! Map) {
-        throw const FormatException('Dashboard response is invalid.');
+        throw const FormatException('Phản hồi từ trang tổng quan không hợp lệ.');
       }
       return MechanicDashboardData.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {

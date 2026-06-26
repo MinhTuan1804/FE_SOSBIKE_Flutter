@@ -14,7 +14,7 @@ class MechanicRepairRepository {
       final response = await _dioClient.dio.get(ApiEndpoints.mechanicRepairServices);
       final data = response.data;
       if (data is! List) {
-        throw const FormatException('Repair services response is invalid.');
+        throw const FormatException('Phản hồi danh sách dịch vụ sửa chữa không hợp lệ.');
       }
       return data
           .map((e) => RepairServiceDto.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -29,7 +29,7 @@ class MechanicRepairRepository {
       final response = await _dioClient.dio.get(ApiEndpoints.mechanicSpareParts);
       final data = response.data;
       if (data is! List) {
-        throw const FormatException('Spare parts response is invalid.');
+        throw const FormatException('Phản hồi danh sách phụ tùng thay thế không hợp lệ.');
       }
       return data
           .map((e) => MechanicSparePartDto.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -46,7 +46,7 @@ class MechanicRepairRepository {
         return null;
       }
       if (response.data is! Map) {
-        throw const FormatException('Active order response is invalid.');
+        throw const FormatException('Phản hồi đơn hàng đang hoạt động không hợp lệ.');
       }
       return ActiveMechanicOrderDto.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
@@ -59,7 +59,7 @@ class MechanicRepairRepository {
     try {
       final response = await _dioClient.dio.get(ApiEndpoints.mechanicOrderQuote(orderId));
       if (response.data is! Map) {
-        throw const FormatException('Quote response is invalid.');
+        throw const FormatException('Phản hồi báo giá không hợp lệ.');
       }
       return OrderQuoteDto.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
@@ -71,7 +71,7 @@ class MechanicRepairRepository {
     try {
       final response = await _dioClient.dio.post(ApiEndpoints.mechanicDevSimulateAccept);
       if (response.data is! Map) {
-        throw const FormatException('Simulate accept response is invalid.');
+        throw const FormatException('Phản hồi mô phỏng nhận đơn không hợp lệ.');
       }
       return ActiveMechanicOrderDto.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
@@ -83,7 +83,7 @@ class MechanicRepairRepository {
     try {
       final response = await _dioClient.dio.post(ApiEndpoints.mechanicOrderArrive(orderId));
       if (response.data is! Map) {
-        throw const FormatException('Arrive response is invalid.');
+        throw const FormatException('Phản hồi thông tin đến nơi không hợp lệ.');
       }
       return ActiveMechanicOrderDto.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
@@ -95,7 +95,7 @@ class MechanicRepairRepository {
     try {
       final response = await _dioClient.dio.post(ApiEndpoints.mechanicOrderStartRepair(orderId));
       if (response.data is! Map) {
-        throw const FormatException('Start repair response is invalid.');
+        throw const FormatException('Phản hồi bắt đầu sửa chữa không hợp lệ.');
       }
       return ActiveMechanicOrderDto.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {

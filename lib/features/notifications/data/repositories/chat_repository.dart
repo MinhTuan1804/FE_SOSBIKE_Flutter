@@ -44,7 +44,7 @@ class ChatRepository {
         data: {'content': content},
       );
       if (response.data is! Map) {
-        throw const FormatException('Chat response is invalid.');
+        throw const FormatException('Phản hồi cuộc hội thoại không hợp lệ.');
       }
       return ChatMessage.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {
