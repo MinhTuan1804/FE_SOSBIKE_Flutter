@@ -52,6 +52,7 @@ class MainShellScreen extends StatefulWidget {
 }
 
 class MainShellScreenState extends State<MainShellScreen> {
+  late RescueProvider _rescueProvider;
   MainNavTab _tab = MainNavTab.orders;
 
   void setTab(MainNavTab tab) {
@@ -421,6 +422,8 @@ class MainShellScreenState extends State<MainShellScreen> {
   @override
   void initState() {
     super.initState();
+    _rescueProvider = context.read<RescueProvider>();
+    _rescueProvider.addListener(_onRescueStatusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -432,14 +435,11 @@ class MainShellScreenState extends State<MainShellScreen> {
         unawaited(context.read<MembershipProvider>().load());
       }
     });
-    context.read<RescueProvider>().addListener(_onRescueStatusChanged);
   }
 
   @override
   void dispose() {
-    try {
-      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
-    } catch (_) {}
+    _rescueProvider.removeListener(_onRescueStatusChanged);
     super.dispose();
   }
 
