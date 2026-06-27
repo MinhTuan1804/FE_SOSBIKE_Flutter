@@ -374,12 +374,14 @@ class MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _onRescueStatusChanged() {
+    if (!mounted) return;
     final rescue = context.read<RescueProvider>();
     final auth = context.read<AuthProvider>();
     if (auth.userType != 'CUSTOMER') {
       if (_orderFlow != _MechanicOrderFlow.none) {
         if (rescue.activeOrderStatus == 'CONFIRMED') {
           if (_orderFlow == _MechanicOrderFlow.accept) {
+            if (!mounted) return;
             setState(() {
               _orderFlow = _MechanicOrderFlow.arrival;
             });
@@ -387,6 +389,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           }
         } else if (rescue.activeOrderStatus == 'REPAIRING') {
           if (_orderFlow == _MechanicOrderFlow.inspect) {
+            if (!mounted) return;
             setState(() {
               _orderFlow = _MechanicOrderFlow.repair;
             });
@@ -394,11 +397,13 @@ class MainShellScreenState extends State<MainShellScreen> {
           }
         } else if (rescue.activeOrderStatus == 'PAID') {
           if (_orderFlow != _MechanicOrderFlow.complete) {
+            if (!mounted) return;
             setState(() {
               _orderFlow = _MechanicOrderFlow.complete;
             });
           }
         } else if (rescue.activeOrderStatus == 'CANCELLED') {
+          if (!mounted) return;
           setState(() {
             _orderFlow = _MechanicOrderFlow.none;
             _activeIncomingRequest = null;
@@ -465,7 +470,7 @@ class MainShellScreenState extends State<MainShellScreen> {
     final hideShellChrome = inOrderFlow || inWalletSetup;
     final showMainHeader = !hideShellChrome && _tab == MainNavTab.orders;
     final notificationProvider = context.watch<NotificationProvider>();
-    final unreadNotificationCount = notificationProvider.incomingOrderUnreadCount;
+    final unreadNotificationCount = notificationProvider.unreadCount;
     final membershipProvider = context.watch<MembershipProvider>();
 
     final rescueProvider = context.watch<RescueProvider>();

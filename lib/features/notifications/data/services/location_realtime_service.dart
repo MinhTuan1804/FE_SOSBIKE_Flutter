@@ -24,6 +24,7 @@ class LocationRealtimeService {
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => await _authService.getToken() ?? '',
+            transport: HttpTransportType.LongPolling,
           ),
         )
         .withAutomaticReconnect()

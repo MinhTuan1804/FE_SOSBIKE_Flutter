@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
@@ -28,6 +29,7 @@ class RescueRealtimeService {
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => await _authService.getToken() ?? '',
+            transport: HttpTransportType.LongPolling,
           ),
         )
         .withAutomaticReconnect()
@@ -57,21 +59,48 @@ class RescueRealtimeService {
       }
     });
 
-    await _connection!.start();
+    try {
+      await _connection!.start();
+    } catch (error) {
+      debugPrint('RescueRealtimeService.connect failed: $error');
+      try {
+        await _connection?.stop();
+      } catch (_) {}
+      _connection = null;
+      rethrow;
+    }
   }
 
   Future<void> joinOrderGroup(String orderId) async {
     if (_connection == null || _connection!.state != HubConnectionState.Connected) {
-      await connect();
+      try {
+        await connect();
+      } catch (error) {
+        debugPrint('RescueRealtimeService.joinOrderGroup connect failed: $error');
+        return;
+      }
     }
-    await _connection!.invoke('JoinOrderGroup', args: [orderId]);
+    try {
+      await _connection!.invoke('JoinOrderGroup', args: [orderId]);
+    } catch (error) {
+      debugPrint('RescueRealtimeService.joinOrderGroup failed: $error');
+    }
   }
 
   Future<void> updateOrderStatus(String orderId, String status) async {
     if (_connection == null || _connection!.state != HubConnectionState.Connected) {
-      await connect();
+      try {
+        await connect();
+      } catch (error) {
+        debugPrint('RescueRealtimeService.updateOrderStatus connect failed: $error');
+        return;
+      }
     }
-    await _connection!.invoke('UpdateOrderStatus', args: [orderId, status]);
+    try {
+      await _connection!.invoke('UpdateOrderStatus', args: [orderId, status]);
+    } catch (error) {
+      debugPrint('RescueRealtimeService.updateOrderStatus failed: $error');
+    }
   }
 
   Future<void> disconnect() async {
