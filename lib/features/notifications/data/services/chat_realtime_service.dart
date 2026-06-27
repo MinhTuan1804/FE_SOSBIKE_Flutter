@@ -33,10 +33,15 @@ class ChatRealtimeService {
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => await _authService.getToken() ?? '',
+            transport: HttpTransportType.WebSockets,
+            skipNegotiation: true,
+            requestTimeout: 30000,
           ),
         )
         .withAutomaticReconnect()
         .build();
+    _connection!.serverTimeoutInMilliseconds = 120000;
+    _connection!.keepAliveIntervalInMilliseconds = 15000;
 
     _connection!.on('MessageReceived', (arguments) {
       if (arguments == null || arguments.isEmpty) return;
@@ -63,8 +68,6 @@ class ChatRealtimeService {
   }
 
   String _buildHubUrl() {
-    var base = ApiEndpoints.baseUrl;
-    base = base.replaceAll(RegExp(r'/api/?$'), '');
-    return '$base/hubs/chat';
+    return ApiEndpoints.hubUrl('chat');
   }
 }

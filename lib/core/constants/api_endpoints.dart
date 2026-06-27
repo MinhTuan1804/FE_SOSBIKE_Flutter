@@ -18,6 +18,37 @@ class ApiEndpoints {
     return _localDevBaseUrl;
   }
 
+  static String get realtimeBaseUrl {
+    const fromDefine = String.fromEnvironment('REALTIME_BASE_URL');
+    if (fromDefine.isNotEmpty) return _normalizeBaseUrl(fromDefine);
+
+    try {
+      if (dotenv.isInitialized) {
+        final fromEnv = dotenv.env['REALTIME_BASE_URL']?.trim();
+        if (fromEnv != null && fromEnv.isNotEmpty) {
+          return _normalizeBaseUrl(fromEnv);
+        }
+      }
+    } catch (_) {}
+
+    final normalizedApiBase = _normalizeBaseUrl(baseUrl);
+    final uri = Uri.tryParse(normalizedApiBase);
+    if (uri == null) return normalizedApiBase;
+
+    final normalizedPath = uri.path.replaceAll(RegExp(r'/+$'), '');
+    // Hub backend được map tại /hubs/* nên mặc định bỏ hậu tố /api của REST base.
+    final hubBasePath = normalizedPath.replaceFirst(RegExp(r'/api$'), '');
+    final finalPath = hubBasePath.isEmpty ? '/' : hubBasePath;
+    return uri.replace(path: finalPath).toString().replaceFirst(RegExp(r'/$'), '');
+  }
+
+  static String hubUrl(String hubName) {
+    final safeHub = hubName.startsWith('/') ? hubName.substring(1) : hubName;
+    return '$realtimeBaseUrl/hubs/$safeHub';
+  }
+
+  static String _normalizeBaseUrl(String raw) => raw.trim().replaceFirst(RegExp(r'/+$'), '');
+
   static const String login = '/Auth/login';
   static const String firebaseLogin = '/FirebaseAuth/login';
   static const String register = '/Auth/register';
