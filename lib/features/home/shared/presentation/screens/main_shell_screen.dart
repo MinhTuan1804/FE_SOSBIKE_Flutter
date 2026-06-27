@@ -424,7 +424,12 @@ class MainShellScreenState extends State<MainShellScreen> {
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
-      await context.read<AuthProvider>().fetchMyProfile(silent: true);
+      final auth = context.read<AuthProvider>();
+      await auth.fetchMyProfile(silent: true);
+      if (!mounted) return;
+      if (auth.userType?.toUpperCase() == 'CUSTOMER') {
+        unawaited(context.read<MembershipProvider>().load());
+      }
     });
     context.read<RescueProvider>().addListener(_onRescueStatusChanged);
   }
@@ -461,10 +466,14 @@ class MainShellScreenState extends State<MainShellScreen> {
     final showMainHeader = !hideShellChrome && _tab == MainNavTab.orders;
     final notificationProvider = context.watch<NotificationProvider>();
     final unreadNotificationCount = notificationProvider.incomingOrderUnreadCount;
+    final membershipProvider = context.watch<MembershipProvider>();
 
     final rescueProvider = context.watch<RescueProvider>();
 
     final isMechanic = auth.userType?.toUpperCase() == 'MECHANIC';
+    final showVipBadge = auth.userType?.toUpperCase() == 'CUSTOMER' &&
+        membershipProvider.currentSubscription != null &&
+        membershipProvider.currentSubscription!.price > 0;
     if (isMechanic) {
       final isVerified = auth.profile?.mechanic?.isVerified ?? false;
       if (!isVerified) {
@@ -497,6 +506,7 @@ class MainShellScreenState extends State<MainShellScreen> {
                 isOnline: rescueProvider.isOnline,
                 onOnlineChanged: (v) => context.read<RescueProvider>().toggleOnlineStatus(v),
                 userType: auth.userType,
+                showVipBadge: showVipBadge,
                 onAvatarTap: () {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(
