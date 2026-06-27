@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_dashboard_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_dashboard_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 
@@ -165,7 +166,11 @@ class _MechanicDashboardTabState extends State<MechanicDashboardTab> {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: provider.refresh,
+      onRefresh: () async {
+        final rescue = context.read<RescueProvider>();
+        await provider.refresh();
+        await rescue.fetchAvailableOrders();
+      },
       child: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
