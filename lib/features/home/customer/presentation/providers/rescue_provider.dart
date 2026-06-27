@@ -178,6 +178,7 @@ class RescueProvider extends ChangeNotifier {
   StreamSubscription? _acceptedSub;
   StreamSubscription? _statusSub;
   StreamSubscription? _locationSub;
+  StreamSubscription<Position>? _geolocatorSubscription;
 
   /// Các trạng thái không cần gọi API Direction (thợ đã đến nơi hoặc sau đó)
   static const _noDirectionNeededStatuses = {
@@ -757,6 +758,7 @@ class RescueProvider extends ChangeNotifier {
     _statusSub?.cancel();
     _locationSub?.cancel();
     _locationTimer?.cancel();
+    _geolocatorSubscription?.cancel();
     _availableOrdersTimer?.cancel();
     _routeUpdateTimer?.cancel();
     super.dispose();
