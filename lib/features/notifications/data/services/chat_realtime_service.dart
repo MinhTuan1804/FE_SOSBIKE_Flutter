@@ -33,8 +33,7 @@ class ChatRealtimeService {
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => await _authService.getToken() ?? '',
-            transport: HttpTransportType.WebSockets,
-            skipNegotiation: true,
+            transport: HttpTransportType.LongPolling,
             requestTimeout: 30000,
           ),
         )
