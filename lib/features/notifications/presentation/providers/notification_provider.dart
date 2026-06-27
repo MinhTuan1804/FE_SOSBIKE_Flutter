@@ -45,7 +45,11 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _ensureRealtimeStarted();
+      try {
+        await _ensureRealtimeStarted();
+      } catch (e) {
+        debugPrint('NotificationProvider.load realtime unavailable: $e');
+      }
       _items = await _repository.getNotifications(unreadOnly: unreadOnly);
       _unreadCount = await _repository.getUnreadCount();
     } catch (e) {

@@ -70,7 +70,7 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
     final notificationProvider = context.watch<NotificationProvider>();
-    final mechanicNotifications = _mechanicNotifications(notificationProvider.items);
+    final mechanicNotifications = notificationProvider.items;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

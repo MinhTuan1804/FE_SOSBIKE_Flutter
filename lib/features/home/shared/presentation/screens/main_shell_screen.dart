@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
@@ -64,6 +66,9 @@ class MainShellScreenState extends State<MainShellScreen> {
   List<MechanicSessionSparePart> _sessionSpareParts = const [];
   bool _quoteSent = false;
   IncomingRescueRequest? _activeIncomingRequest;
+  int? _lastMechanicIncomingNotificationId;
+  DateTime? _mechanicNotificationFallbackStartedAt;
+  Timer? _mechanicNotificationRefreshTimer;
 
   void _openIncomingRequest() {
     context.read<RescueProvider>().simulateIncomingRequest({
@@ -79,6 +84,69 @@ class MainShellScreenState extends State<MainShellScreen> {
 
   void _closeIncomingRequest() {
     context.read<RescueProvider>().dismissIncomingRequest();
+  }
+
+  IncomingRescueRequest? _incomingRequestFromNotification(NotificationItem item) {
+    final payload = _decodeNotificationPayload(item.payloadJson);
+    if (payload == null) return null;
+
+    final customerName = _payloadString(payload, ['customerName', 'CustomerName']).trim();
+    final requestAddress = _payloadString(payload, ['requestAddress', 'RequestAddress']).trim();
+    final distanceKm = _payloadNum(payload, ['distance', 'Distance'])?.toDouble() ?? 0.0;
+    final phoneNumber = _payloadString(payload, ['customerPhone', 'CustomerPhone']).trim();
+    final avatarUrl = _payloadString(payload, ['customerAvatarUrl', 'CustomerAvatarUrl']).trim();
+    final latitude = _payloadNum(payload, ['latitude', 'Latitude'])?.toDouble();
+    final longitude = _payloadNum(payload, ['longitude', 'Longitude'])?.toDouble();
+
+    if (customerName.isEmpty || requestAddress.isEmpty) return null;
+
+    return IncomingRescueRequest(
+      customerName: customerName,
+      address: requestAddress,
+      fullAddress: requestAddress,
+      distanceMeters: distanceKm >= 1 ? distanceKm * 1000.0 : distanceKm,
+      serviceTypeLabel: 'LƯU ĐỘNG',
+      phoneNumber: phoneNumber.isEmpty ? '0987654321' : phoneNumber,
+      avatarUrl: avatarUrl.isEmpty ? null : avatarUrl,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  Map<String, dynamic>? _decodeNotificationPayload(String? payloadJson) {
+    final raw = payloadJson?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  String _payloadString(Map<String, dynamic> payload, List<String> keys) {
+    for (final key in keys) {
+      final value = payload[key];
+      if (value != null) {
+        final text = value.toString().trim();
+        if (text.isNotEmpty) return text;
+      }
+    }
+    return '';
+  }
+
+  num? _payloadNum(Map<String, dynamic> payload, List<String> keys) {
+    for (final key in keys) {
+      final value = payload[key];
+      if (value is num) return value;
+      if (value is String) {
+        final parsed = num.tryParse(value);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
   }
 
   Future<void> _acceptIncomingRequest() async {
@@ -422,6 +490,53 @@ class MainShellScreenState extends State<MainShellScreen> {
     }
   }
 
+  void _onNotificationsChanged() {
+    if (!mounted) return;
+    if (context.read<AuthProvider>().userType?.toUpperCase() == 'CUSTOMER') return;
+    if (_orderFlow != _MechanicOrderFlow.none) return;
+
+    final rescue = context.read<RescueProvider>();
+    if (rescue.incomingRequest != null) return;
+
+    final notificationProvider = context.read<NotificationProvider>();
+    NotificationItem? candidate;
+    for (final item in notificationProvider.items) {
+      final createdAt = item.createdAt;
+      final fallbackStartedAt = _mechanicNotificationFallbackStartedAt;
+      final isFresh = createdAt == null ||
+          fallbackStartedAt == null ||
+          !createdAt.isBefore(fallbackStartedAt.subtract(const Duration(seconds: 30)));
+      final isIncomingOrder =
+          item.notificationType.toUpperCase() == 'RESCUE_ORDER_CREATED';
+      if (!item.isRead && isIncomingOrder && isFresh) {
+        candidate = item;
+        break;
+      }
+    }
+
+    if (candidate == null) return;
+    if (_lastMechanicIncomingNotificationId == candidate.notificationId) return;
+
+    final incoming = _incomingRequestFromNotification(candidate);
+    if (incoming == null) return;
+    final payload = _decodeNotificationPayload(candidate.payloadJson);
+    final orderId =
+        payload == null ? '' : _payloadString(payload, ['orderId', 'OrderId']);
+    if (orderId.isEmpty) return;
+
+    _lastMechanicIncomingNotificationId = candidate.notificationId;
+    rescue.simulateIncomingRequest({
+      'orderId': orderId,
+      'customerName': incoming.customerName,
+      'requestAddress': incoming.address,
+      'distance': incoming.distanceMeters / 1000.0,
+      'customerPhone': incoming.phoneNumber,
+      'customerAvatarUrl': incoming.avatarUrl,
+      'latitude': incoming.latitude,
+      'longitude': incoming.longitude,
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -434,9 +549,20 @@ class MainShellScreenState extends State<MainShellScreen> {
       if (!mounted) return;
       if (auth.userType?.toUpperCase() == 'CUSTOMER') {
         unawaited(context.read<MembershipProvider>().load());
+      } else {
+        _mechanicNotificationFallbackStartedAt ??= DateTime.now();
+        unawaited(context.read<NotificationProvider>().load());
+        _mechanicNotificationRefreshTimer?.cancel();
+        _mechanicNotificationRefreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+          if (!mounted) return;
+          final currentAuthType = context.read<AuthProvider>().userType?.toUpperCase();
+          if (currentAuthType == 'CUSTOMER') return;
+          unawaited(context.read<NotificationProvider>().refresh());
+        });
       }
     });
     context.read<RescueProvider>().addListener(_onRescueStatusChanged);
+    context.read<NotificationProvider>().addListener(_onNotificationsChanged);
   }
 
   @override
@@ -444,6 +570,10 @@ class MainShellScreenState extends State<MainShellScreen> {
     try {
       context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
     } catch (_) {}
+    try {
+      context.read<NotificationProvider>().removeListener(_onNotificationsChanged);
+    } catch (_) {}
+    _mechanicNotificationRefreshTimer?.cancel();
     super.dispose();
   }
 
