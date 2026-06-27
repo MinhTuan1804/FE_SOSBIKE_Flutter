@@ -24,6 +24,7 @@ class AuthService {
 
   String? _memoryToken;
   String? _memoryBlogVisitorId;
+  DateTime? _lastSuccessfulRefreshAt;
 
   Future<void> saveToken(String token) async {
     _memoryToken = token;
@@ -69,8 +70,17 @@ class AuthService {
   }
 
   Future<String?> getToken() async {
+    // 1. If memory token is still valid, return it immediately
     if (_memoryToken != null && _memoryToken!.isNotEmpty) {
       if (!isJwtExpired(_memoryToken!)) {
+        return _memoryToken;
+      }
+
+      // 2. Token expired, but we just refreshed recently (within 10s) — return
+      //    whatever is in memory to prevent hammering the refresh endpoint
+      if (_lastSuccessfulRefreshAt != null &&
+          DateTime.now().difference(_lastSuccessfulRefreshAt!).inSeconds < 10) {
+        debugPrint('AuthService.getToken: returning in-memory token (fresh refresh)');
         return _memoryToken;
       }
     }
@@ -83,11 +93,16 @@ class AuthService {
           _memoryToken = stored;
           return stored;
         } else {
-          // Token is expired, try to refresh!
+          // Token is expired — use shared future to avoid concurrent refreshes
           _refreshFuture ??= refreshAccessToken();
           final refreshed = await _refreshFuture;
-          _refreshFuture = null;
+          // Only null the future after a short delay to let concurrent callers
+          // share the same result
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _refreshFuture = null;
+          });
           if (refreshed != null) {
+            _lastSuccessfulRefreshAt = DateTime.now();
             return refreshed;
           }
         }

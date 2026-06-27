@@ -1094,13 +1094,13 @@ class LocationDetailsPanel extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Tiêu đề bảng điều khiển (Bỏ hoàn toàn tab Điểm đón)
+            // Tiêu đề bảng điều khiển
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Vị trí cứu hộ lân cận',
+                  'Địa điểm xảy ra sự cố',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1111,48 +1111,68 @@ class LocationDetailsPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Danh sách các điểm sự cố cứu hộ lân cận
-            if (items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(),
-              )
-            else
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final itemLatLng = item['latLng'] as LatLng;
-                  final deviceLatLng = deviceLocation ?? initialPosition;
-                  final dist = calculateDistance(
-                    deviceLatLng.latitude,
-                    deviceLatLng.longitude,
-                    itemLatLng.latitude,
-                    itemLatLng.longitude,
-                  );
-                  final distanceStr = dist < 1.0
-                      ? '${(dist * 1000).toStringAsFixed(0)}m'
-                      : '${dist.toStringAsFixed(1)}km';
-                  final isSelected = selectedItemIndex == index;
+            // Danh sách các địa điểm sự cố (bỏ qua thợ)
+            Builder(
+              builder: (context) {
+                final locationItems = items.where((item) => item['type'] != 'worker').toList();
 
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      LocationItemTile(
-                        icon: item['type'] == 'worker' ? Icons.person : Icons.my_location,
-                        iconColor: isSelected ? AppColors.primary : Colors.grey,
-                        title: item['title'] as String,
-                        distance: distanceStr,
-                        isSelected: isSelected,
-                        onTap: () => onItemTap(index, itemLatLng, item['title'] as String),
-                      ),
-
-                      if (index < items.length - 1)
-                        const Divider(height: 1, indent: 64),
-                    ],
+                if (locationItems.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                    child: Text(
+                      'Chua co dia diem nao duoc chon. Hay tim kiem hoac chon tren ban do.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
                   );
-                }),
-              ),
+                }
+
+                final allItems = items;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: () {
+                    final nonWorkers = <Widget>[];
+                    for (int i = 0; i < allItems.length; i++) {
+                      final item = allItems[i];
+                      if (item['type'] == 'worker') continue;
+
+                      final itemLatLng = item['latLng'] as LatLng;
+                      final deviceLatLng = deviceLocation ?? initialPosition;
+                      final dist = calculateDistance(
+                        deviceLatLng.latitude,
+                        deviceLatLng.longitude,
+                        itemLatLng.latitude,
+                        itemLatLng.longitude,
+                      );
+                      final distanceStr = dist < 1.0
+                          ? '${(dist * 1000).toStringAsFixed(0)}m'
+                          : '${dist.toStringAsFixed(1)}km';
+                      final isSelected = selectedItemIndex == i;
+
+                      nonWorkers.add(
+                        LocationItemTile(
+                          icon: Icons.my_location,
+                          iconColor: isSelected ? AppColors.primary : Colors.grey,
+                          title: item['title'] as String,
+                          distance: distanceStr,
+                          isSelected: isSelected,
+                          onTap: () => onItemTap(i, itemLatLng, item['title'] as String),
+                        ),
+                      );
+                    }
+
+                    final childrenWithDividers = <Widget>[];
+                    for (int i = 0; i < nonWorkers.length; i++) {
+                      childrenWithDividers.add(nonWorkers[i]);
+                      if (i < nonWorkers.length - 1) {
+                        childrenWithDividers.add(const Divider(height: 1, indent: 64));
+                      }
+                    }
+                    return childrenWithDividers;
+                  }(),
+                );
+              },
+            ),
 
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
