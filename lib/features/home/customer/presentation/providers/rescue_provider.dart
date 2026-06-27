@@ -165,7 +165,7 @@ class RescueProvider extends ChangeNotifier {
   bool _isOnline = false;
   Map<String, dynamic>? _incomingRequest;
   Timer? _locationTimer;
-  StreamSubscription<Position>? _geolocatorSubscription;
+  Timer? _availableOrdersTimer;
   double? _mechanicLatitude;
   double? _mechanicLongitude;
 
@@ -491,8 +491,11 @@ class RescueProvider extends ChangeNotifier {
         await _realtimeService.connect();
         await _locationService.connect();
         _startLocationUpdates();
+        // Dự phòng realtime: định kỳ kéo các đơn PENDING gần thợ phòng khi bỏ lỡ sự kiện SignalR
+        _startAvailableOrdersPolling();
       } else {
         _stopLocationUpdates();
+        _stopAvailableOrdersPolling();
         _routeUpdateTimer?.cancel();
         _routeUpdateTimer = null;
         await _realtimeService.disconnect();
@@ -513,6 +516,51 @@ class RescueProvider extends ChangeNotifier {
   void dismissIncomingRequest() {
     _incomingRequest = null;
     notifyListeners();
+  }
+
+  void _startAvailableOrdersPolling() {
+    _availableOrdersTimer?.cancel();
+    // Kéo ngay khi vừa bật online, sau đó lặp lại định kỳ
+    unawaited(fetchAvailableOrders());
+    _availableOrdersTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      unawaited(fetchAvailableOrders());
+    });
+  }
+
+  void _stopAvailableOrdersPolling() {
+    _availableOrdersTimer?.cancel();
+    _availableOrdersTimer = null;
+  }
+
+  /// Thợ chủ động kéo đơn PENDING gần mình. Nếu có đơn và hiện không có
+  /// popup/đơn đang xử lý, hiển thị đơn gần nhất qua popup nhận đơn hiện có.
+  Future<void> fetchAvailableOrders() async {
+    if (!_isOnline) return;
+    // Không làm phiền khi đang có popup hoặc đang xử lý một đơn
+    if (_incomingRequest != null || _currentOrderId != null) return;
+
+    try {
+      final orders = await _repository.getAvailableRescueOrders();
+      if (orders.isEmpty) return;
+      // Kiểm tra lại sau await để tránh ghi đè trạng thái vừa thay đổi
+      if (!_isOnline || _incomingRequest != null || _currentOrderId != null) return;
+
+      final nearest = orders.first; // BE đã sắp xếp theo khoảng cách tăng dần
+      _incomingRequest = {
+        'orderId': nearest['orderId'],
+        'customerName': nearest['customerName'] ?? 'Khách hàng',
+        'customerPhone': nearest['customerPhone'] ?? '',
+        'customerAvatarUrl': nearest['customerAvatarUrl'],
+        'requestAddress': nearest['requestAddress'] ?? '',
+        'locationNote': nearest['locationNote'],
+        'distance': nearest['distance'] ?? 0,
+        'latitude': nearest['latitude'],
+        'longitude': nearest['longitude'],
+      };
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[Available Orders] fetch failed: $e');
+    }
   }
 
   void simulateIncomingRequest(Map<String, dynamic> req) {
@@ -709,7 +757,7 @@ class RescueProvider extends ChangeNotifier {
     _statusSub?.cancel();
     _locationSub?.cancel();
     _locationTimer?.cancel();
-    _geolocatorSubscription?.cancel();
+    _availableOrdersTimer?.cancel();
     _routeUpdateTimer?.cancel();
     super.dispose();
   }

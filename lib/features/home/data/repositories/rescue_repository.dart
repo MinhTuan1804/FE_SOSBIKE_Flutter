@@ -40,6 +40,21 @@ class RescueRepository {
     }
   }
 
+  /// Thợ chủ động lấy danh sách đơn cứu hộ PENDING gần vị trí hiện tại.
+  Future<List<Map<String, dynamic>>> getAvailableRescueOrders() async {
+    try {
+      final response = await _dioClient.dio.get('/RescueOrders/available');
+      final data = response.data;
+      final list = (data is Map ? data['orders'] : null) as List? ?? const [];
+      return list
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<bool> updateMechanicStatus(bool isOnline) async {
     try {
       final response = await _dioClient.dio.put(
