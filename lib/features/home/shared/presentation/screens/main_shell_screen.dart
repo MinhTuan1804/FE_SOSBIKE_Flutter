@@ -374,6 +374,7 @@ class MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _onRescueStatusChanged() {
+    if (!mounted) return;
     final rescue = context.read<RescueProvider>();
     final auth = context.read<AuthProvider>();
     if (auth.userType != 'CUSTOMER') {
