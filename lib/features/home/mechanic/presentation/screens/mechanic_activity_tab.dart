@@ -586,6 +586,13 @@ List<NotificationItem> _mechanicNotifications(List<NotificationItem> items) {
     'WITHDRAW_REQUEST_CREATED',
     'WITHDRAW_REQUEST_APPROVED',
     'WITHDRAW_REQUEST_REJECTED',
+    'RESCUE_ORDER_CREATED',
+    'RESCUE_ORDER_ACCEPTED',
+    'RESCUE_ORDER_ARRIVED',
+    'RESCUE_ORDER_QUOTED',
+    'RESCUE_ORDER_SETTLED',
+    'REPAIR_STARTED',
+    'REPAIR_COMPLETED',
   };
 
   return items

@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
 class MechanicActivityNotificationsSection extends StatelessWidget {
   const MechanicActivityNotificationsSection({
@@ -41,9 +45,56 @@ class MechanicActivityNotificationsSection extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) => _NotificationTile(item: items[index]),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return InkWell(
+            onTap: () => _handleTap(context, item),
+            borderRadius: BorderRadius.circular(14),
+            child: _NotificationTile(item: item),
+          );
+        },
       ),
     );
+  }
+
+  void _handleTap(BuildContext context, NotificationItem item) async {
+    context.read<NotificationProvider>().markRead(item.notificationId);
+
+    Map<String, dynamic>? payload;
+    if (item.payloadJson != null && item.payloadJson!.trim().isNotEmpty) {
+      try {
+        final decoded = json.decode(item.payloadJson!);
+        if (decoded is Map) {
+          payload = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
+
+    final type = item.notificationType.toUpperCase();
+    if (type == 'RESCUE_ORDER_CREATED' && payload != null) {
+      context.read<RescueProvider>().simulateIncomingRequest(payload);
+    } else {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            item.title.trim().isEmpty ? 'Thông báo' : item.title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: Text(
+            item.content,
+            style: const TextStyle(fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
 
@@ -126,13 +177,29 @@ class _NotificationTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            timeLabel,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF9CA3AF),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                timeLabel,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ),
+              if (!item.isRead) ...[
+                const SizedBox(height: 6),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

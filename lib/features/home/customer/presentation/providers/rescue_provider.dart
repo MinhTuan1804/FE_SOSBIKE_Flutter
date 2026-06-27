@@ -318,7 +318,7 @@ class RescueProvider extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> getNearbyWorkers(
     double lat,
     double lon, {
-    double radiusKm = 5.0,
+    double radiusKm = 30.0,
   }) async {
     try {
       return await _repository.getNearbyWorkers(
