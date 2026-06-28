@@ -7,6 +7,7 @@ import 'package:fe_moblie_flutter/core/services/auth_service.dart';
 class RescueRealtimeService {
   final AuthService _authService;
   HubConnection? _connection;
+  String? _lastJoinedOrderId;
 
   final _requestController = StreamController<Map<String, dynamic>>.broadcast();
   final _acceptedController = StreamController<Map<String, dynamic>>.broadcast();
@@ -37,6 +38,18 @@ class RescueRealtimeService {
         .build();
     _connection!.serverTimeoutInMilliseconds = 120000;
     _connection!.keepAliveIntervalInMilliseconds = 15000;
+
+    _connection!.onreconnected(({connectionId}) async {
+      debugPrint('Rescue SignalR reconnected with connectionId: $connectionId');
+      if (_lastJoinedOrderId != null) {
+        try {
+          await _connection!.invoke('JoinOrderGroup', args: [_lastJoinedOrderId!]);
+          debugPrint('Successfully auto-rejoined rescue order group: $_lastJoinedOrderId');
+        } catch (e) {
+          debugPrint('Failed to auto-rejoin rescue order group: $e');
+        }
+      }
+    });
 
     _connection!.on('IncomingRescueRequest', (arguments) {
       if (arguments == null || arguments.isEmpty) return;
@@ -75,6 +88,7 @@ class RescueRealtimeService {
   }
 
   Future<void> joinOrderGroup(String orderId) async {
+    _lastJoinedOrderId = orderId;
     if (_connection == null || _connection!.state != HubConnectionState.Connected) {
       try {
         await connect();
