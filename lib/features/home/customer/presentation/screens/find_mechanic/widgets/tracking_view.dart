@@ -122,11 +122,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     );
   }
 
-  // 1. ACCEPTED (Thá»£ Ä‘ang di chuyá»ƒn)
+  // 1. ACCEPTED (Thợ đang di chuyển)
   Widget _buildAcceptedView(BuildContext context, RescueProvider rescue) {
     final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
     final match = rescue.matchedMechanic ?? {};
-    final mechanicName = match['mechanicName'] as String? ?? 'Thá»£ cá»©u há»™';
+    final mechanicName = match['mechanicName'] as String? ?? 'Thợ cứu hộ';
     final vehicleModel = match['vehicleModel'] as String? ?? 'N/A';
     final licensePlate = match['licensePlate'] as String? ?? 'N/A';
     final rating = match['mechanicRating']?.toString() ?? '5.0';
@@ -143,11 +143,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           avatarUrl: match['mechanicAvatarUrl'] as String?,
           name: mechanicName,
           subtitle: '$vehicleModel - $licensePlate',
-          badgeText: 'CÃ¡ch $etaMins phÃºt',
+          badgeText: 'Cách $etaMins phút',
         ),
         const SizedBox(height: 20),
         const Text(
-          'Thá»£ Ä‘ang di chuyá»ƒn Ä‘áº¿n chá»— báº¡n',
+          'Thợ đang di chuyển đến chỗ bạn',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -158,7 +158,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         Row(
           children: [
             Text(
-              'Ä Ã¡nh giÃ¡ $rating',
+              'Đánh giá $rating',
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(width: 6),
@@ -171,12 +171,12 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         const SizedBox(height: 16),
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
         const SizedBox(height: 16),
-        _buildPriceRow('PhÃ­ di chuyá»ƒn (${distanceKm.toStringAsFixed(1)} km)', '$formattedFeeÄ‘'),
+        _buildPriceRow('Phí di chuyển (${distanceKm.toStringAsFixed(1)} km)', '$formattedFeeđ'),
         const SizedBox(height: 8),
-        _buildPriceRow('PhÃ­ ná» n táº£ng', '$feeRate%'),
+        _buildPriceRow('Phí nền tảng', '$feeRate%'),
         const SizedBox(height: 24),
         _buildPrimaryButton(
-          text: 'Há»§y Ä‘áº·t thá»£',
+          text: 'Hủy đặt thợ',
           onPressed: () => _showCancelConfirmation(context),
           backgroundColor: AppColors.primary,
           textColor: Colors.white,
@@ -185,11 +185,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     );
   }
 
-  // 2. ARRIVED (Thá»£ Ä‘Ã£ Ä‘áº¿n nÆ¡i - Ä ang kiá»ƒm tra xe)
+  // 2. ARRIVED (Thợ đã đến nơi - Đang kiểm tra xe)
   Widget _buildArrivedView(BuildContext context, RescueProvider rescue) {
     final feeRate = context.watch<AppConfigProvider>().config.platform.defaultPlatformFeeRate;
     final match = rescue.matchedMechanic ?? {};
-    final mechanicName = match['mechanicName'] as String? ?? 'Thá»£ cá»©u há»™';
+    final mechanicName = match['mechanicName'] as String? ?? 'Thợ cứu hộ';
     final vehicleModel = match['vehicleModel'] as String? ?? 'N/A';
     final licensePlate = match['licensePlate'] as String? ?? 'N/A';
     final travelFee = match['travelFee'] as num? ?? 15000;
@@ -211,7 +211,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           child: Column(
             children: [
               const Text(
-                'Äang kiá»ƒm tra tÃ¬nh tráº¡ng xe',
+                'Đang kiểm tra tình trạng xe',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -222,7 +222,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Thá»£ Ä‘ang thá»±c hiá»‡n kiá»ƒm tra ká»¹ thuáº­t Ä‘á»ƒ láº­p danh sÃ¡ch lá»—i vÃ  bÃ¡o giÃ¡ chi tiáº¿t cho báº¡n.',
+                  'Thợ đang thực hiện kiểm tra kỹ thuật để lập danh sách lỗi và báo giá chi tiết cho bạn.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 13),
                 ),
@@ -246,7 +246,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                         const Icon(Icons.analytics_outlined, color: Colors.blue, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Há»† THá»NG CHáº¨N ÄOÃN SOSBIKE',
+                          'HỆ THỐNG CHẨN ĐOÁN SOSBIKE',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
@@ -257,10 +257,10 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildDiagnosticItem('Kiá»ƒm tra tá»•ng quan Ä‘á»™ng cÆ¡', true),
-                    _buildDiagnosticItem('Kiá»ƒm tra Ã¡p suáº¥t lá»‘p & sÄƒm xe', true),
-                    _buildDiagnosticItem('Kiá»ƒm tra há»‡ thá»‘ng phanh trÆ°á»›c/sau', true),
-                    _buildDiagnosticItem('Äo Ä‘iá»‡n Ã¡p bÃ¬nh áº¯c-quy', false, isPulsing: true),
+                    _buildDiagnosticItem('Kiểm tra tổng quan động cơ', true),
+                    _buildDiagnosticItem('Kiểm tra áp suất lốp & săm xe', true),
+                    _buildDiagnosticItem('Kiểm tra hệ thống phanh trước/sau', true),
+                    _buildDiagnosticItem('Đo điện áp bình ắc-quy', false, isPulsing: true),
                   ],
                 ),
               ),
@@ -279,9 +279,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         const SizedBox(height: 20),
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
         const SizedBox(height: 16),
-        _buildPriceRow('PhÃ­ di chuyá»ƒn', '$formattedFeeÄ‘'),
+        _buildPriceRow('Phí di chuyển', '$formattedFeeđ'),
         const SizedBox(height: 8),
-        _buildPriceRow('PhÃ­ ná»n táº£ng', '$feeRate%'),
+        _buildPriceRow('Phí nền tảng', '$feeRate%'),
       ],
     );
   }
@@ -318,7 +318,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     );
   }
 
-  // 3. QUOTING (Thá»£ gá»­i bÃ¡o giÃ¡ -> KhÃ¡ch hÃ ng chá»n Ä‘á»“ng Ã½)
+  // 3. QUOTING (Thợ gửi báo giá -> Khách hàng chọn đồng ý)
   Widget _buildQuotingView(BuildContext context, RescueProvider rescue) {
     if (rescue.isLoading && rescue.activeQuote == null) {
       return const SizedBox(
@@ -345,7 +345,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'BÃ¡o giÃ¡ chi tiáº¿t tá»« thá»£',
+          'Báo giá chi tiết từ thợ',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -354,7 +354,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
         const SizedBox(height: 4),
         const Text(
-          'Vui lÃ²ng xÃ¡c nháº­n Ä‘á»“ng Ã½ cÃ¡c dá»‹ch vá»¥ vÃ  linh kiá»‡n bÃªn dÆ°á»›i Ä‘á»ƒ thá»£ tiáº¿n hÃ nh sá»­a chá»¯a.',
+          'Vui lòng xác nhận đồng ý các dịch vụ và linh kiện bên dưới để thợ tiến hành sửa chữa.',
           style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 16),
@@ -367,11 +367,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Tá»•ng chi phÃ­ sá»­a chá»¯a',
+              'Tổng chi phí sửa chữa',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             Text(
-              '$formattedTotalÄ‘',
+              '$formattedTotalđ',
               style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
@@ -382,7 +382,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
         const SizedBox(height: 24),
         _buildPrimaryButton(
-          text: _isProcessing ? 'Äang gá»­i xÃ¡c nháº­n...' : 'XÃ¡c nháº­n & Äá»“ng Ã½ sá»­a chá»¯a',
+          text: _isProcessing ? 'Đang gửi xác nhận...' : 'Xác nhận & Đồng ý sửa chữa',
           onPressed: _isProcessing ? null : () => _handleApproveQuote(rescue, orderId),
           backgroundColor: Colors.green,
           textColor: Colors.white,
@@ -391,7 +391,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     );
   }
 
-  // 4. REPAIRING (Äang sá»­a chá»¯a)
+  // 4. REPAIRING (Đang sửa chữa)
   Widget _buildRepairingView(BuildContext context, RescueProvider rescue) {
     final quote = rescue.activeQuote;
     final totalAmount = quote?['totalAmount'] as num? ?? 0;
@@ -402,7 +402,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Äang sá»­a chá»¯a xe mÃ¡y',
+          'Đang sửa chữa xe máy',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -411,7 +411,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
         const SizedBox(height: 4),
         const Text(
-          'Thá»£ Ä‘ang thá»±c hiá»‡n sá»­a chá»¯a xe mÃ¡y cá»§a báº¡n theo bÃ¡o giÃ¡ Ä‘Ã£ duyá»‡t.',
+          'Thợ đang thực hiện sửa chữa xe máy của bạn theo báo giá đã duyệt.',
           style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 16),
@@ -436,7 +436,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'TIáº¾N TRÃŒNH Sá»¬A CHá»®A',
+                    'TIẾN TRÌNH SỬA CHỮA',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
@@ -448,7 +448,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               ),
               const SizedBox(height: 12),
               ...lines.map((l) {
-                final name = l['itemName'] as String? ?? 'Sá»­a chá»¯a';
+                final name = l['itemName'] as String? ?? 'Sửa chữa';
                 final isPart = l['itemType'] == 'PART';
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -484,12 +484,12 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         const SizedBox(height: 20),
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
         const SizedBox(height: 16),
-        _buildPriceRow('Tá»•ng cá»™ng hÃ³a Ä‘Æ¡n', '$formattedTotalÄ‘', isBoldValue: true),
+        _buildPriceRow('Tổng cộng hóa đơn', '$formattedTotalđ', isBoldValue: true),
       ],
     );
   }
 
-  // 5. COMPLETED (HoÃ n thÃ nh sá»­a chá»¯a -> Thanh toÃ¡n)
+  // 5. COMPLETED (Hoàn thành sửa chữa -> Thanh toán)
   Widget _buildCompletedView(BuildContext context, RescueProvider rescue) {
     final quote = rescue.activeQuote;
     final totalAmount = quote?['totalAmount'] as num? ?? 0;
@@ -500,7 +500,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Thanh toÃ¡n hÃ³a Ä‘Æ¡n cá»©u há»™',
+          'Thanh toán hóa đơn cứu hộ',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -509,7 +509,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
         const SizedBox(height: 4),
         const Text(
-          'Thá»£ Ä‘Ã£ hoÃ n thÃ nh cÃ´ng viá»‡c. HÃ£y thanh toÃ¡n Ä‘á»ƒ hoÃ n táº¥t.',
+          'Thợ đã hoàn thành công việc. Hãy thanh toán để hoàn tất.',
           style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 16),
@@ -518,11 +518,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Sá»‘ tiá»n cáº§n thanh toÃ¡n',
+              'Số tiền cần thanh toán',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             Text(
-              '$formattedTotalÄ‘',
+              '$formattedTotalđ',
               style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
@@ -535,7 +535,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
         if (!_paymentIntentCreated) ...[
           const Text(
-            'Chá»n phÆ°Æ¡ng thá»©c thanh toÃ¡n',
+            'Chọn phương thức thanh toán',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
           ),
           const SizedBox(height: 12),
@@ -573,7 +573,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Tiá»n máº·t',
+                          'Tiền mặt',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -620,7 +620,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Chuyá»ƒn khoáº£n',
+                          'Chuyển khoản',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -638,7 +638,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           ),
           const SizedBox(height: 24),
           _buildPrimaryButton(
-            text: _isProcessing ? 'Äang xá»­ lÃ½...' : 'Tiáº¿n hÃ nh thanh toÃ¡n',
+            text: _isProcessing ? 'Đang xử lý...' : 'Tiến hành thanh toán',
             onPressed: _isProcessing ? null : () => _handlePaymentStart(rescue, orderId),
             backgroundColor: AppColors.primary,
             textColor: Colors.white,
@@ -649,7 +649,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             _buildBankTransferDetailsCard(rescue),
             const SizedBox(height: 20),
             _buildPrimaryButton(
-              text: _isProcessing ? 'Äang xÃ¡c nháº­n...' : 'TÃ´i Ä‘Ã£ chuyá»ƒn khoáº£n thÃ nh cÃ´ng',
+              text: _isProcessing ? 'Đang xác nhận...' : 'Tôi đã chuyển khoản thành công',
               onPressed: _isProcessing ? null : () => _handleConfirmPayment(rescue),
               backgroundColor: Colors.green,
               textColor: Colors.white,
@@ -668,12 +668,12 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                   Icon(Icons.payment, size: 40, color: Colors.amber[800]),
                   const SizedBox(height: 10),
                   Text(
-                    'Äang chá» Ä‘Æ°a tiá»n máº·t',
+                    'Đang chờ đưa tiền mặt',
                     style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber[900], fontSize: 15),
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'HÃ£y gá»­i tiá»n máº·t trá»±c tiáº¿p cho thá»£ sá»­a xe. Sau khi giao tiá»n, báº¥m nÃºt xÃ¡c nháº­n bÃªn dÆ°á»›i.',
+                    'Hãy gửi tiền mặt trực tiếp cho thợ sửa xe. Sau khi giao tiền, bấm nút xác nhận bên dưới.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.black54, fontSize: 13),
                   ),
@@ -682,7 +682,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             ),
             const SizedBox(height: 20),
             _buildPrimaryButton(
-              text: _isProcessing ? 'Äang xÃ¡c nháº­n...' : 'XÃ¡c nháº­n Ä‘Ã£ tráº£ tiá»n',
+              text: _isProcessing ? 'Đang xác nhận...' : 'Xác nhận đã trả tiền',
               onPressed: _isProcessing ? null : () => _handleConfirmPayment(rescue),
               backgroundColor: AppColors.primary,
               textColor: Colors.white,
@@ -695,24 +695,24 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 _paymentIntentCreated = false;
               });
             },
-            child: const Text('Thay Ä‘á»•i phÆ°Æ¡ng thá»©c thanh toÃ¡n', style: TextStyle(color: Colors.grey)),
+            child: const Text('Thay đổi phương thức thanh toán', style: TextStyle(color: Colors.grey)),
           ),
         ],
       ],
     );
   }
 
-  // 6. PAID (ÄÃ£ thanh toÃ¡n -> ThÃ nh cÃ´ng - Code UI hoÃ n chá»‰nh)
+  // 6. PAID (Đã thanh toán -> Thành công - Code UI hoàn chỉnh)
   Widget _buildPaidView(BuildContext context, RescueProvider rescue) {
     final quote = rescue.activeQuote ?? {};
     final totalAmount = quote['totalAmount'] as num? ?? 0;
     final formattedTotal = NumberFormat('#,##0', 'vi_VN').format(totalAmount);
     final match = rescue.matchedMechanic ?? {};
-    final mechanicName = match['mechanicName'] as String? ?? 'Thá»£ cá»©u há»™';
+    final mechanicName = match['mechanicName'] as String? ?? 'Thợ cứu hộ';
     
     final intent = rescue.paymentIntent ?? {};
     final txCode = intent['paymentCode'] as String? ?? 'ORD-COMPLETED';
-    final methodLabel = _selectedPaymentMethod == 'CASH' ? 'Tiá»n máº·t' : 'Chuyá»ƒn khoáº£n';
+    final methodLabel = _selectedPaymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản';
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     return Column(
@@ -739,7 +739,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
         const SizedBox(height: 20),
         const Text(
-          'Cá»©u há»™ thÃ nh cÃ´ng!',
+          'Cứu hộ thành công!',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w900,
@@ -750,7 +750,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.0),
           child: Text(
-            'ÄÆ¡n cá»©u há»™ cá»§a báº¡n Ä‘Ã£ Ä‘Æ°á»£c thanh toÃ¡n vÃ  hoÃ n táº¥t thÃ nh cÃ´ng. Cáº£m Æ¡n báº¡n Ä‘Ã£ sá»­ dá»¥ng dá»‹ch vá»¥ cá»§a SOSBike!',
+            'Đơn cứu hộ của bạn đã được thanh toán và hoàn tất thành công. Cảm ơn bạn đã sử dụng dịch vụ của SOSBike!',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
           ),
@@ -770,20 +770,20 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'CHI TIáº¾T HÃ“A ÄÆ N',
+                'CHI TIẾT HÓA ĐƠN',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
               ),
               const SizedBox(height: 10),
-              _buildSummaryField('MÃ£ giao dá»‹ch', txCode),
-              _buildSummaryField('Thá»£ sá»­a chá»¯a', mechanicName),
-              _buildSummaryField('PhÆ°Æ¡ng thá»©c', methodLabel),
-              _buildSummaryField('Thá»i gian', dateStr),
+              _buildSummaryField('Mã giao dịch', txCode),
+              _buildSummaryField('Thợ sửa chữa', mechanicName),
+              _buildSummaryField('Phương thức', methodLabel),
+              _buildSummaryField('Thời gian', dateStr),
               const Divider(height: 20, color: Color(0xFFEBEBEB)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tá»•ng thanh toÃ¡n', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text('$formattedTotalÄ‘', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
+                  const Text('Tổng thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text('$formattedTotalđ', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
                 ],
               ),
             ],
@@ -791,7 +791,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
         const SizedBox(height: 24),
         _buildPrimaryButton(
-          text: 'Trá»Ÿ vá» trang chá»§',
+          text: 'Trở về trang chủ',
           onPressed: () {
             rescue.clearActiveOrderStatus();
             Navigator.of(context).pop();
@@ -957,7 +957,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Chi tiáº¿t cÃ¡c háº¡ng má»¥c:',
+            'Chi tiết các hạng mục:',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
           ),
           const SizedBox(height: 12),
@@ -969,13 +969,13 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             final type = l['itemType'] as String? ?? 'SERVICE';
 
             Color typeColor = Colors.blue;
-            String typeName = 'Dá»‹ch vá»¥';
+            String typeName = 'Dịch vụ';
             if (type == 'PART') {
               typeColor = Colors.orange;
-              typeName = 'Phá»¥ tÃ¹ng';
+              typeName = 'Phụ tùng';
             } else if (type == 'LABOR') {
               typeColor = Colors.purple;
-              typeName = 'CÃ´ng thá»£';
+              typeName = 'Công thợ';
             }
 
             return Padding(
@@ -1000,20 +1000,20 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                        Text('${qty}x ${currencyFormatter.format(price)}Ä‘', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('${qty}x ${currencyFormatter.format(price)}đ', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                   ),
-                  Text('${currencyFormatter.format(total)}Ä‘', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text('${currencyFormatter.format(total)}đ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 ],
               ),
             );
           }),
           const Divider(height: 20, color: Color(0xFFEBEBEB)),
-          _buildQuoteSummaryRow('PhÃ­ di chuyá»ƒn', '${currencyFormatter.format(travelFee)}Ä‘'),
+          _buildQuoteSummaryRow('Phí di chuyển', '${currencyFormatter.format(travelFee)}đ'),
           if (nightSurcharge > 0) ...[
             const SizedBox(height: 6),
-            _buildQuoteSummaryRow('Phá»¥ phÃ­ Ä‘Ãªm muá»™n', '${currencyFormatter.format(nightSurcharge)}Ä‘'),
+            _buildQuoteSummaryRow('Phụ phí đêm muộn', '${currencyFormatter.format(nightSurcharge)}đ'),
           ],
           if (membershipDiscountAmount > 0) ...[
             const SizedBox(height: 6),
@@ -1030,7 +1030,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final code = intent['paymentCode'] as String? ?? 'ORD';
     final formattedAmt = NumberFormat('#,##0', 'vi_VN').format(amount);
 
-    final bankName = intent['bankBin'] as String? ?? 'MB Bank (QuÃ¢n Äá»™i)';
+    final bankName = intent['bankBin'] as String? ?? 'MB Bank (Quân Đội)';
     final accountName = intent['bankAccountName'] as String? ?? 'SOSBIKE SERVICE CO.';
     final accountNumber = intent['bankAccountNumber'] as String? ?? '8888 8888 8888';
     final qrContent = intent['qrContent'] as String?;
@@ -1045,7 +1045,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       child: Column(
         children: [
           const Text(
-            'Chuyá»ƒn khoáº£n NgÃ¢n hÃ ng',
+            'Chuyển khoản Ngân hàng',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
           ),
           const SizedBox(height: 12),
@@ -1071,7 +1071,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                             Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.primary),
                             SizedBox(height: 4),
                             Text(
-                              'Lá»—i táº£i QR',
+                              'Lỗi tải QR',
                               style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -1092,11 +1092,11 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 : const Icon(Icons.qr_code, size: 100, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
-          _buildBankInfoRow('NgÃ¢n hÃ ng', bankName),
-          _buildBankInfoRow('Chá»§ tÃ i khoáº£n', accountName),
-          _buildBankInfoRow('Sá»‘ tÃ i khoáº£n', accountNumber, isCopyable: true),
-          _buildBankInfoRow('Sá»‘ tiá»n', '$formattedAmtÄ‘', isHighlight: true),
-          _buildBankInfoRow('Ná»™i dung chuyá»ƒn khoáº£n', code, isCopyable: true),
+          _buildBankInfoRow('Ngân hàng', bankName),
+          _buildBankInfoRow('Chủ tài khoản', accountName),
+          _buildBankInfoRow('Số tài khoản', accountNumber, isCopyable: true),
+          _buildBankInfoRow('Số tiền', '$formattedAmtđ', isHighlight: true),
+          _buildBankInfoRow('Nội dung chuyển khoản', code, isCopyable: true),
         ],
       ),
     );
@@ -1116,7 +1116,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('ÄÃ£ sao chÃ©p: $value'),
+                        content: Text('Đã sao chép: $value'),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.primary,
                         duration: const Duration(seconds: 2),
@@ -1214,13 +1214,13 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       await rescue.approveOrderQuote(orderId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ÄÃ£ xÃ¡c nháº­n Ä‘á»“ng Ã½ bÃ¡o giÃ¡. Thá»£ Ä‘ang tiáº¿n hÃ nh sá»­a xe.'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('Đã xác nhận đồng ý báo giá. Thợ đang tiến hành sửa xe.'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lá»—i xÃ¡c nháº­n bÃ¡o giÃ¡: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Lỗi xác nhận báo giá: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1256,7 +1256,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lá»—i táº¡o thanh toÃ¡n: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Lỗi tạo thanh toán: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1285,7 +1285,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lá»—i xÃ¡c nháº­n thanh toÃ¡n: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Lỗi xác nhận thanh toán: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1302,17 +1302,17 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('XÃ¡c nháº­n há»§y'),
-          content: const Text('Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n há»§y Ä‘áº·t thá»£ cá»©u há»™ nÃ y khÃ´ng?'),
+          title: const Text('Xác nhận hủy'),
+          content: const Text('Bạn có chắc chắn muốn hủy đặt thợ cứu hộ này không?'),
           actions: <Widget>[
             TextButton(
-              child: const Text('KhÃ´ng'),
+              child: const Text('Không'),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
             ),
             TextButton(
-              child: const Text('CÃ³, há»§y Ä‘áº·t thá»£', style: TextStyle(color: Colors.red)),
+              child: const Text('Có, hủy đặt thợ', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop(); // Dismiss dialog
                 widget.onCancel(); // Return to dashboard
@@ -1324,4 +1324,3 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     );
   }
 }
-
