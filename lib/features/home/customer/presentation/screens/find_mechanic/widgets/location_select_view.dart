@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/config/app_config.dart';
+import 'package:fe_moblie_flutter/core/utils/encoding_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
@@ -255,7 +256,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
           final lng = location['lng'] as double;
           final latLng = LatLng(lat, lng);
           
-          String address = results[0]['formatted_address'] ?? query;
+          String address = EncodingUtils.fixVietnameseEncoding(results[0]['formatted_address'] ?? query);
           if (address.endsWith(', Việt Nam')) {
             address = address.substring(0, address.length - 10);
           } else if (address.endsWith(', Vietnam')) {
@@ -480,7 +481,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         }
         
         if (parts.isNotEmpty) {
-          return parts.join(', ');
+          return EncodingUtils.fixVietnameseEncoding(parts.join(', '));
         }
       }
     } catch (e) {
@@ -508,7 +509,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
             address = address.substring(0, address.length - 9);
           }
           if (address.isNotEmpty) {
-            return address;
+            return EncodingUtils.fixVietnameseEncoding(address);
           }
         }
       }
@@ -517,7 +518,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
     }
 
     // 3. Fallback thông minh cuối cùng bằng Smart Mock Geocoder thay vì hiện toạ độ số thô
-    return _getSmartMockAddress(latLng);
+    return EncodingUtils.fixVietnameseEncoding(_getSmartMockAddress(latLng));
   }
 
 

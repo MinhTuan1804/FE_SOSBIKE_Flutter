@@ -42,6 +42,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_payment_complete_view.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/mechanic_dev_flow.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_incoming_request_popup.dart';
+import 'package:fe_moblie_flutter/core/utils/encoding_utils.dart';
 
 enum _MechanicOrderFlow { none, accept, arrival, inspect, repair, complete }
 
@@ -92,7 +93,7 @@ class MainShellScreenState extends State<MainShellScreen> {
     if (payload == null) return null;
 
     final customerName = _payloadString(payload, ['customerName', 'CustomerName']).trim();
-    final requestAddress = _payloadString(payload, ['requestAddress', 'RequestAddress']).trim();
+    final requestAddress = EncodingUtils.fixVietnameseEncoding(_payloadString(payload, ['requestAddress', 'RequestAddress']).trim());
     final distanceKm = _payloadNum(payload, ['distance', 'Distance'])?.toDouble() ?? 0.0;
     final phoneNumber = _payloadString(payload, ['customerPhone', 'CustomerPhone']).trim();
     final avatarUrl = _payloadString(payload, ['customerAvatarUrl', 'CustomerAvatarUrl']).trim();
@@ -157,8 +158,8 @@ class MainShellScreenState extends State<MainShellScreen> {
 
     final incomingReq = IncomingRescueRequest(
       customerName: req['customerName'] ?? 'Khách hàng',
-      address: req['requestAddress'] ?? '',
-      fullAddress: req['requestAddress'] ?? '',
+      address: EncodingUtils.fixVietnameseEncoding(req['requestAddress'] ?? ''),
+      fullAddress: EncodingUtils.fixVietnameseEncoding(req['requestAddress'] ?? ''),
       distanceMeters: (req['distance'] as num? ?? 2.5) * 1000.0,
       serviceTypeLabel: 'LƯU ĐỘNG',
       phoneNumber: req['customerPhone'] ?? '0987654321',
@@ -316,8 +317,8 @@ class MainShellScreenState extends State<MainShellScreen> {
     if (repair.activeOrder != null) {
       incomingReq = IncomingRescueRequest(
         customerName: repair.activeOrder!.customerName ?? 'Khách hàng',
-        address: repair.activeOrder!.requestAddress,
-        fullAddress: repair.activeOrder!.requestAddress,
+        address: EncodingUtils.fixVietnameseEncoding(repair.activeOrder!.requestAddress),
+        fullAddress: EncodingUtils.fixVietnameseEncoding(repair.activeOrder!.requestAddress),
         distanceMeters: 0,
         serviceTypeLabel: 'LƯU ĐỘNG',
         phoneNumber: '0987654321',
@@ -1024,8 +1025,8 @@ class MainShellScreenState extends State<MainShellScreen> {
             child: MechanicIncomingRequestPopup(
               request: IncomingRescueRequest(
                 customerName: reqMap['customerName'] ?? 'Khách hàng',
-                address: reqMap['requestAddress'] ?? '',
-                fullAddress: reqMap['requestAddress'] ?? '',
+                address: EncodingUtils.fixVietnameseEncoding(reqMap['requestAddress'] ?? ''),
+                fullAddress: EncodingUtils.fixVietnameseEncoding(reqMap['requestAddress'] ?? ''),
                 distanceMeters: (reqMap['distance'] as num? ?? 2.5) * 1000.0,
                 serviceTypeLabel: 'LƯU ĐỘNG',
                 phoneNumber: reqMap['customerPhone'] ?? '0987654321',

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
+import 'package:fe_moblie_flutter/core/utils/encoding_utils.dart';
 
 class MechanicOrderCustomerHeader extends StatelessWidget {
   const MechanicOrderCustomerHeader({
@@ -74,6 +75,7 @@ class MechanicOrderAddressBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final decodedAddress = EncodingUtils.fixVietnameseEncoding(fullAddress);
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       decoration: BoxDecoration(
@@ -88,7 +90,7 @@ class MechanicOrderAddressBox extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  fullAddress,
+                  decodedAddress,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
