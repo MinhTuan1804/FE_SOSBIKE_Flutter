@@ -162,4 +162,13 @@ class RescueRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<Map<String, dynamic>?> getActiveOrderForCustomer() async {
+    try {
+      final response = await _dioClient.dio.get('/RescueOrders/me/active');
+      return Map<String, dynamic>.from(response.data);
+    } catch (_) {
+      return null;
+    }
+  }
 }

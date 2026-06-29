@@ -405,7 +405,7 @@ class _AppointmentCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

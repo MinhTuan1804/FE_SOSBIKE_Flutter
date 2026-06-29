@@ -198,9 +198,11 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
       mechLng = match['mechanicLongitude'] != null ? (match['mechanicLongitude'] as num).toDouble() : null;
     }
 
-    if (mechLat != null && mechLng != null) {
+    final bool showRealMap = (mechLat != null && mechLng != null) || _step == FindMechanicStep.tracking;
+
+    if (showRealMap) {
       final customerLatLng = LatLng(custLat, custLng);
-      final mechanicLatLng = LatLng(mechLat, mechLng);
+      final mechanicLatLng = mechLat != null && mechLng != null ? LatLng(mechLat, mechLng) : null;
 
       final markers = {
         Marker(
@@ -209,26 +211,28 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
           icon: _customerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: const InfoWindow(title: 'Vị trí của bạn'),
         ),
-        Marker(
-          markerId: const MarkerId('mechanic'),
-          position: mechanicLatLng,
-          icon: _mechanicIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          infoWindow: InfoWindow(title: match?['mechanicName'] ?? 'Thợ sửa xe'),
-        ),
+        if (mechanicLatLng != null)
+          Marker(
+            markerId: const MarkerId('mechanic'),
+            position: mechanicLatLng,
+            icon: _mechanicIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+            infoWindow: InfoWindow(title: match?['mechanicName'] ?? 'Thợ sửa xe'),
+          ),
       };
 
       final polylines = {
-        Polyline(
-          polylineId: const PolylineId('route'),
-          points: rescue.activeRoutePoints.isNotEmpty
-              ? rescue.activeRoutePoints
-              : [customerLatLng, mechanicLatLng],
-          color: const Color(0xFFC02020),
-          width: 5,
-        ),
+        if (mechanicLatLng != null)
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: rescue.activeRoutePoints.isNotEmpty
+                ? rescue.activeRoutePoints
+                : [customerLatLng, mechanicLatLng],
+            color: const Color(0xFFC02020),
+            width: 5,
+          ),
       };
 
-      if (_flowMapController != null) {
+      if (_flowMapController != null && mechanicLatLng != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _fitBounds(custLat, custLng, mechLat!, mechLng!);
         });
@@ -237,7 +241,7 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
       return GoogleMap(
         initialCameraPosition: CameraPosition(
           target: customerLatLng,
-          zoom: 14.0,
+          zoom: 15.0,
         ),
         markers: markers,
         polylines: polylines,
@@ -245,9 +249,11 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
         myLocationButtonEnabled: false,
         onMapCreated: (controller) {
           _flowMapController = controller;
-          Future.delayed(const Duration(milliseconds: 200), () {
-            _fitBounds(custLat, custLng, mechanicLatLng.latitude, mechanicLatLng.longitude);
-          });
+          if (mechanicLatLng != null) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              _fitBounds(custLat, custLng, mechanicLatLng.latitude, mechanicLatLng.longitude);
+            });
+          }
         },
       );
     }

@@ -139,10 +139,10 @@ class MechanicOrderContactRow extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.apartment_rounded, color: Color(0xFF2563EB), size: 16),
+          child: const Icon(Icons.apartment_rounded, color: AppColors.primary, size: 16),
         ),
         const SizedBox(width: 8),
         Expanded(

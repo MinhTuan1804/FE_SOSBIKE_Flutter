@@ -210,7 +210,23 @@ class _HistoryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _StarRating(rating: entry.rating),
+              entry.isActive
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9800),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        entry.statusLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    )
+                  : _StarRating(rating: entry.rating),
             ],
           ),
           const SizedBox(height: 10),

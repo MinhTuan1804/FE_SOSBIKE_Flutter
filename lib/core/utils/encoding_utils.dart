@@ -31,4 +31,7 @@ class EncodingUtils {
       return input;
     }
   }
+
+  /// Alias for fixVietnameseEncoding to sanitize UTF-8 inputs.
+  static String sanitizeUtf8(String input) => fixVietnameseEncoding(input);
 }

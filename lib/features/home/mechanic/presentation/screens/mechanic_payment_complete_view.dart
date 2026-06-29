@@ -494,13 +494,13 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
                 height: 72,
                 child: CircularProgressIndicator(
                   strokeWidth: 3.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
               Icon(
                 Icons.qr_code_2_rounded,
                 size: 36,
-                color: Colors.blue.shade600,
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -531,7 +531,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.blue.shade600,
+              foregroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
           ),

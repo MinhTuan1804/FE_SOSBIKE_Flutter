@@ -12,6 +12,7 @@ class RescueProvider extends ChangeNotifier {
   final RescueRepository _repository;
   final RescueRealtimeService _realtimeService;
   final LocationRealtimeService _locationService;
+  final Set<String> _ignoredOrderIds = {};
 
   // Goong Route State
   List<LatLng> _activeRoutePoints = [];
@@ -230,6 +231,8 @@ class RescueProvider extends ChangeNotifier {
 
   void _setupSignalRListeners() {
     _requestSub = _realtimeService.incomingRescueRequests.listen((request) {
+      final oid = request['orderId'] as String?;
+      if (oid != null && _ignoredOrderIds.contains(oid)) return;
       debugPrint('Incoming rescue request received via SignalR: $request');
       _incomingRequest = request;
       notifyListeners();
@@ -515,6 +518,12 @@ class RescueProvider extends ChangeNotifier {
   }
 
   void dismissIncomingRequest() {
+    if (_incomingRequest != null) {
+      final orderId = _incomingRequest!['orderId'] as String?;
+      if (orderId != null) {
+        _ignoredOrderIds.add(orderId);
+      }
+    }
     _incomingRequest = null;
     notifyListeners();
   }
@@ -546,7 +555,10 @@ class RescueProvider extends ChangeNotifier {
       // Kiểm tra lại sau await để tránh ghi đè trạng thái vừa thay đổi
       if (!_isOnline || _incomingRequest != null || _currentOrderId != null) return;
 
-      final nearest = orders.first; // BE đã sắp xếp theo khoảng cách tăng dần
+      final filtered = orders.where((o) => !_ignoredOrderIds.contains(o['orderId'])).toList();
+      if (filtered.isEmpty) return;
+
+      final nearest = filtered.first; // BE đã sắp xếp theo khoảng cách tăng dần
       _incomingRequest = {
         'orderId': nearest['orderId'],
         'customerName': nearest['customerName'] ?? 'Khách hàng',
@@ -762,6 +774,41 @@ class RescueProvider extends ChangeNotifier {
     _availableOrdersTimer?.cancel();
     _routeUpdateTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> checkActiveOrder({required String userType}) async {
+    try {
+      if (userType == 'CUSTOMER') {
+        final activeOrder = await _repository.getActiveOrderForCustomer();
+        if (activeOrder != null) {
+          _currentOrderId = activeOrder['orderId'] as String?;
+          _activeOrderStatus = activeOrder['status'] as String?;
+          _customerLatitude = activeOrder['latitude'] != null ? (activeOrder['latitude'] as num).toDouble() : null;
+          _customerLongitude = activeOrder['longitude'] != null ? (activeOrder['longitude'] as num).toDouble() : null;
+          
+          if (activeOrder['mechanicId'] != null) {
+            _matchedMechanic = {
+              'mechanicId': activeOrder['mechanicId'],
+              'mechanicName': activeOrder['mechanicName'],
+              'mechanicPhone': activeOrder['mechanicPhone'],
+              'mechanicAvatarUrl': activeOrder['mechanicAvatarUrl'],
+              'mechanicLatitude': activeOrder['mechanicLatitude'],
+              'mechanicLongitude': activeOrder['mechanicLongitude'],
+              'status': activeOrder['status'],
+            };
+          }
+          
+          await _realtimeService.connect();
+          if (_currentOrderId != null) {
+            await _realtimeService.joinOrderGroup(_currentOrderId!);
+            _locationService.trackOrder(_currentOrderId!);
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('[RescueProvider] checkActiveOrder error: $e');
+    }
   }
 
   double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {

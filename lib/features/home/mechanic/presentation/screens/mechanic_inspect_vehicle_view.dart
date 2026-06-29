@@ -222,14 +222,14 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                                         children: [
                                           Icon(
                                             selected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-                                            color: const Color(0xFF2563EB),
+                                            color: AppColors.primary,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(part.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                                           ),
-                                          Text(_formatVnd(part.price), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF2563EB))),
+                                          Text(_formatVnd(part.price), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary)),
                                         ],
                                       ),
                                     ),
@@ -243,7 +243,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.4)),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                               ),
                               child: Column(
                                 children: [
@@ -270,7 +270,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                                   ),
                                   const SizedBox(height: 8),
                                   Material(
-                                    color: const Color(0xFF2563EB),
+                                    color: AppColors.primary,
                                     borderRadius: BorderRadius.circular(12),
                                     child: InkWell(
                                       onTap: _submitSparePart,
@@ -410,13 +410,13 @@ class _PartChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFDBEAFE).withValues(alpha: 0.5),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
-          Text(price, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF2563EB))),
+          Text(price, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary)),
           IconButton(onPressed: onRemove, icon: const Icon(Icons.close_rounded, size: 18), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 28, minHeight: 28)),
         ],
       ),

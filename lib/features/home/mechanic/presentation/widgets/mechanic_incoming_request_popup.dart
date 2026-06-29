@@ -229,19 +229,19 @@ class _MapPreview extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF93C5FD), width: 1.2),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.2),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.travel_explore_outlined, size: 16, color: Color(0xFF2563EB)),
-                          SizedBox(width: 6),
-                          Text(
+                          Icon(Icons.travel_explore_outlined, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          const Text(
                             'Xem Thêm',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF2563EB),
+                              color: AppColors.primary,
                             ),
                           ),
                         ],
@@ -297,7 +297,7 @@ class _LocationPulseState extends State<_LocationPulse> with SingleTickerProvide
               height: 36 + t * 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF2563EB).withValues(alpha: 0.25 * (1 - t)),
+                color: AppColors.primary.withValues(alpha: 0.25 * (1 - t)),
               ),
             ),
             Container(
@@ -305,11 +305,11 @@ class _LocationPulseState extends State<_LocationPulse> with SingleTickerProvide
               height: 14,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF2563EB),
+                color: AppColors.primary,
                 border: Border.all(color: Colors.white, width: 2.5),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.5),
+                    color: AppColors.primary.withValues(alpha: 0.5),
                     blurRadius: 8,
                   ),
                 ],

@@ -71,21 +71,20 @@ class MainShellScreenState extends State<MainShellScreen> {
   int? _lastMechanicIncomingNotificationId;
   DateTime? _mechanicNotificationFallbackStartedAt;
   Timer? _mechanicNotificationRefreshTimer;
+  bool _isIncomingRequestPopupVisible = true;
+  String? _lastIncomingOrderId;
 
   void _openIncomingRequest() {
-    context.read<RescueProvider>().simulateIncomingRequest({
-      'orderId': '123e4567-e89b-12d3-a456-426614174000',
-      'customerName': 'Khánh Linh',
-      'requestAddress': 'Chung cư Petroland, đường 62, phường Bình Trưng, Thành phố Thủ Đức.',
-      'distance': 0.4003,
-      'customerPhone': '0123456789',
-      'latitude': 10.765622,
-      'longitude': 106.663172,
+    setState(() {
+      _isIncomingRequestPopupVisible = true;
     });
   }
 
   void _closeIncomingRequest() {
     context.read<RescueProvider>().dismissIncomingRequest();
+    setState(() {
+      _isIncomingRequestPopupVisible = false;
+    });
   }
 
   IncomingRescueRequest? _incomingRequestFromNotification(NotificationItem item) {
@@ -504,10 +503,8 @@ class MainShellScreenState extends State<MainShellScreen> {
     NotificationItem? candidate;
     for (final item in notificationProvider.items) {
       final createdAt = item.createdAt;
-      final fallbackStartedAt = _mechanicNotificationFallbackStartedAt;
-      final isFresh = createdAt == null ||
-          fallbackStartedAt == null ||
-          !createdAt.isBefore(fallbackStartedAt.subtract(const Duration(seconds: 30)));
+      final isFresh = createdAt != null &&
+          DateTime.now().difference(createdAt.toLocal()).inSeconds.abs() <= 60;
       final isIncomingOrder =
           item.notificationType.toUpperCase() == 'RESCUE_ORDER_CREATED';
       if (!item.isRead && isIncomingOrder && isFresh) {
@@ -551,6 +548,7 @@ class MainShellScreenState extends State<MainShellScreen> {
       final auth = context.read<AuthProvider>();
       await auth.fetchMyProfile(silent: true);
       if (!mounted) return;
+      unawaited(context.read<RescueProvider>().checkActiveOrder(userType: auth.userType ?? ''));
       if (auth.userType?.toUpperCase() == 'CUSTOMER') {
         unawaited(context.read<MembershipProvider>().load());
       } else {
@@ -976,6 +974,10 @@ class MainShellScreenState extends State<MainShellScreen> {
 
     final rescueProvider = context.watch<RescueProvider>();
     final reqMap = rescueProvider.incomingRequest;
+    if (reqMap != null && reqMap['orderId'] != _lastIncomingOrderId) {
+      _lastIncomingOrderId = reqMap['orderId'] as String?;
+      _isIncomingRequestPopupVisible = true;
+    }
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1010,10 +1012,15 @@ class MainShellScreenState extends State<MainShellScreen> {
         ),
         if (auth.userType != 'CUSTOMER' &&
             _orderFlow == _MechanicOrderFlow.none &&
-            reqMap != null) ...[
+            reqMap != null &&
+            _isIncomingRequestPopupVisible) ...[
           Positioned.fill(
             child: GestureDetector(
-              onTap: _closeIncomingRequest,
+              onTap: () {
+                setState(() {
+                  _isIncomingRequestPopupVisible = false;
+                });
+              },
               behavior: HitTestBehavior.opaque,
               child: Container(color: Colors.black.withValues(alpha: 0.35)),
             ),

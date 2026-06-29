@@ -1,3 +1,5 @@
+import 'package:fe_moblie_flutter/core/utils/encoding_utils.dart';
+
 class NotificationItem {
   const NotificationItem({
     required this.notificationId,
@@ -29,8 +31,8 @@ class NotificationItem {
     return NotificationItem(
       notificationId: _asInt(json['notificationId'] ?? json['NotificationId']),
       userId: json['userId']?.toString() ?? json['UserId']?.toString() ?? '',
-      title: json['title']?.toString() ?? json['Title']?.toString() ?? '',
-      content: json['content']?.toString() ?? json['Content']?.toString() ?? '',
+      title: EncodingUtils.fixVietnameseEncoding(json['title']?.toString() ?? json['Title']?.toString() ?? ''),
+      content: EncodingUtils.fixVietnameseEncoding(json['content']?.toString() ?? json['Content']?.toString() ?? ''),
       notificationType: json['notificationType']?.toString() ?? json['NotificationType']?.toString() ?? '',
       referenceId: json['referenceId']?.toString() ?? json['ReferenceId']?.toString(),
       entityType: json['entityType']?.toString() ?? json['EntityType']?.toString(),

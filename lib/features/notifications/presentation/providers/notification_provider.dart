@@ -100,6 +100,26 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteNotification(int notificationId) async {
+    final index = _items.indexWhere((item) => item.notificationId == notificationId);
+    if (index == -1) return false;
+    final wasUnread = !_items[index].isRead;
+
+    try {
+      await _repository.deleteNotification(notificationId);
+      _items.removeAt(index);
+      if (wasUnread && _unreadCount > 0) {
+        _unreadCount -= 1;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> reset() async {
     _items = [];
     _unreadCount = 0;

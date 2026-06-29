@@ -71,9 +71,22 @@ class _NotificationListViewState extends State<NotificationListView> {
         separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.black12, indent: 80),
         itemBuilder: (context, index) {
           final item = items[index];
-          return _NotificationTile(
-            item: item,
-            onTap: () => _handleTap(context, item),
+          return Dismissible(
+            key: Key('notif-${item.notificationId}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: Colors.redAccent,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+            ),
+            onDismissed: (_) {
+              context.read<NotificationProvider>().deleteNotification(item.notificationId);
+            },
+            child: _NotificationTile(
+              item: item,
+              onTap: () => _handleTap(context, item),
+            ),
           );
         },
       ),

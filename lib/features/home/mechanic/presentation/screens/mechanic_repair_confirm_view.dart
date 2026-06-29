@@ -167,15 +167,15 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: selected
-                                        ? const Color(0xFF2563EB)
-                                        : const Color(0xFF2563EB).withValues(alpha: 0.25),
+                                        ? AppColors.primary
+                                        : AppColors.primary.withValues(alpha: 0.25),
                                   ),
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       selected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-                                      color: const Color(0xFF2563EB),
+                                      color: AppColors.primary,
                                       size: 18,
                                     ),
                                     const SizedBox(width: 10),
@@ -190,7 +190,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 12,
-                                        color: Color(0xFF2563EB),
+                                        color: AppColors.primary,
                                       ),
                                     ),
                                   ],
@@ -212,7 +212,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.4)),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -242,7 +242,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                           ),
                           const SizedBox(height: 10),
                           Material(
-                            color: const Color(0xFF2563EB),
+                            color: AppColors.primary,
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               onTap: _submitSparePart,
@@ -288,7 +288,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                           child: _LineTile(
                             label: part.isExtra ? '${part.name} (cộng thêm)' : part.name,
                             priceLabel: part.priceLabel,
-                            accent: const Color(0xFF2563EB),
+                            accent: AppColors.primary,
                             onRemove: () => widget.onRemoveSparePart(part.id),
                           ),
                         ),
@@ -401,7 +401,7 @@ class _SummaryCard extends StatelessWidget {
         children: [
           _row('Dịch vụ sửa chữa', serviceTotal, const Color(0xFF16A34A)),
           const SizedBox(height: 6),
-          _row('Phụ tùng', partsTotal, const Color(0xFF2563EB)),
+          _row('Phụ tùng', partsTotal, AppColors.primary),
           const Divider(height: 20),
           _row('Tổng cộng', grandTotal, const Color(0xFF111827), bold: true),
         ],

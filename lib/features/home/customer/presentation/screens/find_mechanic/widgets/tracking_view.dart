@@ -1207,6 +1207,15 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
   // Core Actions
   Future<void> _handleApproveQuote(RescueProvider rescue, String orderId) async {
+    if (rescue.activeOrderStatus == 'REPAIRING') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xác nhận đồng ý báo giá. Thợ đang tiến hành sửa xe.'), backgroundColor: Colors.green),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
