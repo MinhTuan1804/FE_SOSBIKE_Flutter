@@ -179,7 +179,11 @@ class RescueProvider extends ChangeNotifier {
   StreamSubscription? _acceptedSub;
   StreamSubscription? _statusSub;
   StreamSubscription? _locationSub;
+  StreamSubscription? _accountStatusSub;
   StreamSubscription<Position>? _geolocatorSubscription;
+
+  bool _isAccountLocked = false;
+  bool get isAccountLocked => _isAccountLocked;
 
   /// Các trạng thái không cần gọi API Direction (thợ đã đến nơi hoặc sau đó)
   static const _noDirectionNeededStatuses = {
@@ -236,6 +240,14 @@ class RescueProvider extends ChangeNotifier {
       debugPrint('Incoming rescue request received via SignalR: $request');
       _incomingRequest = request;
       notifyListeners();
+    });
+
+    _accountStatusSub = _realtimeService.accountStatusUpdates.listen((status) {
+      debugPrint('Account status change received via SignalR: $status');
+      if (status == 'LOCKED') {
+        _isAccountLocked = true;
+        notifyListeners();
+      }
     });
 
     _acceptedSub = _realtimeService.orderAcceptedUpdates.listen((mechanic) {
@@ -522,6 +534,9 @@ class RescueProvider extends ChangeNotifier {
       final orderId = _incomingRequest!['orderId'] as String?;
       if (orderId != null) {
         _ignoredOrderIds.add(orderId);
+        unawaited(_repository.rejectRescueOrder(orderId).catchError((e) {
+          debugPrint('[RescueProvider] Reject order failed: $e');
+        }));
       }
     }
     _incomingRequest = null;
@@ -769,6 +784,7 @@ class RescueProvider extends ChangeNotifier {
     _acceptedSub?.cancel();
     _statusSub?.cancel();
     _locationSub?.cancel();
+    _accountStatusSub?.cancel();
     _locationTimer?.cancel();
     _geolocatorSubscription?.cancel();
     _availableOrdersTimer?.cancel();

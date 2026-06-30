@@ -56,6 +56,7 @@ class MainShellScreen extends StatefulWidget {
 
 class MainShellScreenState extends State<MainShellScreen> {
   late RescueProvider _rescueProvider;
+  bool _isLockoutDialogShown = false;
   MainNavTab _tab = MainNavTab.orders;
 
   void setTab(MainNavTab tab) {
@@ -445,6 +446,11 @@ class MainShellScreenState extends State<MainShellScreen> {
   void _onRescueStatusChanged() {
     if (!mounted) return;
     final rescue = context.read<RescueProvider>();
+    if (rescue.isAccountLocked && !_isLockoutDialogShown) {
+      _isLockoutDialogShown = true;
+      _showLockoutDialog();
+      return;
+    }
     final auth = context.read<AuthProvider>();
     if (auth.userType != 'CUSTOMER') {
       if (_orderFlow != _MechanicOrderFlow.none) {
@@ -1137,6 +1143,63 @@ class MainShellScreenState extends State<MainShellScreen> {
           ? const NotificationsTabScreen()
           : const MechanicActivityTab(previewOnly: false),
     };
+  }
+
+  void _showLockoutDialog() {
+    int countdown = 5;
+    Timer? timer;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (stateContext, setDialogState) {
+            timer ??= Timer.periodic(const Duration(seconds: 1), (t) async {
+              if (countdown > 1) {
+                setDialogState(() {
+                  countdown--;
+                });
+              } else {
+                t.cancel();
+                // Close dialog
+                Navigator.of(dialogContext).pop();
+                // Logout & navigate to login
+                final auth = context.read<AuthProvider>();
+                await auth.logout();
+                if (mounted) {
+                  navigateToLogin();
+                }
+              }
+            });
+            
+            return WillPopScope(
+              onWillPop: () async => false, // Non-dismissible
+              child: AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Row(
+                  children: const [
+                    Icon(Icons.error_outline, color: Colors.red, size: 28),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tài khoản bị khóa',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.\n'
+                  'Hệ thống sẽ tự động đăng xuất sau $countdown giây.',
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 

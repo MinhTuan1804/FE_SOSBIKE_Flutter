@@ -12,10 +12,12 @@ class RescueRealtimeService {
   final _requestController = StreamController<Map<String, dynamic>>.broadcast();
   final _acceptedController = StreamController<Map<String, dynamic>>.broadcast();
   final _statusController = StreamController<String>.broadcast();
+  final _accountStatusController = StreamController<String>.broadcast();
 
   Stream<Map<String, dynamic>> get incomingRescueRequests => _requestController.stream;
   Stream<Map<String, dynamic>> get orderAcceptedUpdates => _acceptedController.stream;
   Stream<String> get orderStatusUpdates => _statusController.stream;
+  Stream<String> get accountStatusUpdates => _accountStatusController.stream;
 
   RescueRealtimeService(this._authService);
 
@@ -72,6 +74,14 @@ class RescueRealtimeService {
       final raw = arguments.first;
       if (raw is String) {
         _statusController.add(raw);
+      }
+    });
+
+    _connection!.on('AccountStatusChanged', (arguments) {
+      if (arguments == null || arguments.isEmpty) return;
+      final raw = arguments.first;
+      if (raw is String) {
+        _accountStatusController.add(raw);
       }
     });
 

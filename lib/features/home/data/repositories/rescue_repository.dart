@@ -163,6 +163,16 @@ class RescueRepository {
     }
   }
 
+  Future<void> rejectRescueOrder(String orderId) async {
+    try {
+      await _dioClient.dio.post(
+        '/RescueOrders/$orderId/reject',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<Map<String, dynamic>?> getActiveOrderForCustomer() async {
     try {
       final response = await _dioClient.dio.get('/RescueOrders/me/active');
