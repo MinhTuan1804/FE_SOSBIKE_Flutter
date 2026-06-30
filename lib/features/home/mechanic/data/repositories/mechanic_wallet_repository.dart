@@ -171,7 +171,7 @@ class MechanicWalletRepository {
     try {
       final response = await _dioClient.dio.post(
         '/Auth/send-otp',
-        data: {'phoneNumber': phoneNumber, 'purpose': 'FORGOT_PIN'},
+        data: {'phoneNumber': phoneNumber, 'purpose': 'RESET_PIN'},
       );
       final data = response.data;
       return data['debugCode'] as String? ?? 'sent';
@@ -182,13 +182,31 @@ class MechanicWalletRepository {
 
   Future<bool> resetPin(String otp, String newPin) async {
     try {
-      final response = await _dioClient.dio.post(
-        '/wallet/forgot-pin/reset',
+      await _dioClient.dio.post(
+        '/Wallet/forgot-pin/reset',
         data: {'otp': otp, 'newPin': newPin},
       );
-      return response.data['success'] == true;
+      return true;
     } on DioException catch (e) {
-      throw ApiException.fromDioError(e);
+      if (e.response?.data != null && e.response?.data['error'] != null) {
+        throw Exception(e.response?.data['error']);
+      }
+      throw Exception('Không thể đặt lại mã PIN.');
+    }
+  }
+
+  Future<bool> resetPinFirebase(String idToken, String newPin) async {
+    try {
+      await _dioClient.dio.post(
+        '/Wallet/forgot-pin/reset-firebase',
+        data: {'idToken': idToken, 'newPin': newPin},
+      );
+      return true;
+    } on DioException catch (e) {
+      if (e.response?.data != null && e.response?.data['error'] != null) {
+        throw Exception(e.response?.data['error']);
+      }
+      throw Exception('Không thể đặt lại mã PIN qua Firebase.');
     }
   }
 }

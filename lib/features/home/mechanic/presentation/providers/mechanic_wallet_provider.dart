@@ -189,15 +189,35 @@ class MechanicWalletProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
     try {
-      final ok = await _repository.resetPin(otp, newPin);
-      if (ok) {
-        _isPinUnlocked = true;
+      final success = await _repository.resetPin(otp, newPin);
+      if (success) {
         await load(force: true);
       }
-      return ok;
+      return success;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPinFirebase(String idToken, String newPin) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await _repository.resetPinFirebase(idToken, newPin);
+      if (success) {
+        await load(force: true);
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       return false;
     } finally {
       _isLoading = false;

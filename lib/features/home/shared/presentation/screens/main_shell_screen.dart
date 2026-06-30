@@ -546,6 +546,7 @@ class MainShellScreenState extends State<MainShellScreen> {
   void initState() {
     super.initState();
     _rescueProvider = context.read<RescueProvider>();
+    _rescueProvider.resetAccountLockStatus(); // Force reset on init to handle hot reload state persistence
     _rescueProvider.addListener(_onRescueStatusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -576,8 +577,8 @@ class MainShellScreenState extends State<MainShellScreen> {
   @override
   void dispose() {
     try {
-      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
-      context.read<RescueProvider>().resetAccountLockStatus();
+      _rescueProvider.removeListener(_onRescueStatusChanged);
+      _rescueProvider.resetAccountLockStatus();
     } catch (_) {}
     try {
       context.read<NotificationProvider>().removeListener(_onNotificationsChanged);
@@ -1167,6 +1168,7 @@ class MainShellScreenState extends State<MainShellScreen> {
                 Navigator.of(dialogContext).pop();
                 // Logout & navigate to login
                 final auth = context.read<AuthProvider>();
+                context.read<RescueProvider>().resetAccountLockStatus();
                 await auth.logout();
                 if (mounted) {
                   navigateToLogin();

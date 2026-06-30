@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -334,7 +335,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   }
 
   // ── PIN Unlock / Entry Screen ──────────────────────────────────────────────
-  void _showForgotPinBottomSheet(BuildContext context, MechanicWalletProvider provider, String phoneNumber) {
+  void _showForgotPinBottomSheet(BuildContext context, MechanicWalletProvider provider, String phoneNumber, String verificationId) {
     final otpController = TextEditingController();
     final pinController = TextEditingController();
     final confirmPinController = TextEditingController();
@@ -435,64 +436,88 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                                 );
                                 return;
                               }
-                              setModalState(() {
-                                step = 2;
-                              });
-                            } else {
-                              final pin = pinController.text.trim();
-                              final confirmPin = confirmPinController.text.trim();
-                              if (pin.length != 6) {
-                                ScaffoldMessenger.of(stateContext).showSnackBar(
-                                  const SnackBar(content: Text('Mã PIN mới phải gồm 6 chữ số.')),
-                                );
-                                return;
-                              }
-                              if (pin != confirmPin) {
-                                ScaffoldMessenger.of(stateContext).showSnackBar(
-                                  const SnackBar(content: Text('Xác nhận mã PIN không trùng khớp.')),
-                                );
-                                return;
-                              }
 
-                              setModalState(() {
-                                submitting = true;
-                              });
+                              setModalState(() => submitting = true);
+                              final authProv = context.read<AuthProvider>();
+                              // verifyOtp will authenticate Firebase user if successful
+                              final ok = await authProv.verifyOtp(otp, isRegister: true);
+                              setModalState(() => submitting = false);
 
-                              final ok = await provider.resetPin(otpController.text.trim(), pin);
-                              
                               if (ok) {
-                                if (modalContext.mounted) {
-                                  Navigator.pop(modalContext); // Close sheet
-                                }
-                                if (context.mounted) {
+                                setModalState(() {
+                                  step = 2;
+                                });
+                              } else {
+                                if (!stateContext.mounted) return;
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  SnackBar(content: Text(authProv.errorMessage ?? 'Mã OTP không đúng.')),
+                                );
+                              }
+                            } else {
+                              final pin = pinController.text;
+                              final confirm = confirmPinController.text;
+                              if (pin.length != 6 || confirm.length != 6) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Mã PIN phải đủ 6 chữ số.')),
+                                );
+                                return;
+                              }
+                              if (pin != confirm) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Xác nhận mã PIN không khớp.')),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => submitting = true);
+                              
+                              // Lấy Firebase ID Token
+                              final user = FirebaseAuth.instance.currentUser;
+                              final idToken = await user?.getIdToken();
+                              
+                              if (idToken == null) {
+                                setModalState(() => submitting = false);
+                                if (!stateContext.mounted) return;
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Không thể lấy mã xác thực từ Firebase.')),
+                                );
+                                return;
+                              }
+
+                              final ok = await provider.resetPinFirebase(idToken, pin);
+                              setModalState(() => submitting = false);
+
+                              if (ok) {
+                                if (stateContext.mounted) {
+                                  Navigator.pop(stateContext);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Đặt lại mã PIN và mở khóa ví thành công!')),
+                                    const SnackBar(content: Text('Đặt lại mã PIN thành công.')),
                                   );
                                 }
                               } else {
-                                setModalState(() {
-                                  submitting = false;
-                                });
-                                if (stateContext.mounted) {
-                                  ScaffoldMessenger.of(stateContext).showSnackBar(
-                                    SnackBar(content: Text(provider.errorMessage ?? 'Không thể đặt lại mã PIN.')),
-                                  );
-                                }
+                                if (!stateContext.mounted) return;
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  SnackBar(content: Text(provider.errorMessage ?? 'Không thể đặt lại mã PIN.')),
+                                );
                               }
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: Text(
-                      submitting
-                          ? 'Đang xử lý...'
-                          : (step == 1 ? 'Tiếp tục' : 'Xác nhận đặt lại PIN'),
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
+                    child: submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            step == 1 ? 'Xác nhận OTP' : 'Xác nhận mã PIN mới',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
                   ),
                 ],
               ),
@@ -531,7 +556,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: provider.isLoading
+                onPressed: provider.isLoading || auth.isLoading
                     ? null
                     : () async {
                         if (phoneNumber.isEmpty) {
@@ -540,31 +565,24 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                           );
                           return;
                         }
+
+                        final authProv = context.read<AuthProvider>();
                         
-                        // Show loading spinner dialog
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (ctx) => const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
-                          ),
+                        await authProv.verifyPhoneNumber(
+                          phoneNumber: phoneNumber,
+                          onCodeSent: (verificationId) {
+                            if (mounted) {
+                              _showForgotPinBottomSheet(context, provider, phoneNumber, verificationId);
+                            }
+                          },
+                          onError: (error) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(error)),
+                              );
+                            }
+                          },
                         );
-
-                        final code = await provider.sendForgotPinOtp(phoneNumber);
-                        
-                        if (mounted) {
-                          Navigator.pop(context); // Close spinner
-                        }
-
-                        if (code != null) {
-                          if (!mounted) return;
-                          _showForgotPinBottomSheet(context, provider, phoneNumber);
-                        } else {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(provider.errorMessage ?? 'Không thể gửi mã OTP.')),
-                          );
-                        }
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -572,10 +590,16 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text(
-                  'Quên mã PIN',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
+                child: provider.isLoading || auth.isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.blue, strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Quên mã PIN',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
               ),
             ),
           ),
@@ -676,29 +700,23 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                 return;
               }
               
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              );
-
-              final code = await provider.sendForgotPinOtp(phoneNumber);
+              final authProv = context.read<AuthProvider>();
               
-              if (mounted) {
-                Navigator.pop(context);
-              }
-
-              if (code != null) {
-                if (!mounted) return;
-                _showForgotPinBottomSheet(context, provider, phoneNumber);
-              } else {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(provider.errorMessage ?? 'Không thể gửi mã OTP.')),
-                );
-              }
+              await authProv.verifyPhoneNumber(
+                phoneNumber: phoneNumber,
+                onCodeSent: (verificationId) {
+                  if (mounted) {
+                    _showForgotPinBottomSheet(context, provider, phoneNumber, verificationId);
+                  }
+                },
+                onError: (error) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(error)),
+                    );
+                  }
+                },
+              );
             },
             child: Text(
               'Quên mã PIN?',
