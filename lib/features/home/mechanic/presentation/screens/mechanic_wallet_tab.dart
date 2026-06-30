@@ -334,7 +334,268 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   }
 
   // ── PIN Unlock / Entry Screen ──────────────────────────────────────────────
+  void _showForgotPinBottomSheet(BuildContext context, MechanicWalletProvider provider, String phoneNumber) {
+    final otpController = TextEditingController();
+    final pinController = TextEditingController();
+    final confirmPinController = TextEditingController();
+    int step = 1; // 1: Enter OTP, 2: Enter New PIN
+    bool submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (stateContext, setModalState) {
+            final bottomPadding = MediaQuery.of(stateContext).viewInsets.bottom;
+            
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomPadding),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    step == 1 ? 'Quên mã PIN ví' : 'Thiết lập mã PIN mới',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    step == 1
+                        ? 'Mã OTP đã được gửi về số điện thoại $phoneNumber. Vui lòng nhập mã OTP để xác nhận.'
+                        : 'Vui lòng thiết lập mã PIN mới gồm 6 chữ số để tiếp tục sử dụng ví.',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  if (step == 1) ...[
+                    TextField(
+                      controller: otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        hintText: '000000',
+                        hintStyle: TextStyle(color: Colors.grey.shade300),
+                        counterText: '',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: pinController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      obscureText: true,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        hintText: '******',
+                        hintStyle: TextStyle(color: Colors.grey.shade300),
+                        counterText: '',
+                        labelText: 'Mã PIN mới (6 chữ số)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmPinController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      obscureText: true,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        hintText: '******',
+                        counterText: '',
+                        labelText: 'Xác nhận mã PIN mới',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            if (step == 1) {
+                              final otp = otpController.text.trim();
+                              if (otp.length != 6) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP.')),
+                                );
+                                return;
+                              }
+                              setModalState(() {
+                                step = 2;
+                              });
+                            } else {
+                              final pin = pinController.text.trim();
+                              final confirmPin = confirmPinController.text.trim();
+                              if (pin.length != 6) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Mã PIN mới phải gồm 6 chữ số.')),
+                                );
+                                return;
+                              }
+                              if (pin != confirmPin) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Xác nhận mã PIN không trùng khớp.')),
+                                );
+                                return;
+                              }
+
+                              setModalState(() {
+                                submitting = true;
+                              });
+
+                              final ok = await provider.resetPin(otpController.text.trim(), pin);
+                              
+                              if (ok) {
+                                if (modalContext.mounted) {
+                                  Navigator.pop(modalContext); // Close sheet
+                                }
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Đặt lại mã PIN và mở khóa ví thành công!')),
+                                  );
+                                }
+                              } else {
+                                setModalState(() {
+                                  submitting = false;
+                                });
+                                if (stateContext.mounted) {
+                                  ScaffoldMessenger.of(stateContext).showSnackBar(
+                                    SnackBar(content: Text(provider.errorMessage ?? 'Không thể đặt lại mã PIN.')),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      submitting
+                          ? 'Đang xử lý...'
+                          : (step == 1 ? 'Tiếp tục' : 'Xác nhận đặt lại PIN'),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildPinUnlockView(MechanicWalletProvider provider) {
+    final auth = context.watch<AuthProvider>();
+    final phoneNumber = auth.profile?.phoneNumber ?? '';
+
+    if (provider.isWalletLocked) {
+      return _buildPinPadScaffold(
+        children: [
+          const Icon(Icons.lock_person_rounded, color: Colors.orange, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            'Ví của bạn đã bị khóa',
+            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Do nhập sai mã PIN quá 5 lần, ví của bạn đã bị khóa bảo mật.\n\nVui lòng nhấn vào nút bên dưới để đặt lại mã PIN mới qua mã OTP gửi về số điện thoại đăng ký.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 36),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: provider.isLoading
+                    ? null
+                    : () async {
+                        if (phoneNumber.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Không tìm thấy số điện thoại đăng ký để gửi OTP.')),
+                          );
+                          return;
+                        }
+                        
+                        // Show loading spinner dialog
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) => const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                        );
+
+                        final code = await provider.sendForgotPinOtp(phoneNumber);
+                        
+                        if (mounted) {
+                          Navigator.pop(context); // Close spinner
+                        }
+
+                        if (code != null) {
+                          if (!mounted) return;
+                          _showForgotPinBottomSheet(context, provider, phoneNumber);
+                        } else {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(provider.errorMessage ?? 'Không thể gửi mã OTP.')),
+                          );
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue.shade900,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'Quên mã PIN',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              final shellState = context.findAncestorStateOfType<MainShellScreenState>();
+              if (shellState != null) {
+                shellState.setTab(MainNavTab.orders);
+              }
+            },
+            child: const Text(
+              'Quay lại trang chủ',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      );
+    }
+
     return _buildPinPadScaffold(
       children: [
           const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 56),
@@ -386,7 +647,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                     _enteredPin.clear();
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mã PIN không chính xác. Vui lòng nhập lại.')),
+                    SnackBar(content: Text(provider.errorMessage ?? 'Mã PIN không chính xác. Vui lòng nhập lại.')),
                   );
                 }
               }
@@ -404,6 +665,45 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                 shellState.setTab(MainNavTab.orders);
               }
             },
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () async {
+              if (phoneNumber.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Không tìm thấy số điện thoại đăng ký.')),
+                );
+                return;
+              }
+              
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+              );
+
+              final code = await provider.sendForgotPinOtp(phoneNumber);
+              
+              if (mounted) {
+                Navigator.pop(context);
+              }
+
+              if (code != null) {
+                if (!mounted) return;
+                _showForgotPinBottomSheet(context, provider, phoneNumber);
+              } else {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(provider.errorMessage ?? 'Không thể gửi mã OTP.')),
+                );
+              }
+            },
+            child: Text(
+              'Quên mã PIN?',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, decoration: TextDecoration.underline, decorationColor: Colors.white.withValues(alpha: 0.8)),
+            ),
           ),
       ],
     );

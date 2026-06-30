@@ -108,7 +108,7 @@ class MechanicWalletRepository {
     }
   }
 
-  Future<({bool hasWallet, bool hasPin})> checkPinStatus() async {
+  Future<({bool hasWallet, bool hasPin, String? status})> checkPinStatus() async {
     try {
       final response = await _dioClient.dio.get('/wallet/pin-status');
       final data = response.data;
@@ -117,12 +117,13 @@ class MechanicWalletRepository {
         return (
           hasWallet: map['hasWallet'] == true,
           hasPin: map['hasPin'] == true,
+          status: map['status']?.toString(),
         );
       }
-      return (hasWallet: true, hasPin: false);
+      return (hasWallet: true, hasPin: false, status: null);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        return (hasWallet: false, hasPin: false);
+        return (hasWallet: false, hasPin: false, status: null);
       }
       throw ApiException.fromDioError(e);
     }
@@ -151,13 +152,41 @@ class MechanicWalletRepository {
     }
   }
 
-  Future<bool> verifyPin(String pin) async {
+  Future<Map<String, dynamic>> verifyPin(String pin) async {
     try {
       final response = await _dioClient.dio.post(
         '/wallet/verify-pin',
         data: {'pin': pin},
       );
-      return response.data['success'] ?? false;
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      return {'success': false};
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<String> sendForgotPinOtp(String phoneNumber) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/Auth/send-otp',
+        data: {'phoneNumber': phoneNumber, 'purpose': 'FORGOT_PIN'},
+      );
+      final data = response.data;
+      return data['debugCode'] as String? ?? 'sent';
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<bool> resetPin(String otp, String newPin) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/wallet/forgot-pin/reset',
+        data: {'otp': otp, 'newPin': newPin},
+      );
+      return response.data['success'] == true;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

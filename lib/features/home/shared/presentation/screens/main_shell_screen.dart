@@ -577,6 +577,7 @@ class MainShellScreenState extends State<MainShellScreen> {
   void dispose() {
     try {
       context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
+      context.read<RescueProvider>().resetAccountLockStatus();
     } catch (_) {}
     try {
       context.read<NotificationProvider>().removeListener(_onNotificationsChanged);

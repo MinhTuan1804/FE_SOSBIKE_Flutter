@@ -792,6 +792,10 @@ class RescueProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  void resetAccountLockStatus() {
+    _isAccountLocked = false;
+  }
+
   Future<void> checkActiveOrder({required String userType}) async {
     try {
       if (userType == 'CUSTOMER') {
