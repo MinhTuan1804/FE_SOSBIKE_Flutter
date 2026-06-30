@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/mechanic_register_draft.dart';
@@ -250,6 +251,55 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = errorMessageFrom(e);
       debugPrint('AuthProvider._signInWithCredential error: $e');
       return false;
+    }
+  }
+
+  /// Đăng nhập bằng Google qua Firebase Auth → gọi BE /FirebaseAuth/login.
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final googleSignIn = GoogleSignIn(scopes: const ['email', 'profile']);
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        return false;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final user = userCredential.user;
+      if (user == null) {
+        _errorMessage = 'Không lấy được thông tin tài khoản Google.';
+        return false;
+      }
+
+      final idToken = await user.getIdToken();
+      if (idToken == null) {
+        _errorMessage = 'Không lấy được Firebase ID token.';
+        return false;
+      }
+
+      final response = await _repository.firebaseLogin(
+        idToken,
+        fullName: user.displayName,
+      );
+      await _persistSession(response);
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _errorMessage = errorMessageFrom(e);
+      debugPrint('AuthProvider.signInWithGoogle error: $e\n$st');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

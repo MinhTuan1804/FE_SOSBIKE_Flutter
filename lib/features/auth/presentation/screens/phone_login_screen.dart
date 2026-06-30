@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
@@ -30,6 +31,25 @@ class PhoneLoginScreen extends StatefulWidget {
 class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   AuthMode _mode = AuthMode.login;
   final _phoneController = TextEditingController();
+
+  void _onGoogleSignIn() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
+    final success = await auth.signInWithGoogle();
+    if (!mounted) return;
+    if (!success) {
+      if (auth.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+      return;
+    }
+    completeAuthenticationNavigation();
+  }
 
   @override
   void dispose() {
@@ -256,11 +276,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           label: 'Đăng nhập bằng Google',
           iconAsset: 'assets/images/login/btn_google.png',
           border: true,
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đăng nhập Google — sắp có')),
-            );
-          },
+          onPressed: _onGoogleSignIn,
         ),
         const SizedBox(height: 10),
         SocialAuthButton(
