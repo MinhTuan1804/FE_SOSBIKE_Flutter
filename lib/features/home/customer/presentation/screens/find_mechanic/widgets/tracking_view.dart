@@ -83,9 +83,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 20,
-                offset: const Offset(0, -6),
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
@@ -827,8 +827,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.grey[50],
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -872,9 +873,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     Text(
                       name,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Colors.black87,
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -892,8 +893,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    color: Colors.white70,
+                    color: Colors.grey,
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -916,7 +918,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           ),
           const SizedBox(width: 8),
           Material(
-            color: Colors.white24,
+            color: AppColors.primary.withValues(alpha: 0.1),
             shape: const CircleBorder(),
             child: InkWell(
               onTap: () {
@@ -934,7 +936,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               child: const SizedBox(
                 width: 36,
                 height: 36,
-                child: Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+                child: Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
               ),
             ),
           ),
@@ -1192,9 +1194,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           disabledBackgroundColor: Colors.grey[300],
           disabledForegroundColor: Colors.grey[500],
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
         ),
         child: Text(

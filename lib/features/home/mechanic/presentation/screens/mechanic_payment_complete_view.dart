@@ -571,7 +571,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
               ],
             ),
           ),
-          const Divider(height: 32),
+          const _DashedDivider(),
           _receiptRow(
             'Mã đơn hàng',
             widget.orderId.length >= 8
@@ -580,7 +580,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
             isBold: true,
           ),
           _receiptRow('Phương thức', _selectedMethod == 'CASH' ? 'Tiền mặt' : _selectedMethod == 'QR' ? 'QR PayOS' : 'Chuyển khoản'),
-          const Divider(height: 24),
+          const _DashedDivider(),
           const Text(
             'Chi tiết doanh thu:',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF374151)),
@@ -588,7 +588,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
           const SizedBox(height: 8),
           _receiptRow('Tiền khách trả', '+${_currencyFormat.format(_grossAmount)}đ', color: const Color(0xFF16A34A)),
           _receiptRow('Phí hoa hồng Platform (20%)', '-${_currencyFormat.format(_commissionAmount)}đ', color: const Color(0xFFEF4444)),
-          const Divider(height: 20),
+          const _DashedDivider(),
           _receiptRow(
             'Ví thợ ghi nhận (thực nhận)',
             '+${_currencyFormat.format(_netAmount)}đ',
@@ -596,7 +596,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
             color: const Color(0xFF16A34A),
             fontSize: 15,
           ),
-          const Divider(height: 24),
+          const _DashedDivider(),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             decoration: BoxDecoration(
@@ -644,6 +644,38 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashedDivider extends StatelessWidget {
+  const _DashedDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          const dashWidth = 6.0;
+          const dashSpace = 4.0;
+          final dashCount = (width / (dashWidth + dashSpace)).floor();
+          return Flex(
+            direction: Axis.horizontal,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(dashCount, (_) {
+              return const SizedBox(
+                width: dashWidth,
+                height: 1.5,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: Color(0xFFD1D5DB)),
+                ),
+              );
+            }),
+          );
+        },
       ),
     );
   }

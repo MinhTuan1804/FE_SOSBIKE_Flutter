@@ -162,7 +162,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                               onTap: selected ? null : () => _addCatalogPart(part),
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
@@ -248,7 +248,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                               onTap: _submitSparePart,
                               borderRadius: BorderRadius.circular(12),
                               child: const SizedBox(
-                                height: 44,
+                                height: 48,
                                 child: Center(
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -308,7 +308,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
@@ -352,17 +352,17 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                     onTap: widget.isSubmitting ? null : () => widget.onCompleteRepair(),
                     borderRadius: BorderRadius.circular(16),
                     child: SizedBox(
-                      height: 46,
+                      height: 52,
                       child: Center(
                         child: widget.isSubmitting
                             ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                               )
                             : Text(
                                 'Hoàn thành sửa xe · ${_formatVnd(_grandTotal)}',
-                                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),
@@ -496,10 +496,10 @@ class _LineTile extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               onPressed: onRemove,
-              icon: const Icon(Icons.close_rounded, size: 18),
+              icon: const Icon(Icons.close_rounded, size: 20),
               color: Colors.grey.shade600,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             ),
           ],
         ],

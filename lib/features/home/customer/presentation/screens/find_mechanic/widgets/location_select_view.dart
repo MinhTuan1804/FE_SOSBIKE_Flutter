@@ -792,27 +792,27 @@ class SearchAddressBar extends StatelessWidget {
         child: Container(
           height: 54,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              const Icon(Icons.location_on, color: Colors.white, size: 24),
+              const Icon(Icons.location_on, color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   isPlaceholder ? 'Tìm kiếm vị trí cứu hộ...' : address,
                   style: TextStyle(
-                    color: isPlaceholder ? Colors.white.withValues(alpha: 0.7) : Colors.white,
-                    fontSize: 14,
+                    color: isPlaceholder ? Colors.grey[500] : Colors.black87,
+                    fontSize: 15,
                     fontWeight: isPlaceholder ? FontWeight.w500 : FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -825,12 +825,12 @@ class SearchAddressBar extends StatelessWidget {
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
+                    color: AppColors.primary,
                     strokeWidth: 2,
                   ),
                 )
               else
-                const Icon(Icons.search, color: Colors.white, size: 20),
+                const Icon(Icons.search, color: AppColors.primary, size: 22),
             ],
           ),
         ),
@@ -903,7 +903,7 @@ class _AddressSearchOverlayState extends State<AddressSearchOverlay> {
                 ),
                 Expanded(
                   child: Container(
-                    height: 46,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -1072,9 +1072,9 @@ class LocationDetailsPanel extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -1176,28 +1176,25 @@ class LocationDetailsPanel extends StatelessWidget {
             ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: onConfirmLocation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 2,
-                      ),
-                      child: const Text(
-                        'Chọn địa điểm này',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.paddingOf(context).bottom + 20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: onConfirmLocation,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 0,
                   ),
-                ],
+                  child: const Text(
+                    'Chọn địa điểm này',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
+                ),
               ),
             ),
           ],

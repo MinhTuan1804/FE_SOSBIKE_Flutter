@@ -443,10 +443,20 @@ class MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  void _onRescueStatusChanged() {
+  void _onRescueStatusChanged() async {
     if (!mounted) return;
     final rescue = context.read<RescueProvider>();
     if (rescue.isAccountLocked && !_isLockoutDialogShown) {
+      final auth = context.read<AuthProvider>();
+      try {
+        final profile = await auth.fetchMyProfile(silent: true);
+        if (profile != null && profile.isLocked == false && profile.isActive == true) {
+          rescue.resetAccountLockStatus();
+          return;
+        }
+      } catch (_) {}
+      
+      if (!mounted) return;
       _isLockoutDialogShown = true;
       _showLockoutDialog();
       return;

@@ -277,16 +277,19 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
   }
 
   Widget _buildStepContent() {
-    return switch (_step) {
+    final Widget currentStepWidget = switch (_step) {
       FindMechanicStep.locationSelect => LocationSelectView(
+          key: const ValueKey('locationSelect'),
           onBack: () => Navigator.of(context).pop(),
           onConfirmLocation: _confirmLocation,
         ),
       FindMechanicStep.searching => SearchingView(
+          key: const ValueKey('searching'),
           progress: _searchProgress,
           onCancel: _cancelSearch,
         ),
       FindMechanicStep.mechanicFound => MechanicFoundView(
+          key: const ValueKey('mechanicFound'),
           onCancel: _cancelSearch,
           onConfirm: () async {
             final orderId = context.read<RescueProvider>().currentOrderId;
@@ -299,12 +302,32 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
           },
         ),
       FindMechanicStep.tracking => TrackingView(
+          key: const ValueKey('tracking'),
           onCancel: () {
             _cancelSearch();
             Navigator.of(context).pop();
           },
         ),
     };
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.05),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: currentStepWidget,
+    );
   }
 }
 

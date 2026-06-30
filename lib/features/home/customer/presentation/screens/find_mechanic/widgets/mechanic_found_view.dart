@@ -39,9 +39,9 @@ class MechanicFoundView extends StatelessWidget {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
@@ -53,8 +53,9 @@ class MechanicFoundView extends StatelessWidget {
               // Mechanic Profile Card
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.grey[50],
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -97,16 +98,16 @@ class MechanicFoundView extends StatelessWidget {
                             children: [
                               Text(
                                 mechanicName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                               ),
                               const SizedBox(width: 6),
                               Container(
                                 decoration: const BoxDecoration(
-                                  color: Colors.white,
+                                  color: Colors.blueAccent,
                                   shape: BoxShape.circle,
                                 ),
                                 padding: const EdgeInsets.all(2),
@@ -118,8 +119,9 @@ class MechanicFoundView extends StatelessWidget {
                           const Text(
                             'Thợ sửa chữa chuyên nghiệp',
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: Colors.grey,
                               fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -136,7 +138,7 @@ class MechanicFoundView extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -252,19 +254,20 @@ class MechanicFoundView extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: ElevatedButton(
                       onPressed: onCancel,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: Colors.grey, width: 1.5),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[100],
+                        foregroundColor: Colors.black87,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: const Text(
                         'Hủy',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                     ),
                   ),
@@ -276,13 +279,14 @@ class MechanicFoundView extends StatelessWidget {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: const Text(
                         'Đặt ngay',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                     ),
                   ),

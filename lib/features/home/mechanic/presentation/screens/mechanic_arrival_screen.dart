@@ -175,7 +175,7 @@ class MechanicArrivalView extends StatelessWidget {
                 onTap: isSubmitting ? null : onArrived,
                 borderRadius: BorderRadius.circular(16),
                 child: SizedBox(
-                  height: 46,
+                  height: 52,
                   child: Center(
                     child: isSubmitting
                         ? const SizedBox(
@@ -185,7 +185,7 @@ class MechanicArrivalView extends StatelessWidget {
                           )
                         : const Text(
                             'Đã đến nơi',
-                            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
                 ),

@@ -133,42 +133,62 @@ class MechanicOrderContactRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.person_rounded, color: Colors.black87, size: 20),
           ),
-          child: const Icon(Icons.apartment_rounded, color: AppColors.primary, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            phoneNumber,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Liên hệ khách hàng',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+                Text(
+                  phoneNumber,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        _ContactIconButton(
-          icon: Icons.phone_rounded,
-          color: const Color(0xFF16A34A),
-          onTap: onCall,
-        ),
-        const SizedBox(width: 8),
-        _ContactIconButton(
-          icon: Icons.chat_bubble_rounded,
-          color: const Color(0xFF16A34A),
-          onTap: onChat,
-        ),
-      ],
+          _ContactIconButton(
+            icon: Icons.phone_rounded,
+            color: const Color(0xFF16A34A),
+            onTap: onCall,
+          ),
+          const SizedBox(width: 12),
+          _ContactIconButton(
+            icon: Icons.chat_bubble_rounded,
+            color: AppColors.primary,
+            onTap: onChat,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -189,13 +209,14 @@ class _ContactIconButton extends StatelessWidget {
     return Material(
       color: color,
       shape: const CircleBorder(),
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(icon, color: Colors.white, size: 18),
+          width: 48,
+          height: 48,
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );
@@ -253,10 +274,10 @@ class MechanicOrderBottomSheet extends StatelessWidget {
         padding: const EdgeInsets.only(top: 8, bottom: 10),
         child: Center(
           child: Container(
-            width: 40,
-            height: 4,
+            width: 48,
+            height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1D5DB),
+              color: const Color(0xFFE5E7EB),
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -269,9 +290,9 @@ class MechanicOrderBottomSheet extends StatelessWidget {
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.12),
-          blurRadius: 16,
-          offset: const Offset(0, -4),
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 8,
+          offset: const Offset(0, -2),
         ),
       ],
     );

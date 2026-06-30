@@ -22,6 +22,7 @@ class UserResponseDto {
   final String? avatarUrl;
   final bool isPhoneVerified;
   final bool isActive;
+  final bool isLocked;
   final String? gender;
   final String? dateOfBirth;
   final String? currentAddress;
@@ -35,6 +36,7 @@ class UserResponseDto {
     this.avatarUrl,
     this.isPhoneVerified = false,
     this.isActive = false,
+    this.isLocked = false,
     this.gender,
     this.dateOfBirth,
     this.currentAddress,
@@ -50,6 +52,7 @@ class UserResponseDto {
       avatarUrl: json['avatarUrl'] ?? json['avatarurl'],
       isPhoneVerified: json['isPhoneVerified'] ?? json['isphoneverified'] ?? false,
       isActive: json['isActive'] ?? json['isactive'] ?? false,
+      isLocked: json['isLocked'] ?? json['islocked'] ?? false,
       gender: json['gender'],
       dateOfBirth: json['dateOfBirth'] ?? json['dateofbirth'],
       currentAddress: json['currentAddress'] ?? json['currentaddress'],
