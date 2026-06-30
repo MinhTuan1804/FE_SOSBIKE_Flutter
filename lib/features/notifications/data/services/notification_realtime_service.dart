@@ -34,7 +34,6 @@ class NotificationRealtimeService {
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => await _authService.getToken() ?? '',
-            transport: HttpTransportType.LongPolling,
             requestTimeout: 30000,
           ),
         )

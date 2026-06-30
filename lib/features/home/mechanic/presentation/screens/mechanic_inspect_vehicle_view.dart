@@ -320,7 +320,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                               children: [
                                 const Text('Tổng cộng', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
                                 const Spacer(),
-                                Text(_formatVnd(_grandTotal), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF16A34A))),
+                                Text(_formatVnd(_grandTotal), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primary)),
                               ],
                             ),
                           ),

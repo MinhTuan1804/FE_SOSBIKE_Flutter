@@ -29,6 +29,17 @@ class RescueRepository {
     }
   }
 
+  Future<Map<String, dynamic>> cancelRescueOrder(String orderId) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/RescueOrders/$orderId/cancel',
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> acceptRescueOrder(String orderId) async {
     try {
       final response = await _dioClient.dio.post(

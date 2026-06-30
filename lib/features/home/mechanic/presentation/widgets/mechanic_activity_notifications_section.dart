@@ -47,10 +47,26 @@ class MechanicActivityNotificationsSection extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           final item = items[index];
-          return InkWell(
-            onTap: () => _handleTap(context, item),
-            borderRadius: BorderRadius.circular(14),
-            child: _NotificationTile(item: item),
+          return Dismissible(
+            key: ValueKey(item.notificationId),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.red[400],
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.delete_outline, color: Colors.white),
+            ),
+            onDismissed: (_) {
+              context.read<NotificationProvider>().deleteNotification(item.notificationId);
+            },
+            child: InkWell(
+              onTap: () => _handleTap(context, item),
+              borderRadius: BorderRadius.circular(14),
+              child: _NotificationTile(item: item),
+            ),
           );
         },
       ),

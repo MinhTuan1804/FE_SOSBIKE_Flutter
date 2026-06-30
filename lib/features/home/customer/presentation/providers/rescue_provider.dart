@@ -473,6 +473,7 @@ class RescueProvider extends ChangeNotifier {
   Future<void> cancelSearch() async {
     if (_currentOrderId != null) {
       try {
+        await _repository.cancelRescueOrder(_currentOrderId!);
         await _realtimeService.updateOrderStatus(_currentOrderId!, 'CANCELLED');
       } catch (e) {
         debugPrint('Error sending cancel status: $e');

@@ -45,7 +45,7 @@ class MechanicOrderCustomerHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF22D3EE),
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
@@ -178,7 +178,7 @@ class MechanicOrderContactRow extends StatelessWidget {
           ),
           _ContactIconButton(
             icon: Icons.phone_rounded,
-            color: const Color(0xFF16A34A),
+            color: AppColors.primary,
             onTap: onCall,
           ),
           const SizedBox(width: 12),

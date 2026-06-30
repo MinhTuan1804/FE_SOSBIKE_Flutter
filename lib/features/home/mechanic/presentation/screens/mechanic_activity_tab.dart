@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_activity_models.dart';
@@ -77,14 +78,39 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 10),
-          child: const Text(
-            'Hoạt Động',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              height: 1.15,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Hoạt Động',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  height: 1.15,
+                ),
+              ),
+              if (_section == _ActivitySection.notifications)
+                IconButton(
+                  icon: notificationProvider.isMarkingAllRead
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.done_all_rounded, color: Colors.white, size: 28),
+                  onPressed: notificationProvider.unreadCount == 0 || notificationProvider.isMarkingAllRead
+                      ? null
+                      : () {
+                          HapticFeedback.lightImpact();
+                          context.read<NotificationProvider>().markAllRead();
+                        },
+                  tooltip: 'Đánh dấu tất cả đã đọc',
+                ),
+            ],
           ),
         ),
         Padding(
@@ -572,30 +598,4 @@ class _AppointmentReminderDialog extends StatelessWidget {
   }
 }
 
-List<NotificationItem> _mechanicNotifications(List<NotificationItem> items) {
-  const relevantTypes = <String>{
-    'MECHANIC_PROFILE_SUBMITTED',
-    'MECHANIC_PROFILE_APPROVED',
-    'MECHANIC_PROFILE_REJECTED',
-    'MECHANIC_SERVICE_SUBMITTED',
-    'MECHANIC_SERVICE_APPROVED',
-    'MECHANIC_SERVICE_REJECTED',
-    'MAINTENANCE_REMINDER',
-    'ADMIN_ANNOUNCEMENT',
-    'SYSTEM_MAINTENANCE',
-    'WITHDRAW_REQUEST_CREATED',
-    'WITHDRAW_REQUEST_APPROVED',
-    'WITHDRAW_REQUEST_REJECTED',
-    'RESCUE_ORDER_CREATED',
-    'RESCUE_ORDER_ACCEPTED',
-    'RESCUE_ORDER_ARRIVED',
-    'RESCUE_ORDER_QUOTED',
-    'RESCUE_ORDER_SETTLED',
-    'REPAIR_STARTED',
-    'REPAIR_COMPLETED',
-  };
 
-  return items
-      .where((item) => relevantTypes.contains(item.notificationType.toUpperCase()))
-      .toList(growable: false);
-}

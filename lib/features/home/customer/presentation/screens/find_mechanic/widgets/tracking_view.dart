@@ -233,9 +233,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.15)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -243,14 +243,14 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.analytics_outlined, color: Colors.blue, size: 20),
+                        const Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
-                        Text(
+                        const Text(
                           'HỆ THỐNG CHẨN ĐOÁN SOSBIKE',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
-                            color: Colors.blue[900],
+                            color: AppColors.primaryDark,
                             letterSpacing: 1.1,
                           ),
                         ),
@@ -293,7 +293,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         children: [
           Icon(
             isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-            color: isCompleted ? Colors.green : (isPulsing ? Colors.blue : Colors.grey),
+            color: isCompleted ? AppColors.primary : (isPulsing ? AppColors.primary : Colors.grey),
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -303,7 +303,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isPulsing ? FontWeight.bold : FontWeight.normal,
-                color: isCompleted ? Colors.black87 : (isPulsing ? Colors.blue[900] : Colors.grey[600]),
+                color: isCompleted ? Colors.black87 : (isPulsing ? AppColors.primaryDark : Colors.grey[600]),
               ),
             ),
           ),
@@ -311,7 +311,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             const SizedBox(
               width: 10,
               height: 10,
-              child: CircularProgressIndicator(strokeWidth: 1.5, valueColor: AlwaysStoppedAnimation(Colors.blue)),
+              child: CircularProgressIndicator(strokeWidth: 1.5, valueColor: AlwaysStoppedAnimation(AppColors.primary)),
             ),
         ],
       ),
@@ -384,7 +384,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         _buildPrimaryButton(
           text: _isProcessing ? 'Đang gửi xác nhận...' : 'Xác nhận & Đồng ý sửa chữa',
           onPressed: _isProcessing ? null : () => _handleApproveQuote(rescue, orderId),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           textColor: Colors.white,
         ),
       ],
@@ -420,9 +420,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.15)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -432,15 +432,15 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 children: [
                   Transform.rotate(
                     angle: _wrenchRotation,
-                    child: const Icon(Icons.build_circle_outlined, color: Colors.green, size: 24),
+                    child: const Icon(Icons.build_circle_outlined, color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  const Text(
                     'TIẾN TRÌNH SỬA CHỮA',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
-                      color: Colors.green[900],
+                      color: AppColors.primaryDark,
                       letterSpacing: 1.1,
                     ),
                   ),
@@ -456,7 +456,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     children: [
                       Icon(
                         isPart ? Icons.settings : Icons.build,
-                        color: Colors.green[700],
+                        color: AppColors.primary,
                         size: 16,
                       ),
                       const SizedBox(width: 10),
@@ -471,7 +471,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                         height: 10,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                         ),
                       ),
                     ],
@@ -717,24 +717,24 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
     return Column(
       children: [
-        // Glowing Success Badge (Replacing PNG mockup)
+        // Glowing Success Badge
         Container(
           height: 80,
           width: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.green.withValues(alpha: 0.1),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3), width: 3),
+            color: AppColors.primary.withValues(alpha: 0.1),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.green.withValues(alpha: 0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 16,
                 spreadRadius: 2,
               )
             ],
           ),
           child: const Center(
-            child: Icon(Icons.check_circle, size: 52, color: Colors.green),
+            child: Icon(Icons.check_circle, size: 52, color: AppColors.primary),
           ),
         ),
         const SizedBox(height: 20),
@@ -743,7 +743,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w900,
-            color: Colors.green,
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(height: 6),
@@ -796,7 +796,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             rescue.clearActiveOrderStatus();
             Navigator.of(context).pop();
           },
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           textColor: Colors.white,
         ),
       ],
@@ -867,15 +867,20 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -892,6 +897,8 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -901,44 +908,51 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: badgeColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Text(
-              badgeText,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
           const SizedBox(width: 8),
-          Material(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            shape: const CircleBorder(),
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ChatDetailScreen(
-                      orderId: orderId,
-                      title: name,
-                      avatarUrl: avatarUrl,
-                    ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Material(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(
+                          orderId: orderId,
+                          title: name,
+                          avatarUrl: avatarUrl,
+                        ),
+                      ),
+                    );
+                  },
+                  customBorder: const CircleBorder(),
+                  child: const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
                   ),
-                );
-              },
-              customBorder: const CircleBorder(),
-              child: const SizedBox(
-                width: 36,
-                height: 36,
-                child: Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
+                ),
               ),
-            ),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Text(
+                  badgeText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

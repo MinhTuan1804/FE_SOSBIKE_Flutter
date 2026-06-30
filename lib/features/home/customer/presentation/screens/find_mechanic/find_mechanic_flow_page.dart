@@ -51,7 +51,20 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     _loadCustomMarkerIcons();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<RescueProvider>().addListener(_onRescueProviderChanged);
+        final rescue = context.read<RescueProvider>();
+        if (rescue.currentOrderId != null) {
+          if (rescue.matchedMechanic != null) {
+            final st = rescue.activeOrderStatus;
+            if (st == 'ACCEPTED' || st == 'ARRIVED' || st == 'QUOTED' || st == 'REPAIRING') {
+              setState(() => _step = FindMechanicStep.tracking);
+            } else {
+              setState(() => _step = FindMechanicStep.mechanicFound);
+            }
+          } else {
+            setState(() => _step = FindMechanicStep.searching);
+          }
+        }
+        rescue.addListener(_onRescueProviderChanged);
       }
     });
   }

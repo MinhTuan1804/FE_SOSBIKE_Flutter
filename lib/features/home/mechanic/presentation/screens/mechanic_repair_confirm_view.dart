@@ -124,7 +124,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
             ),
             Expanded(
               child: Container(
-                color: const Color(0xFFF0FDF4),
+                color: const Color(0xFFFFF5F5),
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                   children: [
@@ -346,7 +346,7 @@ class _MechanicRepairConfirmViewState extends State<MechanicRepairConfirmView> {
                 subtitle:
                     'Sau khi đã sửa xe thành công và chọn các khoản mục thanh toán, hãy nhấn nút Hoàn thành.',
                 action: Material(
-                  color: widget.isSubmitting ? const Color(0xFF9CA3AF) : const Color(0xFF16A34A),
+                  color: widget.isSubmitting ? const Color(0xFF9CA3AF) : AppColors.primary,
                   borderRadius: BorderRadius.circular(16),
                   child: InkWell(
                     onTap: widget.isSubmitting ? null : () => widget.onCompleteRepair(),

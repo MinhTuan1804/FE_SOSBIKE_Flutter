@@ -42,7 +42,6 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
   double _netAmount = 0.0;
   double _walletBalanceAfter = 0.0;
 
-  final _amountCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -66,7 +65,6 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
     try {
       context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
     } catch (_) {}
-    _amountCtrl.dispose();
     super.dispose();
   }
 
@@ -107,7 +105,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
       setState(() {
         _isSettling = false;
         _isSettled = true;
-        _selectedMethod = 'TRANSFER';
+        // Giữ nguyên phương thức đã chọn (CASH nếu khách trả tiền mặt)
         _grossAmount = gross;
         _commissionAmount = commission;
         _netAmount = net;
@@ -137,80 +135,8 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
         _isLoading = false;
         if (quote != null) {
           _quote = quote;
-          _amountCtrl.text = quote.totalAmount.round().toString();
         } else {
           _errorMessage = provider.errorMessage ?? 'Không lấy được thông tin hóa đơn.';
-        }
-      });
-    }
-  }
-
-  Future<void> _confirmSettleCash() async {
-    final amount = double.tryParse(_amountCtrl.text.trim()) ?? (_quote?.totalAmount ?? 0.0);
-    if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số tiền mặt hợp lệ.')),
-      );
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.monetization_on_rounded, color: Colors.green, size: 28),
-            SizedBox(width: 8),
-            Text('Xác nhận tiền mặt', style: TextStyle(fontWeight: FontWeight.w800)),
-          ],
-        ),
-        content: Text(
-          'Khách đã thanh toán ${_currencyFormat.format(amount)}đ tiền mặt cho bạn?',
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w700)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF16A34A),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Xác nhận', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      await _settleCashFlow(amount);
-    }
-  }
-
-  Future<void> _settleCashFlow(double amount) async {
-    setState(() {
-      _isSettling = true;
-      _errorMessage = null;
-    });
-
-    final provider = context.read<MechanicRepairProvider>();
-    final result = await provider.settleCashOrder(amount);
-
-    if (mounted) {
-      setState(() {
-        _isSettling = false;
-        if (result != null) {
-          _isSettled = true;
-          _grossAmount = amount;
-          _commissionAmount = (result['commissionAmount'] as num?)?.toDouble() ?? (amount * 0.2);
-          _netAmount = _grossAmount - _commissionAmount;
-          _walletBalanceAfter = (result['walletNewBalance'] as num?)?.toDouble() ?? 0.0;
-        } else {
-          _errorMessage = provider.errorMessage ?? 'Quyết toán tiền mặt thất bại.';
         }
       });
     }
@@ -393,7 +319,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
               method: 'CASH',
               label: 'Tiền mặt',
               icon: Icons.payments_rounded,
-              color: const Color(0xFF16A34A),
+              color: AppColors.primary,
             ),
             _buildMethodButton(
               method: 'TRANSFER',
@@ -416,7 +342,7 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -425,40 +351,62 @@ class _MechanicPaymentCompleteViewState extends State<MechanicPaymentCompleteVie
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Xác nhận số tiền mặt đã nhận:',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
+              // Số tiền cần thu
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Số tiền cần thu:',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
+                  ),
+                  Text(
+                    '${_currencyFormat.format(quoteTotal)}đ',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _amountCtrl,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  suffixText: 'VNĐ',
-                  filled: true,
-                  fillColor: const Color(0xFFF9FAFB),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              const SizedBox(height: 20),
+              // Thông báo chờ - hệ thống tự động xử lý
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _isSettling ? null : _confirmSettleCash,
-                icon: _isSettling
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle_outline, color: Colors.white),
-                label: const Text(
-                  'Xác nhận đã nhận tiền',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF16A34A),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  children: [
+                    if (_isSettling) ...[
+                      const SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Đang xử lý quyết toán...',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      ),
+                    ] else ...[
+                      const Icon(Icons.payments_outlined, size: 36, color: AppColors.primary),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Đang chờ khách thanh toán',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.primary),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Yêu cầu khách xác nhận trên ứng dụng của họ. Hệ thống sẽ tự động quyết toán ngay khi khách xác nhận.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.5),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],

@@ -126,7 +126,7 @@ class MechanicIncomingRequestPopup extends StatelessWidget {
                         Expanded(
                           child: _ActionButton(
                             label: 'Hủy',
-                            background: AppColors.primary,
+                            background: const Color(0xFF6B7280),
                             onTap: onCancel,
                           ),
                         ),
@@ -134,7 +134,7 @@ class MechanicIncomingRequestPopup extends StatelessWidget {
                         Expanded(
                           child: _ActionButton(
                             label: 'Nhận',
-                            background: const Color(0xFF16A34A),
+                            background: AppColors.primary,
                             onTap: onAccept,
                           ),
                         ),

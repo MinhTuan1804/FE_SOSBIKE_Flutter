@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/core/services/auth_service.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
@@ -96,6 +100,29 @@ class _NotificationListViewState extends State<NotificationListView> {
   Future<void> _handleTap(BuildContext context, NotificationItem item) async {
     await context.read<NotificationProvider>().markRead(item.notificationId);
     if (!context.mounted) return;
+
+    final type = item.notificationType.toUpperCase();
+    final auth = context.read<AuthProvider>();
+    final isCustomer = auth.userType == 'CUSTOMER';
+
+    if (isCustomer) {
+      if (type == 'RESCUE_ORDER_ACCEPTED' || 
+          type == 'RESCUE_ORDER_ARRIVED' || 
+          type == 'RESCUE_ORDER_QUOTED' || 
+          type == 'REPAIR_STARTED' || 
+          type == 'REPAIR_COMPLETED') {
+        final rescue = context.read<RescueProvider>();
+        if (rescue.currentOrderId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const FindMechanicFlowPage(),
+            ),
+          );
+          return;
+        }
+      }
+    }
+
     await _showDetailModal(context, item);
   }
 

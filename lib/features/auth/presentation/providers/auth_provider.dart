@@ -159,8 +159,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      String formattedPhone = phoneNumber.trim();
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+84${formattedPhone.substring(1)}';
+      } else if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+84$formattedPhone';
+      }
+
       await _firebaseAuth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
+        phoneNumber: formattedPhone,
         verificationCompleted: (PhoneAuthCredential credential) async {
           // Tự động xác thực trên Android nếu có thể
           await _signInWithCredential(credential);
