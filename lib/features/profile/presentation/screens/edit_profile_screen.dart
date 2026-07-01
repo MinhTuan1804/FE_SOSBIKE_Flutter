@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/utils/image_picker_utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -164,7 +165,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     // Avatar Section
                     Center(
                       child: GestureDetector(
-                        onTap: _pickImage,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _pickImage();
+                        },
                         child: Stack(
                           alignment: Alignment.bottomRight,
                           children: [
@@ -268,7 +272,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     // Gender
                     DropdownButtonFormField<String>(
-                      value: _gender,
+                      initialValue: _gender,
                       decoration: InputDecoration(
                         labelText: 'Giới tính',
                         prefixIcon: const Icon(Icons.transgender),
@@ -292,7 +296,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     // Date of Birth
                     InkWell(
-                      onTap: () => _selectDate(context),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _selectDate(context);
+                      },
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: 'Ngày sinh',
@@ -325,11 +332,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     // Submit Button
                     ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _submit();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

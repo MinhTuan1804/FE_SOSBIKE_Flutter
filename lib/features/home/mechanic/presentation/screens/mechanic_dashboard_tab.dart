@@ -352,7 +352,7 @@ class _RevenueCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 12, thickness: 1),
-          _breakdownRow('QR PayOS', qrAmount, const Color(0xFF2563EB)),
+          _breakdownRow('QR PayOS', qrAmount, AppColors.primary),
           const SizedBox(height: 4),
           _breakdownRow('Tiền mặt', cashAmount, const Color(0xFF16A34A)),
           const SizedBox(height: 4),

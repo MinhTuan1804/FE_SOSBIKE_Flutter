@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
 
 enum MainNavTab { orders, history, wallet, maintenance }
 
@@ -68,10 +68,10 @@ class MainBottomNavBar extends StatelessWidget {
             right: 0,
             bottom: -18,
                 height: _barHeight + bottom + 30,
-            child: const DecoratedBox(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.only(
+                color: AppConfig.current.ui.navbarBottomColor,
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(_corner),
                   bottomRight: Radius.circular(_corner),
                 ),
@@ -90,7 +90,7 @@ class MainBottomNavBar extends StatelessWidget {
               height: _bumpRadius + 20,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: AppConfig.current.ui.navbarBottomColor,
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),

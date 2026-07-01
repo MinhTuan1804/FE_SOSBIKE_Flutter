@@ -11,6 +11,8 @@ class UserProfileDto {
     this.currentAddress,
     this.isPhoneVerified = false,
     this.isEmailVerified = false,
+    this.isLocked = false,
+    this.isActive = true,
     this.mechanic,
     this.wallet,
   });
@@ -26,6 +28,8 @@ class UserProfileDto {
   final String? currentAddress;
   final bool isPhoneVerified;
   final bool isEmailVerified;
+  final bool isLocked;
+  final bool isActive;
   final MechanicProfileDto? mechanic;
   final WalletProfileDto? wallet;
 
@@ -52,6 +56,8 @@ class UserProfileDto {
       currentAddress: json['currentAddress'] as String? ?? json['currentaddress'] as String?,
       isPhoneVerified: json['isPhoneVerified'] ?? json['isphoneverified'] ?? false,
       isEmailVerified: json['isEmailVerified'] ?? json['isemailverified'] ?? false,
+      isLocked: json['isLocked'] ?? json['islocked'] ?? false,
+      isActive: json['isActive'] ?? json['isactive'] ?? false,
       mechanic: mechanicJson == null ? null : MechanicProfileDto.fromJson(mechanicJson),
       wallet: walletJson == null ? null : WalletProfileDto.fromJson(walletJson),
     );
@@ -61,6 +67,7 @@ class UserProfileDto {
 class MechanicProfileDto {
   const MechanicProfileDto({
     this.isVerified = false,
+    this.verifiedAt,
     required this.identityCard,
     required this.licensePlate,
     this.vehicleModel,
@@ -77,6 +84,7 @@ class MechanicProfileDto {
   });
 
   final bool isVerified;
+  final DateTime? verifiedAt;
   final String identityCard;
   final String licensePlate;
   final String? vehicleModel;
@@ -94,6 +102,7 @@ class MechanicProfileDto {
   factory MechanicProfileDto.fromJson(Map<String, dynamic> json) {
     return MechanicProfileDto(
       isVerified: json['isVerified'] ?? json['isverified'] ?? false,
+      verifiedAt: _parseDateTime(json['verifiedAt'] ?? json['verifiedat']),
       identityCard: '${json['identityCard'] ?? json['identitycard'] ?? ''}',
       licensePlate: '${json['licensePlate'] ?? json['licenseplate'] ?? ''}',
       vehicleModel: json['vehicleModel'] as String? ?? json['vehiclemodel'] as String?,
@@ -113,6 +122,13 @@ class MechanicProfileDto {
       color: json['color'] as String?,
     );
   }
+}
+
+DateTime? _parseDateTime(dynamic value) {
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value);
+  }
+  return null;
 }
 
 class WalletProfileDto {

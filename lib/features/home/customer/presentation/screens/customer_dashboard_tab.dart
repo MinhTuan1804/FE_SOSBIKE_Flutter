@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
+import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
 
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
 class CustomerDashboardTab extends StatefulWidget {
   const CustomerDashboardTab({super.key});
@@ -29,6 +32,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
   @override
   Widget build(BuildContext context) {
     final appConfig = context.watch<AppConfigProvider>().config;
+    final rescueProv = context.watch<RescueProvider>();
 
     if (_showFindMechanicSelection) {
       return _buildFindMechanicSelectionView();
@@ -44,6 +48,64 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               children: [
+                if (rescueProv.currentOrderId != null) ...[
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const FindMechanicFlowPage(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.car_crash, color: Colors.white),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bạn có đơn cứu hộ đang hoạt động',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Chạm để xem tiến trình',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.primary),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 _SosBanner(
                   brandName: appConfig.ui.brandName,
                   onStart: () {
@@ -65,7 +127,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFBF2121), width: 2),
+                              border: Border.all(color: AppColors.primary, width: 2),
                             ),
                             child: Icon(Icons.error, color: Colors.red[400], size: 28),
                           ),
@@ -85,7 +147,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFBF2121), width: 2),
+                              border: Border.all(color: AppColors.primary, width: 2),
                             ),
                             child: Icon(Icons.location_on, color: Colors.red[400], size: 28),
                           ),
@@ -134,7 +196,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                     ),
                   ),
 
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   // Right side: Maintenance Info
                   Expanded(
                     flex: 5,
@@ -158,7 +220,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 16),
 
-                        _MaintenanceItem(
+                        const _MaintenanceItem(
                           icon: Icons.water_drop,
                           iconColor: Colors.red,
                           title: 'Dầu động cơ',
@@ -168,7 +230,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 12),
 
-                        _MaintenanceItem(
+                        const _MaintenanceItem(
                           icon: Icons.adjust,
                           iconColor: Colors.green,
                           title: 'Má phanh',
@@ -178,7 +240,7 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                         ),
                         const SizedBox(height: 12),
 
-                        _MaintenanceItem(
+                        const _MaintenanceItem(
                           icon: Icons.tire_repair,
                           iconColor: Colors.green,
                           title: 'Lốp xe',
@@ -195,14 +257,14 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                           child: ElevatedButton(
                             onPressed: () {},
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF8B1A1A),
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                                 side: const BorderSide(color: Colors.white),
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                              minimumSize: const Size(100, 36),
+                              minimumSize: const Size(100, 48),
                             ),
                             child: const Text(
                               'Đặt lịch',
@@ -287,7 +349,10 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         height: 230,
         decoration: BoxDecoration(
@@ -350,9 +415,9 @@ class _CustomerDashboardTabState extends State<CustomerDashboardTab> {
                 bottom: 20,
                 right: 20,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC02020), // Vibrant red matching Figma brand red/button
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(30), // fully rounded pill
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.8),
@@ -426,7 +491,7 @@ class _SosBanner extends StatelessWidget {
             right: 20,
             child: Text(
               brandName,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
                 fontWeight: FontWeight.w900,
@@ -443,14 +508,18 @@ class _SosBanner extends StatelessWidget {
             bottom: 16,
             right: 16,
             child: ElevatedButton.icon(
-              onPressed: onStart,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onStart();
+              },
               icon: const Icon(Icons.start, color: Colors.white, size: 20),
               label: const Text(
                 'Bắt đầu',
                 style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB02A2A),
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(120, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                   side: const BorderSide(color: Colors.white54, width: 1.5),
@@ -479,7 +548,10 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         height: 100,
         decoration: BoxDecoration(

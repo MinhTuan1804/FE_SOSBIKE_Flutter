@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -32,12 +33,15 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
     final membership = context.watch<MembershipProvider>();
     final subscription = membership.currentSubscription;
 
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 0),
-          child: Text(
+        Container(
+          color: AppColors.primary,
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 16),
+          child: const Text(
             'Thanh toán',
             style: TextStyle(
               color: Colors.white,
@@ -83,8 +87,7 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
                                 break;
                               }
                             }
-                            if (targetPlan == null) {
-                              targetPlan = CustomerMembershipPlan(
+                            targetPlan ??= CustomerMembershipPlan(
                                 planId: membership.pendingSession!.planId,
                                 name: membership.pendingSession!.planName,
                                 targetAudience: 'B2C',
@@ -95,9 +98,8 @@ class _CustomerWalletTabState extends State<CustomerWalletTab> {
                                 isCurrentPlan: false,
                                 benefits: const [],
                               );
-                            }
 
-                            final ok = await Navigator.push<bool>(
+                            await Navigator.push<bool>(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CustomerSubscriptionCheckoutScreen(
@@ -241,14 +243,16 @@ class _MembershipStatusCard extends StatelessWidget {
           if (active && subscription != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Hết hạn: ${dateFormat.format(subscription!.endDate.toLocal())}',
+              subscription!.price <= 0
+                  ? 'Hiệu lực: Vô thời hạn'
+                  : 'Hết hạn: ${dateFormat.format(subscription!.endDate.toLocal())}',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.88),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (subscription!.autoRenew)
+            if (subscription!.price > 0 && subscription!.autoRenew)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
@@ -285,10 +289,13 @@ class _MembershipPlansBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF7A1010),
+      color: AppColors.primaryDark,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -443,9 +450,12 @@ class _PendingPaymentBanner extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                height: 30,
+                height: 48,
                 child: ElevatedButton(
-                  onPressed: onContinue,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onContinue();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/network/error_message.dart';
@@ -14,6 +14,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fi
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/mechanic_register_info_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/profile_setup_screen.dart';
@@ -106,25 +107,13 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           if (sent.debugCode != null) _devOtpCode = sent.debugCode;
         });
         _startTimer();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              sent.debugCode != null
-                  ? 'Đã làm mới mã OTP (dev)'
-                  : 'Đã gửi lại mã OTP',
-            ),
-            duration: const Duration(seconds: 3),
-          ),
+        AppAlert.showSuccess(
+          context,
+          sent.debugCode != null ? 'Đã làm mới mã OTP (dev)' : 'Đã gửi lại mã OTP',
         );
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessageFrom(e)),
-              duration: const Duration(seconds: 5),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
+          AppAlert.showError(context, errorMessageFrom(e));
         }
       }
       return;
@@ -138,16 +127,12 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       phoneNumber: widget.phoneNumber,
       onCodeSent: (_) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã gửi lại mã OTP thành công')),
-          );
+          AppAlert.showSuccess(context, 'Đã gửi lại mã OTP thành công');
         }
       },
       onError: (error) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error)),
-          );
+          AppAlert.showError(context, error);
         }
       },
     );
@@ -155,9 +140,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   Future<void> _onContinue() async {
     if (_otp.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP')),
-      );
+      AppAlert.showError(context, 'Vui lòng nhập đủ 6 số OTP');
       return;
     }
 
@@ -195,13 +178,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       } catch (e) {
         if (mounted) {
           setState(() => _verifying = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessageFrom(e)),
-              duration: const Duration(seconds: 5),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
+          AppAlert.showError(context, errorMessageFrom(e));
         }
       }
       return;
@@ -233,9 +210,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'Xác thực OTP thất bại')),
-        );
+        AppAlert.showError(context, authProvider.errorMessage ?? 'Xác thực OTP thất bại');
       }
     }
   }

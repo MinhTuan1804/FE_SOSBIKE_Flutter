@@ -127,7 +127,6 @@ class MechanicPriorityPlan {
     final tier = tierFromCode(json['planTier']?.toString());
     final price = (json['price'] as num?)?.toInt() ?? 0;
     final days = (json['durationDays'] as num?)?.toInt() ?? 30;
-    final name = json['name']?.toString() ?? '';
     final benefitsJson = json['benefits'] as List<dynamic>?;
     final benefits = benefitsJson != null && benefitsJson.isNotEmpty
         ? benefitsJson

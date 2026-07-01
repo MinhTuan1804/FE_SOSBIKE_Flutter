@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/incoming_rescue_request.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_flow_title_bar.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_map_draggable_sheet.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_map_background.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_order_shared_widgets.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/screens/chat_detail_screen.dart';
 
 /// Giao diện **Nhận Đơn** của thợ — hiển thị map thực tế + draggable sheet + thẻ chờ khách xác nhận.
 class MechanicAcceptOrderView extends StatelessWidget {
@@ -50,7 +53,18 @@ class MechanicAcceptOrderView extends StatelessWidget {
                 MechanicOrderContactRow(
                   phoneNumber: request.phoneNumber,
                   onCall: () {},
-                  onChat: () {},
+                  onChat: () {
+                    final rescue = context.read<RescueProvider>();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(
+                          orderId: rescue.currentOrderId ?? '',
+                          title: request.customerName,
+                          avatarUrl: request.avatarUrl,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -61,10 +75,10 @@ class MechanicAcceptOrderView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
@@ -72,7 +86,7 @@ class MechanicAcceptOrderView extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     'Đang chờ khách hàng xác nhận...',
                     style: TextStyle(

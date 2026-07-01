@@ -24,9 +24,9 @@ class SearchingView extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 // Inner concentric pulse rings
-                _PulseRing(delay: 0),
-                _PulseRing(delay: 1),
-                _PulseRing(delay: 2),
+                const _PulseRing(delay: 0),
+                const _PulseRing(delay: 1),
+                const _PulseRing(delay: 2),
                 // Custom scooter graphic
                 Container(
                   width: 180,
@@ -36,7 +36,7 @@ class SearchingView extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(12),
-                  child: Icon(Icons.two_wheeler, color: AppColors.primary, size: 90),
+                  child: const Icon(Icons.two_wheeler, color: AppColors.primary, size: 90),
                 ),
               ],
             ),
@@ -58,9 +58,9 @@ class SearchingView extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
@@ -116,16 +116,17 @@ class SearchingView extends StatelessWidget {
                 ElevatedButton(
                   onPressed: onCancel,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.grey[100],
+                    foregroundColor: Colors.black87,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
                   ),
                   child: const Text(
                     'Hủy tìm thợ',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -194,8 +195,7 @@ class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMi
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.red.withValues(alpha: 0.4), width: 3),
-                color: Colors.red.withValues(alpha: 0.05),
+                color: AppColors.primary.withValues(alpha: 0.15),
               ),
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/screens/chat_detail_screen.dart';
 import 'package:intl/intl.dart';
 
 class TrackingView extends StatefulWidget {
@@ -82,9 +83,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 20,
-                offset: const Offset(0, -6),
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
@@ -138,6 +139,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMechanicProfileCard(
+          orderId: rescue.currentOrderId ?? '',
           avatarUrl: match['mechanicAvatarUrl'] as String?,
           name: mechanicName,
           subtitle: '$vehicleModel - $licensePlate',
@@ -197,6 +199,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMechanicProfileCard(
+          orderId: rescue.currentOrderId ?? '',
           avatarUrl: match['mechanicAvatarUrl'] as String?,
           name: mechanicName,
           subtitle: '$vehicleModel - $licensePlate',
@@ -230,9 +233,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.15)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -240,14 +243,14 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.analytics_outlined, color: Colors.blue, size: 20),
+                        const Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
-                        Text(
+                        const Text(
                           'HỆ THỐNG CHẨN ĐOÁN SOSBIKE',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
-                            color: Colors.blue[900],
+                            color: AppColors.primaryDark,
                             letterSpacing: 1.1,
                           ),
                         ),
@@ -290,7 +293,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         children: [
           Icon(
             isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-            color: isCompleted ? Colors.green : (isPulsing ? Colors.blue : Colors.grey),
+            color: isCompleted ? AppColors.primary : (isPulsing ? AppColors.primary : Colors.grey),
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -300,7 +303,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isPulsing ? FontWeight.bold : FontWeight.normal,
-                color: isCompleted ? Colors.black87 : (isPulsing ? Colors.blue[900] : Colors.grey[600]),
+                color: isCompleted ? Colors.black87 : (isPulsing ? AppColors.primaryDark : Colors.grey[600]),
               ),
             ),
           ),
@@ -308,7 +311,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             const SizedBox(
               width: 10,
               height: 10,
-              child: CircularProgressIndicator(strokeWidth: 1.5, valueColor: AlwaysStoppedAnimation(Colors.blue)),
+              child: CircularProgressIndicator(strokeWidth: 1.5, valueColor: AlwaysStoppedAnimation(AppColors.primary)),
             ),
         ],
       ),
@@ -331,6 +334,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final quote = rescue.activeQuote;
     final travelFee = quote?['travelFee'] as num? ?? 0;
     final nightSurcharge = quote?['nightSurcharge'] as num? ?? 0;
+    final membershipDiscountAmount = quote?['membershipDiscountAmount'] as num? ?? 0;
     final totalAmount = quote?['totalAmount'] as num? ?? 0;
     final lines = (quote?['lines'] as List?) ?? [];
     final orderId = rescue.currentOrderId ?? '';
@@ -356,7 +360,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         const SizedBox(height: 16),
         
         // Quote Details Box
-        _buildQuoteLinesCard(lines, travelFee, nightSurcharge),
+        _buildQuoteLinesCard(lines, travelFee, nightSurcharge, membershipDiscountAmount),
         const SizedBox(height: 20),
 
         Row(
@@ -368,7 +372,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             ),
             Text(
               '$formattedTotalđ',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 20,
@@ -380,7 +384,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         _buildPrimaryButton(
           text: _isProcessing ? 'Đang gửi xác nhận...' : 'Xác nhận & Đồng ý sửa chữa',
           onPressed: _isProcessing ? null : () => _handleApproveQuote(rescue, orderId),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           textColor: Colors.white,
         ),
       ],
@@ -416,9 +420,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.05),
+            color: AppColors.primary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.15)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -428,15 +432,15 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 children: [
                   Transform.rotate(
                     angle: _wrenchRotation,
-                    child: const Icon(Icons.build_circle_outlined, color: Colors.green, size: 24),
+                    child: const Icon(Icons.build_circle_outlined, color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  const Text(
                     'TIẾN TRÌNH SỬA CHỮA',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
-                      color: Colors.green[900],
+                      color: AppColors.primaryDark,
                       letterSpacing: 1.1,
                     ),
                   ),
@@ -452,7 +456,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     children: [
                       Icon(
                         isPart ? Icons.settings : Icons.build,
-                        color: Colors.green[700],
+                        color: AppColors.primary,
                         size: 16,
                       ),
                       const SizedBox(width: 10),
@@ -467,7 +471,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                         height: 10,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                         ),
                       ),
                     ],
@@ -519,7 +523,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             ),
             Text(
               '$formattedTotalđ',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
                 fontSize: 22,
@@ -707,30 +711,30 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final mechanicName = match['mechanicName'] as String? ?? 'Thợ cứu hộ';
     
     final intent = rescue.paymentIntent ?? {};
-    final txCode = (intent['paymentCode'] ?? intent['PaymentCode']) as String? ?? 'ORD-COMPLETED';
+    final txCode = intent['paymentCode'] as String? ?? 'ORD-COMPLETED';
     final methodLabel = _selectedPaymentMethod == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản';
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     return Column(
       children: [
-        // Glowing Success Badge (Replacing PNG mockup)
+        // Glowing Success Badge
         Container(
           height: 80,
           width: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.green.withValues(alpha: 0.1),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3), width: 3),
+            color: AppColors.primary.withValues(alpha: 0.1),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.green.withValues(alpha: 0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 blurRadius: 16,
                 spreadRadius: 2,
               )
             ],
           ),
           child: const Center(
-            child: Icon(Icons.check_circle, size: 52, color: Colors.green),
+            child: Icon(Icons.check_circle, size: 52, color: AppColors.primary),
           ),
         ),
         const SizedBox(height: 20),
@@ -739,7 +743,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w900,
-            color: Colors.green,
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(height: 6),
@@ -779,7 +783,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Tổng thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text('$formattedTotalđ', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
+                  Text('$formattedTotalđ', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.primary)),
                 ],
               ),
             ],
@@ -792,7 +796,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             rescue.clearActiveOrderStatus();
             Navigator.of(context).pop();
           },
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
           textColor: Colors.white,
         ),
       ],
@@ -814,6 +818,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
   // Common Header/Card Helper Widgets
   Widget _buildMechanicProfileCard({
+    required String orderId,
     required String? avatarUrl,
     required String name,
     required String subtitle,
@@ -822,8 +827,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.grey[50],
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -861,15 +867,20 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -886,35 +897,69 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white70,
+                    color: Colors.grey,
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: badgeColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Text(
-              badgeText,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+          const SizedBox(width: 8),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Material(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(
+                          orderId: orderId,
+                          title: name,
+                          avatarUrl: avatarUrl,
+                        ),
+                      ),
+                    );
+                  },
+                  customBorder: const CircleBorder(),
+                  child: const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 6),
+              Container(
+                decoration: BoxDecoration(
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Text(
+                  badgeText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuoteLinesCard(List<dynamic> lines, num travelFee, num nightSurcharge) {
+  Widget _buildQuoteLinesCard(List<dynamic> lines, num travelFee, num nightSurcharge, num membershipDiscountAmount) {
     final currencyFormatter = NumberFormat('#,##0', 'vi_VN');
 
     return Container(
@@ -986,6 +1031,10 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
             const SizedBox(height: 6),
             _buildQuoteSummaryRow('Phụ phí đêm muộn', '${currencyFormatter.format(nightSurcharge)}đ'),
           ],
+          if (membershipDiscountAmount > 0) ...[
+            const SizedBox(height: 6),
+      _buildQuoteSummaryRow('Nền tảng tài trợ', '-${currencyFormatter.format(membershipDiscountAmount)}đ'),
+          ],
         ],
       ),
     );
@@ -993,14 +1042,14 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
   Widget _buildBankTransferDetailsCard(RescueProvider rescue) {
     final intent = rescue.paymentIntent ?? {};
-    final amount = (intent['amount'] ?? intent['Amount']) as num? ?? 0;
-    final code = (intent['paymentCode'] ?? intent['PaymentCode']) as String? ?? 'ORD';
+    final amount = intent['amount'] as num? ?? 0;
+    final code = intent['paymentCode'] as String? ?? 'ORD';
     final formattedAmt = NumberFormat('#,##0', 'vi_VN').format(amount);
 
-    final bankName = (intent['bankBin'] ?? intent['BankBin']) as String? ?? 'MB Bank (Quân Đội)';
-    final accountName = (intent['bankAccountName'] ?? intent['BankAccountName']) as String? ?? 'SOSBIKE SERVICE CO.';
-    final accountNumber = (intent['bankAccountNumber'] ?? intent['BankAccountNumber']) as String? ?? '8888 8888 8888';
-    final qrContent = (intent['qrContent'] ?? intent['QrContent']) as String?;
+    final bankName = intent['bankBin'] as String? ?? 'MB Bank (Quân Đội)';
+    final accountName = intent['bankAccountName'] as String? ?? 'SOSBIKE SERVICE CO.';
+    final accountNumber = intent['bankAccountNumber'] as String? ?? '8888 8888 8888';
+    final qrContent = intent['qrContent'] as String?;
 
     return Container(
       decoration: BoxDecoration(
@@ -1031,13 +1080,13 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                     'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrContent)}',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
-                      return Center(
+                      return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.qr_code_2_rounded, size: 40, color: AppColors.primary),
-                            const SizedBox(height: 4),
-                            const Text(
+                            SizedBox(height: 4),
+                            Text(
                               'Lỗi tải QR',
                               style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
                             ),
@@ -1056,7 +1105,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
                       );
                     },
                   )
-                : Icon(Icons.qr_code, size: 100, color: AppColors.primary),
+                : const Icon(Icons.qr_code, size: 100, color: AppColors.primary),
           ),
           const SizedBox(height: 12),
           _buildBankInfoRow('Ngân hàng', bankName),
@@ -1159,9 +1208,9 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
           disabledBackgroundColor: Colors.grey[300],
           disabledForegroundColor: Colors.grey[500],
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
         ),
         child: Text(
@@ -1174,6 +1223,15 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
 
   // Core Actions
   Future<void> _handleApproveQuote(RescueProvider rescue, String orderId) async {
+    if (rescue.activeOrderStatus == 'REPAIRING') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xác nhận đồng ý báo giá. Thợ đang tiến hành sửa xe.'), backgroundColor: Colors.green),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
@@ -1210,7 +1268,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         if (_selectedPaymentMethod == 'CASH') {
           // Cash payment does not require user confirmation.
           // Confirm payment immediately!
-          final paymentId = (intent['paymentId'] ?? intent['PaymentId']) as String?;
+          final paymentId = intent['paymentId'] as String?;
           if (paymentId != null) {
             await rescue.confirmRescueOrderPayment(paymentId, 'CASH_MOCK_TX');
           }
@@ -1239,7 +1297,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
     final intent = rescue.paymentIntent;
     if (intent == null) return;
 
-    final paymentId = (intent['paymentId'] ?? intent['PaymentId']) as String?;
+    final paymentId = intent['paymentId'] as String?;
     if (paymentId == null) return;
 
     setState(() {

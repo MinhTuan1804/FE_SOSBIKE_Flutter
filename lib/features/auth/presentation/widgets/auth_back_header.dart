@@ -31,11 +31,11 @@ class AuthBackHeader extends StatelessWidget {
                     ),
                     if (showLabel) ...[
                       const SizedBox(width: 6),
-                      Flexible(
+                      const Flexible(
                         child: Text(
                           'Quay lại',
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

@@ -14,8 +14,15 @@ class FirebasePhoneAuthService {
     void Function(PhoneAuthCredential credential)? onAutoVerified,
     bool resend = false,
   }) async {
+    String formattedPhone = e164Phone.trim();
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '+84${formattedPhone.substring(1)}';
+    } else if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+84$formattedPhone';
+    }
+
     await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: e164Phone,
+      phoneNumber: formattedPhone,
       timeout: const Duration(seconds: 60),
       forceResendingToken: resend ? _resendToken : null,
       verificationCompleted: (credential) {

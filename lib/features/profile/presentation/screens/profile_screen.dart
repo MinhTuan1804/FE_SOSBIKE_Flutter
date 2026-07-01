@@ -8,9 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,28 +23,59 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const _bgColor = Color(0xFFF9F9F9); // Nền xám nhạt
+  bool _notificationsEnabled = true;
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+  );
+  static const _keyNotificationsEnabled = 'notifications_enabled';
 
   @override
   void initState() {
     super.initState();
+    _loadNotificationPreference();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<VehicleProvider>().fetchMyVehicles();
       context.read<AuthProvider>().fetchMyProfile(silent: true);
     });
   }
 
+  Future<void> _loadNotificationPreference() async {
+    try {
+      final val = await _storage.read(key: _keyNotificationsEnabled);
+      if (val != null) {
+        setState(() {
+          _notificationsEnabled = val == 'true';
+        });
+      }
+    } catch (e) {
+      debugPrint('ProfileScreenState._loadNotificationPreference error: $e');
+    }
+  }
+
+  Future<void> _saveNotificationPreference(bool value) async {
+    try {
+      await _storage.write(key: _keyNotificationsEnabled, value: value.toString());
+    } catch (e) {
+      debugPrint('ProfileScreenState._saveNotificationPreference error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final vehicleProvider = context.watch<VehicleProvider>();
-    final isVerified = auth.profile?.mechanic?.isVerified ?? false;
+    final mechanic = auth.profile?.mechanic;
+    final isVerified = mechanic?.verifiedAt != null || mechanic?.isVerified == true;
+    final isPendingMechanic = auth.userType?.toUpperCase() == 'MECHANIC' && !isVerified;
 
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppConfig.current.ui.navbarHeaderColor,
         elevation: 0,
         centerTitle: false,
         title: const Text(
@@ -68,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             left: 0,
             right: 0,
             height: 120,
-            child: Container(color: AppColors.primary),
+            child: Container(color: AppConfig.current.ui.navbarHeaderColor),
           ),
           
           SingleChildScrollView(
@@ -177,12 +211,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 24),
 
                 // 2. Phần Thông tin cá nhân
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Thông tin cá nhân',
                         style: TextStyle(
                           fontSize: 18,
@@ -259,12 +293,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // ── SECTION: Hồ sơ & Giấy tờ thợ (luôn hiển thị với mechanic) ──
                 if (auth.userType?.toUpperCase() == 'MECHANIC') ...[
                   const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Hồ sơ & Giấy tờ thợ',
                           style: TextStyle(
                             fontSize: 18,
@@ -310,7 +344,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         title: Text(
-                          isVerified ? 'Hồ sơ đã được xác thực' : 'Hoàn thiện hồ sơ & Xác thực thợ',
+                          isVerified
+                              ? 'Hồ sơ đã được xác thực'
+                              : isPendingMechanic
+                                  ? 'Hồ sơ đang chờ admin duyệt'
+                                  : 'Hoàn thiện hồ sơ & Xác thực thợ',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -320,7 +358,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         subtitle: Text(
                           isVerified
                               ? 'Tài khoản của bạn đã được Admin SOSBIKE duyệt'
-                              : 'Khu vực hoạt động, ảnh CCCD, chứng chỉ nghề & ngân hàng',
+                              : isPendingMechanic
+                                  ? 'Hồ sơ đã gửi lên admin. Bạn có thể chỉnh sửa và bổ sung khi cần.'
+                                  : 'Khu vực hoạt động, ảnh CCCD, chứng chỉ nghề & ngân hàng',
                           style: TextStyle(
                             fontSize: 12,
                             color: isVerified ? Colors.green[400] : Colors.grey,
@@ -810,6 +850,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 ],
 
+                // ── SECTION: Cài đặt thông báo (luôn hiển thị cho cả 2 role) ──
+                const SizedBox(height: 24),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Cài đặt ứng dụng',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Icon(Icons.settings_outlined, color: AppColors.primary, size: 24),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          value: _notificationsEnabled,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _notificationsEnabled = value;
+                              _saveNotificationPreference(value);
+                            });
+                          },
+                          secondary: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+                          title: const Text(
+                            'Nhận thông báo đẩy',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: const Text(
+                            'Cho phép nhận thông báo đơn cứu hộ, tin nhắn chat và cập nhật hệ thống',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          activeThumbColor: AppColors.primary,
+                          activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
                 const SizedBox(height: 120), // Khoảng trống cho thanh điều hướng
               ],
@@ -948,7 +1051,11 @@ class _EmailLinkVerificationDialogState extends State<EmailLinkVerificationDialo
   @override
   void initState() {
     super.initState();
-    _sendLink();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _sendLink();
+      }
+    });
   }
 
   @override
@@ -1237,13 +1344,13 @@ class _VehiclePhotoPlaceholder extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 180,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF1C1C1E),
-            const Color(0xFF2C2C2E),
+            Color(0xFF1C1C1E),
+            Color(0xFF2C2C2E),
           ],
         ),
       ),
@@ -1385,24 +1492,15 @@ class _SettingsMenuState extends State<_SettingsMenu> {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    final ok = await showDialog<bool>(
+    final ok = await AppAlert.showConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có muốn đăng xuất?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
+      title: 'Đăng xuất',
+      content: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
+      confirmLabel: 'Đăng xuất',
+      cancelLabel: 'Hủy',
+      isDanger: true,
     );
-    if (ok == true && context.mounted) {
+    if (ok && context.mounted) {
       await context.read<AuthProvider>().logout();
       if (context.mounted) navigateToLogin();
     }

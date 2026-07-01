@@ -14,7 +14,7 @@ class MechanicServiceOfferingRepository {
       final response = await _dioClient.dio.get(ApiEndpoints.mechanicMyServices);
       final data = response.data;
       if (data is! List) {
-        throw const FormatException('Mechanic services response is invalid.');
+        throw const FormatException('Phản hồi danh sách dịch vụ của thợ không hợp lệ.');
       }
       return data
           .map((e) => MechanicServiceOfferingDto.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -31,7 +31,7 @@ class MechanicServiceOfferingRepository {
         data: payload.toJson(),
       );
       if (response.data is! Map) {
-        throw const FormatException('Create mechanic service response is invalid.');
+        throw const FormatException('Phản hồi tạo dịch vụ cho thợ không hợp lệ.');
       }
       return MechanicServiceOfferingDto.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {

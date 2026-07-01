@@ -12,6 +12,7 @@ class RescueProvider extends ChangeNotifier {
   final RescueRepository _repository;
   final RescueRealtimeService _realtimeService;
   final LocationRealtimeService _locationService;
+  final Set<String> _ignoredOrderIds = {};
 
   // Goong Route State
   List<LatLng> _activeRoutePoints = [];
@@ -24,7 +25,6 @@ class RescueProvider extends ChangeNotifier {
 
   final GoongService _goongService = GoongService();
   DateTime? _lastGoongRouteFetchTime;
-  int _goongApiCallCount = 0;
   Timer? _routeUpdateTimer;
 
   // Active Mechanic Order Coords for dynamic routing on mechanic side
@@ -46,7 +46,6 @@ class RescueProvider extends ChangeNotifier {
   }) async {
     _routeUpdateTimer?.cancel();
     _routeUpdateTimer = null;
-    _goongApiCallCount = 0;
 
     // Call Goong Directions API only once at the beginning
     await fetchGoongRoute(
@@ -56,7 +55,6 @@ class RescueProvider extends ChangeNotifier {
       mechLng: mechLng,
       force: true,
     );
-    _goongApiCallCount = 1;
   }
 
   void setActiveCustomerCoords(double lat, double lng) {
@@ -108,14 +106,15 @@ class RescueProvider extends ChangeNotifier {
         }
       }
 
-      double remainingDistance = _calculateHaversineDistance(
-        mechLat,
-        mechLng,
-        _activeRoutePoints[closestIndex].latitude,
-        _activeRoutePoints[closestIndex].longitude,
-      );
+      // Truncate passed points and snap the polyline start to the mechanic's current location
+      final List<LatLng> sublisted = _activeRoutePoints.sublist(closestIndex);
+      if (sublisted.isNotEmpty) {
+        sublisted[0] = LatLng(mechLat, mechLng);
+      }
+      _activeRoutePoints = sublisted;
 
-      for (int i = closestIndex; i < _activeRoutePoints.length - 1; i++) {
+      double remainingDistance = 0.0;
+      for (int i = 0; i < _activeRoutePoints.length - 1; i++) {
         remainingDistance += _calculateHaversineDistance(
           _activeRoutePoints[i].latitude,
           _activeRoutePoints[i].longitude,
@@ -180,6 +179,11 @@ class RescueProvider extends ChangeNotifier {
   StreamSubscription? _acceptedSub;
   StreamSubscription? _statusSub;
   StreamSubscription? _locationSub;
+  StreamSubscription? _accountStatusSub;
+  StreamSubscription<Position>? _geolocatorSubscription;
+
+  bool _isAccountLocked = false;
+  bool get isAccountLocked => _isAccountLocked;
 
   /// Các trạng thái không cần gọi API Direction (thợ đã đến nơi hoặc sau đó)
   static const _noDirectionNeededStatuses = {
@@ -231,9 +235,19 @@ class RescueProvider extends ChangeNotifier {
 
   void _setupSignalRListeners() {
     _requestSub = _realtimeService.incomingRescueRequests.listen((request) {
+      final oid = request['orderId'] as String?;
+      if (oid != null && _ignoredOrderIds.contains(oid)) return;
       debugPrint('Incoming rescue request received via SignalR: $request');
       _incomingRequest = request;
       notifyListeners();
+    });
+
+    _accountStatusSub = _realtimeService.accountStatusUpdates.listen((status) {
+      debugPrint('Account status change received via SignalR: $status');
+      if (status == 'LOCKED') {
+        _isAccountLocked = true;
+        notifyListeners();
+      }
     });
 
     _acceptedSub = _realtimeService.orderAcceptedUpdates.listen((mechanic) {
@@ -316,6 +330,23 @@ class RescueProvider extends ChangeNotifier {
   }
 
   // --- Customer Actions ---
+
+  Future<List<Map<String, dynamic>>> getNearbyWorkers(
+    double lat,
+    double lon, {
+    double radiusKm = 30.0,
+  }) async {
+    try {
+      return await _repository.getNearbyWorkers(
+        latitude: lat,
+        longitude: lon,
+        radiusKm: radiusKm,
+      );
+    } catch (e) {
+      debugPrint('Error getting nearby workers in provider: $e');
+      return [];
+    }
+  }
 
   Future<bool> createRescueOrder({
     required double latitude,
@@ -442,6 +473,7 @@ class RescueProvider extends ChangeNotifier {
   Future<void> cancelSearch() async {
     if (_currentOrderId != null) {
       try {
+        await _repository.cancelRescueOrder(_currentOrderId!);
         await _realtimeService.updateOrderStatus(_currentOrderId!, 'CANCELLED');
       } catch (e) {
         debugPrint('Error sending cancel status: $e');
@@ -499,6 +531,15 @@ class RescueProvider extends ChangeNotifier {
   }
 
   void dismissIncomingRequest() {
+    if (_incomingRequest != null) {
+      final orderId = _incomingRequest!['orderId'] as String?;
+      if (orderId != null) {
+        _ignoredOrderIds.add(orderId);
+        unawaited(_repository.rejectRescueOrder(orderId).catchError((e) {
+          debugPrint('[RescueProvider] Reject order failed: $e');
+        }));
+      }
+    }
     _incomingRequest = null;
     notifyListeners();
   }
@@ -530,7 +571,10 @@ class RescueProvider extends ChangeNotifier {
       // Kiểm tra lại sau await để tránh ghi đè trạng thái vừa thay đổi
       if (!_isOnline || _incomingRequest != null || _currentOrderId != null) return;
 
-      final nearest = orders.first; // BE đã sắp xếp theo khoảng cách tăng dần
+      final filtered = orders.where((o) => !_ignoredOrderIds.contains(o['orderId'])).toList();
+      if (filtered.isEmpty) return;
+
+      final nearest = filtered.first; // BE đã sắp xếp theo khoảng cách tăng dần
       _incomingRequest = {
         'orderId': nearest['orderId'],
         'customerName': nearest['customerName'] ?? 'Khách hàng',
@@ -613,6 +657,8 @@ class RescueProvider extends ChangeNotifier {
 
   void updateMechanicLocation(double latitude, double longitude) {
     if (!_isOnline) return;
+    // OPTIMIZATION: Skip HTTP PUT database write when busy on an active rescue order
+    if (_currentOrderId != null) return;
     _repository.updateMechanicLocation(latitude, longitude).catchError((e) {
       debugPrint('Failed to update mechanic location: $e');
     });
@@ -682,19 +728,55 @@ class RescueProvider extends ChangeNotifier {
     }
   }
 
-  void _startLocationUpdates() {
-    _locationTimer?.cancel();
+  Future<void> _startLocationUpdates() async {
+    _stopLocationUpdates();
     // Update location immediately upon going online
-    _syncCurrentLocation();
-    // Simulate updating location every 30 seconds
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _syncCurrentLocation();
-    });
+    await _syncCurrentLocation();
+
+    if (!_isOnline) return;
+
+    // Check if permission is granted before starting stream
+    final permission = await Geolocator.checkPermission();
+    final isAuthorized = permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+
+    if (isAuthorized) {
+      const locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Fire updates only when moved 10 meters (saves battery & network traffic)
+      );
+
+      _geolocatorSubscription = Geolocator.getPositionStream(
+        locationSettings: locationSettings,
+      ).listen((Position position) {
+        if (!_isOnline) return;
+        _mechanicLatitude = position.latitude;
+        _mechanicLongitude = position.longitude;
+        notifyListeners();
+        updateMechanicLocation(position.latitude, position.longitude);
+
+        if (_currentOrderId != null) {
+          _locationService.sendLocation(_currentOrderId!, position.latitude, position.longitude);
+          if (_isRouteStillNeeded) {
+            _updateRemainingEtaLocally(position.latitude, position.longitude);
+          }
+        }
+      }, onError: (e) {
+        debugPrint('Geolocator stream error: $e');
+      });
+    } else {
+      // Fallback: If not authorized, use a periodic timer
+      _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        _syncCurrentLocation();
+      });
+    }
   }
 
   void _stopLocationUpdates() {
     _locationTimer?.cancel();
     _locationTimer = null;
+    _geolocatorSubscription?.cancel();
+    _geolocatorSubscription = null;
   }
 
   @override
@@ -703,10 +785,51 @@ class RescueProvider extends ChangeNotifier {
     _acceptedSub?.cancel();
     _statusSub?.cancel();
     _locationSub?.cancel();
+    _accountStatusSub?.cancel();
     _locationTimer?.cancel();
+    _geolocatorSubscription?.cancel();
     _availableOrdersTimer?.cancel();
     _routeUpdateTimer?.cancel();
     super.dispose();
+  }
+
+  void resetAccountLockStatus() {
+    _isAccountLocked = false;
+  }
+
+  Future<void> checkActiveOrder({required String userType}) async {
+    try {
+      if (userType == 'CUSTOMER') {
+        final activeOrder = await _repository.getActiveOrderForCustomer();
+        if (activeOrder != null) {
+          _currentOrderId = activeOrder['orderId'] as String?;
+          _activeOrderStatus = activeOrder['status'] as String?;
+          _customerLatitude = activeOrder['latitude'] != null ? (activeOrder['latitude'] as num).toDouble() : null;
+          _customerLongitude = activeOrder['longitude'] != null ? (activeOrder['longitude'] as num).toDouble() : null;
+          
+          if (activeOrder['mechanicId'] != null) {
+            _matchedMechanic = {
+              'mechanicId': activeOrder['mechanicId'],
+              'mechanicName': activeOrder['mechanicName'],
+              'mechanicPhone': activeOrder['mechanicPhone'],
+              'mechanicAvatarUrl': activeOrder['mechanicAvatarUrl'],
+              'mechanicLatitude': activeOrder['mechanicLatitude'],
+              'mechanicLongitude': activeOrder['mechanicLongitude'],
+              'status': activeOrder['status'],
+            };
+          }
+          
+          await _realtimeService.connect();
+          if (_currentOrderId != null) {
+            await _realtimeService.joinOrderGroup(_currentOrderId!);
+            _locationService.trackOrder(_currentOrderId!);
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('[RescueProvider] checkActiveOrder error: $e');
+    }
   }
 
   double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {

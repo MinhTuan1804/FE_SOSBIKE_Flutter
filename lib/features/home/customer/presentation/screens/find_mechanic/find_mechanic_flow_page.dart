@@ -51,7 +51,20 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     _loadCustomMarkerIcons();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<RescueProvider>().addListener(_onRescueProviderChanged);
+        final rescue = context.read<RescueProvider>();
+        if (rescue.currentOrderId != null) {
+          if (rescue.matchedMechanic != null) {
+            final st = rescue.activeOrderStatus;
+            if (st == 'ACCEPTED' || st == 'ARRIVED' || st == 'QUOTED' || st == 'REPAIRING') {
+              setState(() => _step = FindMechanicStep.tracking);
+            } else {
+              setState(() => _step = FindMechanicStep.mechanicFound);
+            }
+          } else {
+            setState(() => _step = FindMechanicStep.searching);
+          }
+        }
+        rescue.addListener(_onRescueProviderChanged);
       }
     });
   }
@@ -176,7 +189,7 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
     if (_step == FindMechanicStep.locationSelect) {
       return Container(
         color: Colors.white,
-        child: Center(
+        child: const Center(
           child: CircularProgressIndicator(
             color: AppColors.primary,
             strokeWidth: 3,
@@ -198,9 +211,11 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
       mechLng = match['mechanicLongitude'] != null ? (match['mechanicLongitude'] as num).toDouble() : null;
     }
 
-    if (mechLat != null && mechLng != null) {
+    final bool showRealMap = (mechLat != null && mechLng != null) || _step == FindMechanicStep.tracking;
+
+    if (showRealMap) {
       final customerLatLng = LatLng(custLat, custLng);
-      final mechanicLatLng = LatLng(mechLat, mechLng);
+      final mechanicLatLng = mechLat != null && mechLng != null ? LatLng(mechLat, mechLng) : null;
 
       final markers = {
         Marker(
@@ -209,29 +224,37 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
           icon: _customerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: const InfoWindow(title: 'Vị trí của bạn'),
         ),
-        Marker(
-          markerId: const MarkerId('mechanic'),
-          position: mechanicLatLng,
-          icon: _mechanicIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          infoWindow: InfoWindow(title: match?['mechanicName'] ?? 'Thợ sửa xe'),
-        ),
+        if (mechanicLatLng != null)
+          Marker(
+            markerId: const MarkerId('mechanic'),
+            position: mechanicLatLng,
+            icon: _mechanicIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+            infoWindow: InfoWindow(title: match?['mechanicName'] ?? 'Thợ sửa xe'),
+          ),
       };
 
       final polylines = {
-        Polyline(
-          polylineId: const PolylineId('route'),
-          points: rescue.activeRoutePoints.isNotEmpty
-              ? rescue.activeRoutePoints
-              : [customerLatLng, mechanicLatLng],
-          color: const Color(0xFFC02020),
-          width: 5,
-        ),
+        if (mechanicLatLng != null)
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: rescue.activeRoutePoints.isNotEmpty
+                ? rescue.activeRoutePoints
+                : [customerLatLng, mechanicLatLng],
+            color: const Color(0xFFC02020),
+            width: 5,
+          ),
       };
+
+      if (_flowMapController != null && mechanicLatLng != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fitBounds(custLat, custLng, mechLat!, mechLng!);
+        });
+      }
 
       return GoogleMap(
         initialCameraPosition: CameraPosition(
           target: customerLatLng,
-          zoom: 14.0,
+          zoom: 15.0,
         ),
         markers: markers,
         polylines: polylines,
@@ -239,9 +262,11 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
         myLocationButtonEnabled: false,
         onMapCreated: (controller) {
           _flowMapController = controller;
-          Future.delayed(const Duration(milliseconds: 200), () {
-            _fitBounds(custLat, custLng, mechanicLatLng.latitude, mechanicLatLng.longitude);
-          });
+          if (mechanicLatLng != null) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              _fitBounds(custLat, custLng, mechanicLatLng.latitude, mechanicLatLng.longitude);
+            });
+          }
         },
       );
     }
@@ -265,16 +290,19 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
   }
 
   Widget _buildStepContent() {
-    return switch (_step) {
+    final Widget currentStepWidget = switch (_step) {
       FindMechanicStep.locationSelect => LocationSelectView(
+          key: const ValueKey('locationSelect'),
           onBack: () => Navigator.of(context).pop(),
           onConfirmLocation: _confirmLocation,
         ),
       FindMechanicStep.searching => SearchingView(
+          key: const ValueKey('searching'),
           progress: _searchProgress,
           onCancel: _cancelSearch,
         ),
       FindMechanicStep.mechanicFound => MechanicFoundView(
+          key: const ValueKey('mechanicFound'),
           onCancel: _cancelSearch,
           onConfirm: () async {
             final orderId = context.read<RescueProvider>().currentOrderId;
@@ -287,12 +315,32 @@ class _FindMechanicFlowPageState extends State<FindMechanicFlowPage> {
           },
         ),
       FindMechanicStep.tracking => TrackingView(
+          key: const ValueKey('tracking'),
           onCancel: () {
             _cancelSearch();
             Navigator.of(context).pop();
           },
         ),
     };
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 0.05),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: currentStepWidget,
+    );
   }
 }
 

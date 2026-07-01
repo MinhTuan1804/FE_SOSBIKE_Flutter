@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/widgets/coming_soon_overlay.dart';
 
@@ -40,10 +41,13 @@ class _DangerWarningScreenState extends State<DangerWarningScreen> {
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop();
+                      },
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: 48,
+                        height: 48,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -92,8 +96,10 @@ class _DangerWarningScreenState extends State<DangerWarningScreen> {
                       // Center: vertical toggle switch
                       Center(
                         child: GestureDetector(
-                          onTap: () =>
-                              setState(() => _isSwitchedOn = !_isSwitchedOn),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() => _isSwitchedOn = !_isSwitchedOn);
+                          },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             width: 140,
@@ -105,8 +111,8 @@ class _DangerWarningScreenState extends State<DangerWarningScreen> {
                               gradient: _isSwitchedOn
                                   ? const LinearGradient(
                                       colors: [
-                                        Color(0xFFE81B1B),
-                                        Color(0xFF800C0C)
+                                        AppColors.primary,
+                                        AppColors.primaryDark
                                       ],
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
@@ -205,7 +211,10 @@ class _DangerWarningScreenState extends State<DangerWarningScreen> {
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         width: 48,
         height: 48,

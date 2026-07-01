@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
@@ -170,39 +170,29 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final email = _emailController.text.trim();
 
     if (name.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập họ và tên (ít nhất 2 ký tự)')),
-      );
+      AppAlert.showError(context, 'Vui lòng nhập họ và tên (ít nhất 2 ký tự)');
       return;
     }
 
     if (_selectedDob == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày sinh')),
-      );
+      AppAlert.showError(context, 'Vui lòng chọn ngày sinh');
       return;
     }
 
     if (_selectedGender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn giới tính')),
-      );
+      AppAlert.showError(context, 'Vui lòng chọn giới tính');
       return;
     }
 
     if (!_isEmailValid(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email không hợp lệ')),
-      );
+      AppAlert.showError(context, 'Email không hợp lệ');
       return;
     }
 
     final identity = _identityController.text.trim();
     if (_isMechanic) {
       if (identity.length < 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Số CCCD/CMND không hợp lệ')),
-        );
+        AppAlert.showError(context, 'Số CCCD/CMND không hợp lệ');
         return;
       }
     }
@@ -251,11 +241,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       if (mounted) navigateToHome();
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Cập nhật hồ sơ thất bại'),
-          ),
-        );
+        AppAlert.showError(context, authProvider.errorMessage ?? 'Cập nhật hồ sơ thất bại');
       }
     }
   }

@@ -11,6 +11,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_h
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_form_layout.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_dots.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 
 class PasswordLoginScreen extends StatefulWidget {
   const PasswordLoginScreen({
@@ -65,9 +66,7 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
   Future<void> _submit() async {
     final password = _passwordController.text.trim();
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mật khẩu tối thiểu 6 ký tự')),
-      );
+      AppAlert.showError(context, 'Mật khẩu tối thiểu 6 ký tự');
       return;
     }
 
@@ -98,13 +97,7 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
     if (!mounted) return;
 
     if (!success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.errorMessage ?? 'Thao tác thất bại'),
-          duration: const Duration(seconds: 5),
-          backgroundColor: Colors.red.shade700,
-        ),
-      );
+      AppAlert.showError(context, auth.errorMessage ?? 'Thao tác thất bại');
       return;
     }
 

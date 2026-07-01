@@ -1,11 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/customer/data/models/customer_order_history_entry.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
 
 /// Tab **Lịch sử** — đơn cứu hộ đã hoàn thành của khách (giống tab lịch sử thợ).
 class CustomerOrderHistoryTab extends StatefulWidget {
@@ -53,8 +55,14 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: provider.refresh,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  provider.refresh();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size(120, 48),
+                ),
                 child: const Text('Thử lại'),
               ),
             ],
@@ -63,12 +71,15 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
       );
     }
 
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 0),
-          child: Column(
+        Container(
+          color: AppColors.primary,
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 16),
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -97,24 +108,34 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF15803D).withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Đơn đang xử lý (${rescue.activeOrderStatus ?? "..."})',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                    ),
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const FindMechanicFlowPage(),
                   ),
-                ],
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF15803D).withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Đơn đang xử lý (${rescue.activeOrderStatus ?? "..."})',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -162,7 +183,7 @@ class _HistoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF9E1818).withValues(alpha: 0.92),
+        color: AppColors.primary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -200,14 +221,30 @@ class _HistoryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _StarRating(rating: entry.rating),
+              entry.isActive
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9800),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        entry.statusLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    )
+                  : _StarRating(rating: entry.rating),
             ],
           ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF6E1010),
+              color: AppColors.primaryDark,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -270,7 +307,7 @@ class _Avatar extends StatelessWidget {
       child: Container(
         width: 42,
         height: 42,
-        color: const Color(0xFF6E1010),
+        color: AppColors.primaryDark,
         child: url.isEmpty
             ? const Icon(Icons.person, color: Colors.white70)
             : CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, width: 42, height: 42),

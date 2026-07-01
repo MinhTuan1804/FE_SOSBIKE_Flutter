@@ -166,7 +166,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(color: AppColors.primary),
+                    borderSide: const BorderSide(color: AppColors.primary),
                   ),
                 ),
               ),

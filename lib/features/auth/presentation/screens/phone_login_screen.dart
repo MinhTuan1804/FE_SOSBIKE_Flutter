@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -17,6 +17,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_screen
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/social_auth_button.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
+import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 import 'package:provider/provider.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
@@ -68,12 +69,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   void _onContinue() async {
     if (!_isPhoneValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Số điện thoại không hợp lệ. Dùng số VN 10 số (vd: 0912345678, 0977999888)',
-          ),
-        ),
+      AppAlert.showError(
+        context,
+        'Số điện thoại không hợp lệ. Dùng số VN 10 số (vd: 0912345678, 0977999888)',
       );
       return;
     }
@@ -86,13 +84,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
     if (phoneExists == null) {
       if (mounted && authProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage!),
-            duration: const Duration(seconds: 5),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
+        AppAlert.showError(context, authProvider.errorMessage!);
       }
       return;
     }
@@ -100,18 +92,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     // 2. Validate based on Mode
     if (_mode == AuthMode.login && !phoneExists) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Số điện thoại chưa được đăng ký với hệ thống')),
-        );
+        AppAlert.showError(context, 'Số điện thoại chưa được đăng ký với hệ thống');
       }
       return;
     }
 
     if (_mode == AuthMode.register && phoneExists) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Số điện thoại này đã được đăng ký trong DB')),
-        );
+        AppAlert.showError(context, 'Số điện thoại này đã được đăng ký trong hệ thống');
       }
       return;
     }
@@ -169,9 +157,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         );
       },
       onError: (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
+        AppAlert.showError(context, error);
       },
     );
   }
@@ -285,9 +271,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           background: const Color(0xFFE8F1FF),
           foreground: const Color(0xFF1877F2),
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đăng nhập Facebook — sắp có')),
-            );
+            AppAlert.showInfo(context, 'Đăng nhập Facebook — sắp có');
           },
         ),
         const SizedBox(height: 10),
@@ -297,9 +281,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           background: Colors.black,
           foreground: Colors.white,
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đăng nhập Apple — sắp có')),
-            );
+            AppAlert.showInfo(context, 'Đăng nhập Apple — sắp có');
           },
         ),
         const SizedBox(height: 20),

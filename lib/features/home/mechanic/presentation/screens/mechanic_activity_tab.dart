@@ -1,9 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_activity_models.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_services_tab.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_activity_notifications_section.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
+import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 
-enum _ActivitySection { schedule, notifications }
+enum _ActivitySection { schedule, notifications, services }
 
 /// Tab **Bảo Trì → Hoạt Động** — Đặt lịch + Thông báo (Figma).
 class MechanicActivityTab extends StatefulWidget {
@@ -23,8 +29,6 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
   bool _reminderShown = false;
 
   final _appointments = MechanicAppointment.sample;
-  final _notifications = MechanicActivityNotification.sample;
-
   @override
   void initState() {
     super.initState();
@@ -65,19 +69,48 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final notificationProvider = context.watch<NotificationProvider>();
+    final mechanicNotifications = notificationProvider.items;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
-          child: Text(
-            'Hoạt Động',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              height: 1.15,
-            ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Hoạt Động',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  height: 1.15,
+                ),
+              ),
+              if (_section == _ActivitySection.notifications)
+                IconButton(
+                  icon: notificationProvider.isMarkingAllRead
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.done_all_rounded, color: Colors.white, size: 28),
+                  onPressed: notificationProvider.unreadCount == 0 || notificationProvider.isMarkingAllRead
+                      ? null
+                      : () {
+                          HapticFeedback.lightImpact();
+                          context.read<NotificationProvider>().markAllRead();
+                        },
+                  tooltip: 'Đánh dấu tất cả đã đọc',
+                ),
+            ],
           ),
         ),
         Padding(
@@ -99,16 +132,21 @@ class _MechanicActivityTabState extends State<MechanicActivityTab> {
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: _section == _ActivitySection.schedule
-                ? _ScheduleSection(
-                    focusedMonth: _focusedMonth,
-                    selectedDay: _selectedDay,
-                    appointments: _appointments,
-                    onMonthChanged: (month) => setState(() => _focusedMonth = month),
-                    onDaySelected: (day) => setState(() => _selectedDay = day),
-                    selectedAppointment: _appointmentForDay(_selectedDay),
-                  )
-                : _NotificationsSection(items: _notifications),
+            child: switch (_section) {
+              _ActivitySection.schedule => _ScheduleSection(
+                  focusedMonth: _focusedMonth,
+                  selectedDay: _selectedDay,
+                  appointments: _appointments,
+                  onMonthChanged: (month) => setState(() => _focusedMonth = month),
+                  onDaySelected: (day) => setState(() => _selectedDay = day),
+                  selectedAppointment: _appointmentForDay(_selectedDay),
+                ),
+              _ActivitySection.notifications => MechanicActivityNotificationsSection(
+                  items: mechanicNotifications,
+                  onRefresh: () => context.read<NotificationProvider>().refresh(),
+                ),
+              _ActivitySection.services => const MechanicServicesTab(isLightTheme: true),
+            },
           ),
         ),
       ],
@@ -133,12 +171,20 @@ class _SectionToggle extends StatelessWidget {
             onTap: () => onChanged(_ActivitySection.schedule),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: _ToggleChip(
             label: 'Thông báo',
             selected: section == _ActivitySection.notifications,
             onTap: () => onChanged(_ActivitySection.notifications),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _ToggleChip(
+            label: 'Dịch vụ',
+            selected: section == _ActivitySection.services,
+            onTap: () => onChanged(_ActivitySection.services),
           ),
         ),
       ],
@@ -385,7 +431,7 @@ class _AppointmentCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -552,118 +598,4 @@ class _AppointmentReminderDialog extends StatelessWidget {
   }
 }
 
-class _NotificationsSection extends StatelessWidget {
-  const _NotificationsSection({required this.items});
 
-  final List<MechanicActivityNotification> items;
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const Center(
-        child: Text(
-          'Chưa có thông báo.',
-          style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 100),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _NotificationTile(item: items[index]),
-    );
-  }
-}
-
-class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.item});
-
-  final MechanicActivityNotification item;
-
-  @override
-  Widget build(BuildContext context) {
-    final isReview = item.kind == MechanicActivityNotificationKind.review;
-    final iconBg = isReview ? const Color(0xFFFFD54F) : AppColors.primary;
-    final icon = isReview ? Icons.star_rounded : Icons.mail_rounded;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF3F4F6)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
-                    height: 1.3,
-                  ),
-                ),
-                if (item.subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-                if (item.preview != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    item.preview!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF9CA3AF),
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            item.timeLabel,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF9CA3AF),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

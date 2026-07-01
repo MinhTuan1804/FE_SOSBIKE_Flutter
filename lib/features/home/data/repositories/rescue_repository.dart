@@ -29,6 +29,17 @@ class RescueRepository {
     }
   }
 
+  Future<Map<String, dynamic>> cancelRescueOrder(String orderId) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/RescueOrders/$orderId/cancel',
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> acceptRescueOrder(String orderId) async {
     try {
       final response = await _dioClient.dio.post(
@@ -136,6 +147,49 @@ class RescueRepository {
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getNearbyWorkers({
+    required double latitude,
+    required double longitude,
+    double radiusKm = 5.0,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _dioClient.dio.get(
+        '/workers/nearby',
+        queryParameters: {
+          'latitude': latitude,
+          'longitude': longitude,
+          'radius_km': radiusKm,
+          'limit': limit,
+        },
+      );
+      return List<Map<String, dynamic>>.from(
+        (response.data as List).map((e) => Map<String, dynamic>.from(e)),
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<void> rejectRescueOrder(String orderId) async {
+    try {
+      await _dioClient.dio.post(
+        '/RescueOrders/$orderId/reject',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>?> getActiveOrderForCustomer() async {
+    try {
+      final response = await _dioClient.dio.get('/RescueOrders/me/active');
+      return Map<String, dynamic>.from(response.data);
+    } catch (_) {
+      return null;
     }
   }
 }

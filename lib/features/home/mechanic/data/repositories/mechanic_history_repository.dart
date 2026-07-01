@@ -28,7 +28,7 @@ class MechanicHistoryRepository {
         },
       );
       if (response.data is! Map) {
-        throw const FormatException('History response is invalid.');
+        throw const FormatException('Phản hồi từ lịch sử không hợp lệ.');
       }
       return MechanicCustomerHistoryPage.fromJson(
           Map<String, dynamic>.from(response.data));

@@ -9,6 +9,10 @@ import 'package:fe_moblie_flutter/features/notifications/data/services/notificat
 class NotificationProvider extends ChangeNotifier {
   NotificationProvider(this._repository, this._realtimeService);
 
+  static const Set<String> _incomingOrderNotificationTypes = {
+    'RESCUE_ORDER_CREATED',
+  };
+
   final NotificationRepository _repository;
   final NotificationRealtimeService _realtimeService;
 
@@ -26,6 +30,14 @@ class NotificationProvider extends ChangeNotifier {
   bool get isMarkingAllRead => _isMarkingAllRead;
   String? get errorMessage => _errorMessage;
   int get unreadCount => _unreadCount;
+  int get incomingOrderUnreadCount => _items
+      .where((item) => !item.isRead && _incomingOrderNotificationTypes.contains(item.notificationType.toUpperCase()))
+      .length;
+  List<NotificationItem> get incomingOrderNotifications => _items
+      .where((item) => _incomingOrderNotificationTypes.contains(item.notificationType.toUpperCase()))
+      .toList(growable: false);
+  bool isIncomingOrderNotification(NotificationItem item) =>
+      _incomingOrderNotificationTypes.contains(item.notificationType.toUpperCase());
 
   Future<void> load({bool unreadOnly = false}) async {
     _isLoading = true;
@@ -33,7 +45,11 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _ensureRealtimeStarted();
+      try {
+        await _ensureRealtimeStarted();
+      } catch (e) {
+        debugPrint('NotificationProvider.load realtime unavailable: $e');
+      }
       _items = await _repository.getNotifications(unreadOnly: unreadOnly);
       _unreadCount = await _repository.getUnreadCount();
     } catch (e) {
@@ -81,6 +97,26 @@ class NotificationProvider extends ChangeNotifier {
     } finally {
       _isMarkingAllRead = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> deleteNotification(int notificationId) async {
+    final index = _items.indexWhere((item) => item.notificationId == notificationId);
+    if (index == -1) return false;
+    final wasUnread = !_items[index].isRead;
+
+    try {
+      await _repository.deleteNotification(notificationId);
+      _items.removeAt(index);
+      if (wasUnread && _unreadCount > 0) {
+        _unreadCount -= 1;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      notifyListeners();
+      return false;
     }
   }
 

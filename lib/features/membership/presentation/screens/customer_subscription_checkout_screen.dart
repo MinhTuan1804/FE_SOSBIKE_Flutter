@@ -35,6 +35,7 @@ class _CustomerSubscriptionCheckoutScreenState
   Timer? _timer;
   Duration _timeRemaining = const Duration(minutes: 15);
   bool _isExpired = false;
+  bool _canPop = false;
 
   @override
   void initState() {
@@ -120,16 +121,22 @@ class _CustomerSubscriptionCheckoutScreenState
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_step == _CheckoutStep.processing) return false;
+    return PopScope(
+      canPop: _canPop,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (_step == _CheckoutStep.processing) return;
         final navigator = Navigator.of(context);
         await _handlePop();
+        setState(() {
+          _canPop = true;
+        });
+        if (!context.mounted) return;
         if (_step == _CheckoutStep.success || _step == _CheckoutStep.failure) {
           navigator.pop(_step == _CheckoutStep.success);
-          return false;
+        } else {
+          navigator.pop();
         }
-        return true;
       },
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -258,7 +265,10 @@ class _ConfirmView extends StatelessWidget {
                     child: Row(
                       children: [
                         IconButton(
-                          onPressed: onBack,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            onBack();
+                          },
                           icon: const Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: Colors.white,
@@ -436,7 +446,7 @@ class _ConfirmView extends StatelessWidget {
                     value: plan.billingLabel,
                   ),
                   _OrderSummaryRow(label: 'Giá gốc', value: '${_formatMoney(plan.price)}đ'),
-                  _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
+                  const _OrderSummaryRow(label: 'Giảm giá', value: '0đ'),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Divider(color: Color(0xFF3A1A1A)),
@@ -471,7 +481,7 @@ class _ConfirmView extends StatelessWidget {
           height: 50,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.primary, const Color(0xFFB81818)]),
+              gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFFB81818)]),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
@@ -482,7 +492,10 @@ class _ConfirmView extends StatelessWidget {
               ],
             ),
             child: ElevatedButton(
-              onPressed: onConfirm,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onConfirm();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -536,6 +549,7 @@ class _PayOSQRView extends StatelessWidget {
   final VoidCallback onConfirm;
 
   Future<void> _copyText(BuildContext context, String text, String message) async {
+    HapticFeedback.lightImpact();
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -570,7 +584,10 @@ class _PayOSQRView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          onPressed: onBack,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            onBack();
+          },
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
         title: const Text(
@@ -785,6 +802,7 @@ class _PayOSQRView extends StatelessWidget {
                                 onPressed: isExpired
                                     ? null
                                     : () async {
+                                        HapticFeedback.lightImpact();
                                         final Uri url = Uri.parse(intent.checkoutUrl!);
                                         if (await canLaunchUrl(url)) {
                                           await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -848,7 +866,12 @@ class _PayOSQRView extends StatelessWidget {
         child: SizedBox(
           height: 48,
           child: ElevatedButton(
-            onPressed: isExpired ? null : onConfirm,
+            onPressed: isExpired
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                    onConfirm();
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -1160,7 +1183,10 @@ class _ResultViewState extends State<_ResultView>
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: widget.onRetry,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            widget.onRetry?.call();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -1176,7 +1202,10 @@ class _ResultViewState extends State<_ResultView>
                       width: double.infinity,
                       height: 48,
                       child: OutlinedButton(
-                        onPressed: widget.onDone,
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          widget.onDone();
+                        },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
@@ -1448,7 +1477,7 @@ class _PlanStyle {
     const ascii = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd'
         'AAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD';
     var result = value;
-    final length = vietnamese.length < ascii.length ? vietnamese.length : ascii.length;
+    const length = vietnamese.length < ascii.length ? vietnamese.length : ascii.length;
     for (var i = 0; i < length; i++) {
       result = result.replaceAll(vietnamese[i], ascii[i]);
     }

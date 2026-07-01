@@ -7,6 +7,10 @@ import 'package:geocoding/geocoding.dart' as geo;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
+import 'package:fe_moblie_flutter/core/utils/encoding_utils.dart';
+import 'package:provider/provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 
 class LocationSelectView extends StatefulWidget {
   const LocationSelectView({
@@ -30,6 +34,13 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   String _selectedAddress = 'Vị trí hiện tại của bạn';
 
   String get _goongApiKey {
+    // 1. Try DB config first
+    try {
+      final dbKey = AppConfig.current.thirdParty.goongApiKey;
+      if (dbKey.isNotEmpty) return dbKey;
+    } catch (_) {}
+
+    // 2. Fallback to .env
     try {
       if (dotenv.isInitialized) {
         final key = dotenv.env['GOONG_API_KEY'];
@@ -46,6 +57,8 @@ class _LocationSelectViewState extends State<LocationSelectView> {
 
   final Set<Marker> _markers = {};
   List<Map<String, dynamic>> _incidentLocations = [];
+  BitmapDescriptor? _workerIcon;
+  bool _isLoadingWorkers = false;
 
 
 
@@ -60,10 +73,23 @@ class _LocationSelectViewState extends State<LocationSelectView> {
     });
   }
 
+  Future<void> _loadWorkerMarkerIcon() async {
+    try {
+      _workerIcon = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(32, 32)),
+        'assets/images/onboarding/logo.png',
+      );
+    } catch (e) {
+      _workerIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _updateLocations(_initialPosition);
+    _loadWorkerMarkerIcon().then((_) {
+      _fetchNearbyWorkers(_initialPosition);
+    });
     _markers.add(
       Marker(
         markerId: const MarkerId('user_location'),
@@ -86,80 +112,120 @@ class _LocationSelectViewState extends State<LocationSelectView> {
   // Thuật toán Haversine tính khoảng cách (trả về km)
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const p = 0.017453292519943295;
-    final c = cos;
+    const c = cos;
     final a = 0.5 - c((lat2 - lat1) * p)/2 + 
           c(lat1 * p) * c(lat2 * p) * 
           (1 - c((lon2 - lon1) * p))/2;
     return 12742 * asin(sqrt(a));
   }
 
-  // Cập nhật danh sách các điểm xung quanh tâm bản đồ
-  void _updateLocations(LatLng center) {
-    // Tọa độ 4 điểm sự cố lân cận mô phỏng trong bán kính 200m
-    final incident1LatLng = LatLng(center.latitude + 0.0008, center.longitude - 0.0006); // ~90m
-    final incident2LatLng = LatLng(center.latitude - 0.0012, center.longitude + 0.0010); // ~150m
-    final incident3LatLng = LatLng(center.latitude + 0.0005, center.longitude + 0.0013); // ~140m
-    final incident4LatLng = LatLng(center.latitude - 0.0014, center.longitude - 0.0008); // ~170m
-
-    final tempIncidents = [
-      {
-        'title': 'Sự cố hỏng xích - Đang xác định vị trí...',
-        'latLng': incident1LatLng,
-        'type': 'incident_1',
-      },
-      {
-        'title': 'Bể bánh xe - Đang xác định vị trí...',
-        'latLng': incident2LatLng,
-        'type': 'incident_2',
-      },
-      {
-        'title': 'Chết máy đột ngột - Đang xác định vị trí...',
-        'latLng': incident3LatLng,
-        'type': 'incident_3',
-      },
-      {
-        'title': 'Thủng lốp xe - Đang xác định vị trí...',
-        'latLng': incident4LatLng,
-        'type': 'incident_4',
-      },
-    ];
-
-    setState(() {
-      // Giữ lại các điểm tự chọn (không có trường 'type')
-      final customItems = _incidentLocations.where((item) {
-        return item['type'] == null;
-      }).toList();
-      _incidentLocations = [...customItems, ...tempIncidents];
-      
-      // Giới hạn danh sách tối đa 5 phần tử (1 GPS hiện tại ở đầu + 4 lân cận)
-      if (_incidentLocations.length > 5) {
-        _incidentLocations = _incidentLocations.sublist(0, 5);
-      }
-    });
-
-    // Dùng Smart Mock Geocoder trực tiếp cho các sự cố giả lập để tiết kiệm số lượng request Goong API
-    final address1 = _getSmartMockAddress(incident1LatLng);
-    _updateIncidentTitle('incident_1', 'Sự cố hỏng xích - $address1');
-
-    final address2 = _getSmartMockAddress(incident2LatLng);
-    _updateIncidentTitle('incident_2', 'Bể bánh xe - $address2');
-
-    final address3 = _getSmartMockAddress(incident3LatLng);
-    _updateIncidentTitle('incident_3', 'Chết máy đột ngột - $address3');
-
-    final address4 = _getSmartMockAddress(incident4LatLng);
-    _updateIncidentTitle('incident_4', 'Thủng lốp xe - $address4');
-  }
-
-  void _updateIncidentTitle(String type, String newTitle) {
+  void _updateMarkers() {
     if (!mounted) return;
     setState(() {
+      _markers.clear();
+      
+      // 1. Add user location marker
+      LatLng userPos = _initialPosition;
+      if (_incidentLocations.isNotEmpty) {
+        final selected = _incidentLocations[_selectedItemIndex < _incidentLocations.length ? _selectedItemIndex : 0];
+        userPos = selected['latLng'] as LatLng;
+      }
+      
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('user_location'),
+          position: userPos,
+          infoWindow: const InfoWindow(
+            title: 'Vị trí cứu hộ',
+          ),
+        ),
+      );
+
+      // 2. Add worker markers
       for (var item in _incidentLocations) {
-        if (item['type'] == type) {
-          item['title'] = newTitle;
+        if (item['type'] == 'worker') {
+          final latLng = item['latLng'] as LatLng;
+          final String title = item['title'] as String;
+          final String snippet = item['subtitle'] as String? ?? '';
+          final wData = item['workerData'] as Map<String, dynamic>?;
+          final String workerId = wData?['mechanicId']?.toString() ?? title;
+
+          _markers.add(
+            Marker(
+              markerId: MarkerId('worker_$workerId'),
+              position: latLng,
+              icon: _workerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+              infoWindow: InfoWindow(
+                title: title,
+                snippet: snippet,
+              ),
+              onTap: () {
+                final index = _incidentLocations.indexOf(item);
+                if (index != -1 && mounted) {
+                  setState(() {
+                    _selectedItemIndex = index;
+                    _selectedAddress = title;
+                  });
+                  _mapController?.animateCamera(
+                    CameraUpdate.newLatLng(latLng),
+                  );
+                }
+              },
+            ),
+          );
         }
       }
     });
+  }
+
+  Future<void> _fetchNearbyWorkers(LatLng center) async {
+    if (_isLoadingWorkers) return;
+    setState(() {
+      _isLoadingWorkers = true;
+    });
+
+    try {
+      final rescueProvider = Provider.of<RescueProvider>(context, listen: false);
+      final workers = await rescueProvider.getNearbyWorkers(
+        center.latitude,
+        center.longitude,
+        radiusKm: 5.0,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        // Remove old workers from list
+        _incidentLocations.removeWhere((item) => item['type'] == 'worker');
+
+        // Map real workers from API
+        final workerItems = workers.map((w) {
+          final lat = w['latitude'] != null ? (w['latitude'] as num).toDouble() : 0.0;
+          final lng = w['longitude'] != null ? (w['longitude'] as num).toDouble() : 0.0;
+          return {
+            'title': 'Thợ: ${w['fullName'] ?? 'Sửa xe'} (${w['rating'] ?? 5.0}★)',
+            'subtitle': '${w['vehicleModel'] ?? 'N/A'} - ${w['licensePlate'] ?? 'N/A'} (${w['distanceKm'] ?? 0.0}km)',
+            'latLng': LatLng(lat, lng),
+            'type': 'worker',
+            'workerData': w,
+          };
+        }).toList();
+
+        // Keep only custom user selected locations (type is null) and append new workers
+        final customItems = _incidentLocations.where((item) => item['type'] == null).toList();
+        _incidentLocations = [...customItems, ...workerItems];
+      });
+
+      _updateMarkers();
+    } catch (e) {
+      debugPrint('Lỗi khi tìm thợ xung quanh: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingWorkers = false;
+        });
+      }
+    }
   }
 
   // Tìm kiếm địa chỉ bằng Google Geocoding API hoặc Fallback Offline thông minh
@@ -190,7 +256,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
           final lng = location['lng'] as double;
           final latLng = LatLng(lat, lng);
           
-          String address = results[0]['formatted_address'] ?? query;
+          String address = EncodingUtils.fixVietnameseEncoding(results[0]['formatted_address'] ?? query);
           if (address.endsWith(', Việt Nam')) {
             address = address.substring(0, address.length - 10);
           } else if (address.endsWith(', Vietnam')) {
@@ -205,8 +271,10 @@ class _LocationSelectViewState extends State<LocationSelectView> {
               _addToHistory(query);
             });
             _highlightLocation(latLng);
+            _fetchNearbyWorkers(latLng);
           }
           return;
+
         }
       }
     } catch (e) {
@@ -254,7 +322,9 @@ class _LocationSelectViewState extends State<LocationSelectView> {
           _addToHistory(query);
         });
         _highlightLocation(latLng);
+        _fetchNearbyWorkers(latLng);
       }
+
     } else {
       if (mounted) {
         setState(() {
@@ -272,26 +342,30 @@ class _LocationSelectViewState extends State<LocationSelectView> {
       'latLng': position,
     };
 
-    // Loại bỏ bất kỳ phần tử nào trùng tiêu đề hoặc trùng tọa độ cũ
-    _incidentLocations.removeWhere((item) => item['title'] == address);
+    // Lấy các thợ hiện tại đang lưu trong list để không bị mất khi insert custom location
+    final workerItems = _incidentLocations.where((item) => item['type'] == 'worker').toList();
+
+    // Loại bỏ các custom location trùng tên hoặc toạ độ
+    _incidentLocations.removeWhere((item) => item['type'] != 'worker' && item['title'] == address);
     
     // Đảm bảo phần tử Index 0 luôn là vị trí hiện tại (GPS) nếu đã được tải
-    if (_incidentLocations.isNotEmpty && _incidentLocations.first['type'] == null && _incidentLocations.first['title'] == _selectedAddress) {
-      // Vị trí GPS hiện tại đang ở đầu, chèn vào ngay sau nó (Index 1)
-      _incidentLocations.insert(1, newIncident);
+    final customItems = _incidentLocations.where((item) => item['type'] != 'worker').toList();
+    if (customItems.isNotEmpty && customItems.first['title'] == _selectedAddress) {
+      customItems.insert(1, newIncident);
     } else {
-      // Chèn lên đầu
-      _incidentLocations.insert(0, newIncident);
+      customItems.insert(0, newIncident);
     }
 
-    // Giới hạn danh sách tối đa 5 phần tử: 1 GPS hiện tại + 4 lân cận
-    if (_incidentLocations.length > 5) {
-      _incidentLocations = _incidentLocations.sublist(0, 5);
-    }
+    // Giới hạn danh sách các điểm tự chọn tối đa 2 phần tử để tránh quá dài
+    final limitedCustom = customItems.take(2).toList();
+    
+    // Ghép lại với danh sách thợ
+    _incidentLocations = [...limitedCustom, ...workerItems];
     
     _selectedItemIndex = _incidentLocations.indexWhere((item) => item['title'] == address);
     if (_selectedItemIndex == -1) _selectedItemIndex = 0;
   }
+
 
   // Smart Mock Geocoder: Dùng để sinh địa chỉ tiếng Việt cực kỳ thực tế xung quanh TP.HCM khi cả hai dịch vụ geocoding đều lỗi (ví dụ do lỗi Billing của API Key)
   String _getSmartMockAddress(LatLng latLng) {
@@ -407,7 +481,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         }
         
         if (parts.isNotEmpty) {
-          return parts.join(', ');
+          return EncodingUtils.fixVietnameseEncoding(parts.join(', '));
         }
       }
     } catch (e) {
@@ -435,7 +509,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
             address = address.substring(0, address.length - 9);
           }
           if (address.isNotEmpty) {
-            return address;
+            return EncodingUtils.fixVietnameseEncoding(address);
           }
         }
       }
@@ -444,7 +518,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
     }
 
     // 3. Fallback thông minh cuối cùng bằng Smart Mock Geocoder thay vì hiện toạ độ số thô
-    return _getSmartMockAddress(latLng);
+    return EncodingUtils.fixVietnameseEncoding(_getSmartMockAddress(latLng));
   }
 
 
@@ -476,8 +550,9 @@ class _LocationSelectViewState extends State<LocationSelectView> {
         setState(() {
           _deviceLocation = latLng;
           _selectedItemIndex = 0;
-          _updateLocations(latLng);
+          _fetchNearbyWorkers(latLng);
           _isLoadingAddress = true;
+
           _selectedAddress = 'Đang xác định địa chỉ...';
         });
 
@@ -558,6 +633,8 @@ class _LocationSelectViewState extends State<LocationSelectView> {
                 _selectedAddress = 'Đang xác định địa chỉ...';
               });
               _highlightLocation(position);
+              _fetchNearbyWorkers(position);
+
               
               _reverseGeocode(position).then((address) {
                 if (mounted) {
@@ -673,7 +750,7 @@ class _LocationSelectViewState extends State<LocationSelectView> {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
             onPressed: onBack,
           ),
         ),
@@ -715,27 +792,27 @@ class SearchAddressBar extends StatelessWidget {
         child: Container(
           height: 54,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              const Icon(Icons.location_on, color: Colors.white, size: 24),
+              const Icon(Icons.location_on, color: AppColors.primary, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   isPlaceholder ? 'Tìm kiếm vị trí cứu hộ...' : address,
                   style: TextStyle(
-                    color: isPlaceholder ? Colors.white.withValues(alpha: 0.7) : Colors.white,
-                    fontSize: 14,
+                    color: isPlaceholder ? Colors.grey[500] : Colors.black87,
+                    fontSize: 15,
                     fontWeight: isPlaceholder ? FontWeight.w500 : FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -748,12 +825,12 @@ class SearchAddressBar extends StatelessWidget {
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
+                    color: AppColors.primary,
                     strokeWidth: 2,
                   ),
                 )
               else
-                const Icon(Icons.search, color: Colors.white, size: 20),
+                const Icon(Icons.search, color: AppColors.primary, size: 22),
             ],
           ),
         ),
@@ -826,7 +903,7 @@ class _AddressSearchOverlayState extends State<AddressSearchOverlay> {
                 ),
                 Expanded(
                   child: Container(
-                    height: 46,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -834,7 +911,7 @@ class _AddressSearchOverlayState extends State<AddressSearchOverlay> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        Icon(Icons.search, color: AppColors.primary, size: 20),
+                        const Icon(Icons.search, color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
@@ -895,7 +972,7 @@ class _AddressSearchOverlayState extends State<AddressSearchOverlay> {
                 ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.red[50],
-                    child: Icon(Icons.my_location, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.my_location, color: AppColors.primary, size: 20),
                   ),
                   title: const Text(
                     'Lấy vị trí hiện tại',
@@ -995,9 +1072,9 @@ class LocationDetailsPanel extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -1018,13 +1095,13 @@ class LocationDetailsPanel extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Tiêu đề bảng điều khiển (Bỏ hoàn toàn tab Điểm đón)
+            // Tiêu đề bảng điều khiển
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Vị trí cứu hộ lân cận',
+                  'Địa điểm xảy ra sự cố',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1035,71 +1112,89 @@ class LocationDetailsPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Danh sách các điểm sự cố cứu hộ lân cận
-            if (items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(),
-              )
-            else
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final itemLatLng = item['latLng'] as LatLng;
-                  final deviceLatLng = deviceLocation ?? initialPosition;
-                  final dist = calculateDistance(
-                    deviceLatLng.latitude,
-                    deviceLatLng.longitude,
-                    itemLatLng.latitude,
-                    itemLatLng.longitude,
-                  );
-                  final distanceStr = dist < 1.0
-                      ? '${(dist * 1000).toStringAsFixed(0)}m'
-                      : '${dist.toStringAsFixed(1)}km';
-                  final isSelected = selectedItemIndex == index;
+            // Danh sách các địa điểm sự cố (bỏ qua thợ)
+            Builder(
+              builder: (context) {
+                final locationItems = items.where((item) => item['type'] != 'worker').toList();
 
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      LocationItemTile(
-                        icon: Icons.warning_amber_rounded,
-                        iconColor: isSelected ? Colors.amber[800]! : Colors.grey,
-                        title: item['title'] as String,
-                        distance: distanceStr,
-                        isSelected: isSelected,
-                        onTap: () => onItemTap(index, itemLatLng, item['title'] as String),
-                      ),
-                      if (index < items.length - 1)
-                        const Divider(height: 1, indent: 64),
-                    ],
+                if (locationItems.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                    child: Text(
+                      'Chua co dia diem nao duoc chon. Hay tim kiem hoac chon tren ban do.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
                   );
-                }),
-              ),
+                }
+
+                final allItems = items;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: () {
+                    final nonWorkers = <Widget>[];
+                    for (int i = 0; i < allItems.length; i++) {
+                      final item = allItems[i];
+                      if (item['type'] == 'worker') continue;
+
+                      final itemLatLng = item['latLng'] as LatLng;
+                      final deviceLatLng = deviceLocation ?? initialPosition;
+                      final dist = calculateDistance(
+                        deviceLatLng.latitude,
+                        deviceLatLng.longitude,
+                        itemLatLng.latitude,
+                        itemLatLng.longitude,
+                      );
+                      final distanceStr = dist < 1.0
+                          ? '${(dist * 1000).toStringAsFixed(0)}m'
+                          : '${dist.toStringAsFixed(1)}km';
+                      final isSelected = selectedItemIndex == i;
+
+                      nonWorkers.add(
+                        LocationItemTile(
+                          icon: Icons.my_location,
+                          iconColor: isSelected ? AppColors.primary : Colors.grey,
+                          title: item['title'] as String,
+                          distance: distanceStr,
+                          isSelected: isSelected,
+                          onTap: () => onItemTap(i, itemLatLng, item['title'] as String),
+                        ),
+                      );
+                    }
+
+                    final childrenWithDividers = <Widget>[];
+                    for (int i = 0; i < nonWorkers.length; i++) {
+                      childrenWithDividers.add(nonWorkers[i]);
+                      if (i < nonWorkers.length - 1) {
+                        childrenWithDividers.add(const Divider(height: 1, indent: 64));
+                      }
+                    }
+                    return childrenWithDividers;
+                  }(),
+                );
+              },
+            ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: onConfirmLocation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 2,
-                      ),
-                      child: const Text(
-                        'Chọn địa điểm này',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.paddingOf(context).bottom + 20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: onConfirmLocation,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 0,
                   ),
-                ],
+                  child: const Text(
+                    'Chọn địa điểm này',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
+                ),
               ),
             ),
           ],

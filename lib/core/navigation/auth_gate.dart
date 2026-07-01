@@ -43,6 +43,7 @@ class _AuthGateState extends State<AuthGate> {
       debugPrint('Lỗi yêu cầu quyền vị trí: $e');
     }
 
+    if (!mounted) return;
     final auth = context.read<AuthProvider>();
     await auth.checkAuthStatus();
     if (!mounted) return;

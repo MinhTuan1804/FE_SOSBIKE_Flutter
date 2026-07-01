@@ -64,12 +64,15 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
       );
     }
 
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 0),
-          child: Column(
+        Container(
+          color: AppColors.primary,
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 16),
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -206,7 +209,7 @@ class _InProgressOrderCard extends StatelessWidget {
               const Spacer(),
               Text(
                 _statusLabel,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,

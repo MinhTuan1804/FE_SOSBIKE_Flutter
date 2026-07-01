@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
 import 'package:fe_moblie_flutter/core/utils/jwt_utils.dart';
 
 class AuthService {
@@ -21,6 +24,7 @@ class AuthService {
 
   String? _memoryToken;
   String? _memoryBlogVisitorId;
+  DateTime? _lastSuccessfulRefreshAt;
 
   Future<void> saveToken(String token) async {
     _memoryToken = token;
@@ -31,17 +35,77 @@ class AuthService {
     }
   }
 
+  Future<String?>? _refreshFuture;
+
+  Future<String?> refreshAccessToken() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+    try {
+      final client = HttpClient();
+      final uri = Uri.parse('${ApiEndpoints.baseUrl}${ApiEndpoints.refreshToken}');
+      final request = await client.postUrl(uri);
+      request.headers.set('content-type', 'application/json');
+      request.headers.set('ngrok-skip-browser-warning', 'true');
+      
+      request.write(json.encode({'refreshToken': refreshToken}));
+      final response = await request.close();
+      
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final data = json.decode(responseBody);
+        final newAccessToken = data['accessToken'] as String?;
+        final newRefreshToken = data['refreshToken'] as String?;
+        if (newAccessToken != null) {
+          await saveToken(newAccessToken);
+          if (newRefreshToken != null) {
+            await saveRefreshToken(newRefreshToken);
+          }
+          return newAccessToken;
+        }
+      }
+    } catch (e) {
+      debugPrint('AuthService.refreshAccessToken error: $e');
+    }
+    return null;
+  }
+
   Future<String?> getToken() async {
+    // 1. If memory token is still valid, return it immediately
     if (_memoryToken != null && _memoryToken!.isNotEmpty) {
-      return _memoryToken;
+      if (!isJwtExpired(_memoryToken!)) {
+        return _memoryToken;
+      }
+
+      // 2. Token expired, but we just refreshed recently (within 10s) — return
+      //    whatever is in memory to prevent hammering the refresh endpoint
+      if (_lastSuccessfulRefreshAt != null &&
+          DateTime.now().difference(_lastSuccessfulRefreshAt!).inSeconds < 10) {
+        debugPrint('AuthService.getToken: returning in-memory token (fresh refresh)');
+        return _memoryToken;
+      }
     }
     try {
       final stored = await _storage
           .read(key: _keyToken)
           .timeout(const Duration(seconds: 3), onTimeout: () => null);
       if (stored != null && stored.isNotEmpty) {
-        _memoryToken = stored;
-        return stored;
+        if (!isJwtExpired(stored)) {
+          _memoryToken = stored;
+          return stored;
+        } else {
+          // Token is expired — use shared future to avoid concurrent refreshes
+          _refreshFuture ??= refreshAccessToken();
+          final refreshed = await _refreshFuture;
+          // Only null the future after a short delay to let concurrent callers
+          // share the same result
+          Future.delayed(const Duration(milliseconds: 500), () {
+            _refreshFuture = null;
+          });
+          if (refreshed != null) {
+            _lastSuccessfulRefreshAt = DateTime.now();
+            return refreshed;
+          }
+        }
       }
     } catch (e) {
       debugPrint('AuthService.getToken fallback memory: $e');

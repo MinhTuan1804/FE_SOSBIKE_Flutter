@@ -13,6 +13,7 @@ class MechanicWalletProvider extends ChangeNotifier {
   bool _hasWallet = true;
   bool? _hasPin;
   bool _isPinUnlocked = false;
+  bool _isWalletLocked = false;
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -25,6 +26,7 @@ class MechanicWalletProvider extends ChangeNotifier {
   List<MechanicWithdrawRequest> get withdrawRequests => _data?.withdrawRequests ?? const [];
   bool? get hasPin => _hasPin;
   bool get isPinUnlocked => _isPinUnlocked;
+  bool get isWalletLocked => _isWalletLocked;
 
   /// Tạo ví → PIN → liên kết ngân hàng: ẩn header/nav shell.
   bool isInWalletSetupFlow({required bool hasBankLinked}) {
@@ -73,6 +75,7 @@ class MechanicWalletProvider extends ChangeNotifier {
       try {
         final pinStatus = await _repository.checkPinStatus();
         _hasPin = pinStatus.hasPin;
+        _isWalletLocked = pinStatus.status?.toUpperCase() == 'LOCKED';
       } catch (e) {
         debugPrint('checkPinStatus failed: $e');
         _hasPin = false;
@@ -92,6 +95,7 @@ class MechanicWalletProvider extends ChangeNotifier {
       final pinStatus = await _repository.checkPinStatus();
       _hasWallet = true;
       _hasPin = pinStatus.hasPin;
+      _isWalletLocked = pinStatus.status?.toUpperCase() == 'LOCKED';
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
@@ -139,13 +143,81 @@ class MechanicWalletProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final ok = await _repository.verifyPin(pin);
+      final result = await _repository.verifyPin(pin);
+      final ok = result['success'] == true;
       if (ok) {
         _isPinUnlocked = true;
+        _isWalletLocked = false;
+      } else {
+        if (result['locked'] == true) {
+          _isWalletLocked = true;
+          _errorMessage = result['message']?.toString() ?? 'Ví của bạn đã bị khóa.';
+        } else {
+          _errorMessage = result['message']?.toString() ?? 'Mã PIN không chính xác.';
+        }
       }
       return ok;
     } catch (e) {
       _errorMessage = e.toString();
+      if (_errorMessage != null && _errorMessage!.contains('khóa')) {
+        _isWalletLocked = true;
+      }
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> sendForgotPinOtp(String phoneNumber) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final code = await _repository.sendForgotPinOtp(phoneNumber);
+      return code;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPin(String otp, String newPin) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await _repository.resetPin(otp, newPin);
+      if (success) {
+        await load(force: true);
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPinFirebase(String idToken, String newPin) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await _repository.resetPinFirebase(idToken, newPin);
+      if (success) {
+        await load(force: true);
+      }
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       return false;
     } finally {
       _isLoading = false;

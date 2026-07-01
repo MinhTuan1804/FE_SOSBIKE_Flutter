@@ -90,7 +90,6 @@ class AuthRepository {
     try {
       final response = await _dioClient.dio.get(
         ApiEndpoints.userMe,
-        options: Options(extra: {'skipAuthLogout': true}),
       );
       return UserResponseDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -102,7 +101,6 @@ class AuthRepository {
     try {
       final response = await _dioClient.dio.get(
         ApiEndpoints.userMe,
-        options: Options(extra: {'skipAuthLogout': true}),
       );
       return UserProfileDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -226,7 +224,7 @@ class AuthRepository {
     }
   }
 
-  Future<String> _uploadAvatarToFirebase(XFile avatarFile, String? oldAvatarUrl) async {
+  Future<String> uploadAvatarToFirebase(XFile avatarFile, String? oldAvatarUrl) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw StateError('Người dùng chưa đăng nhập Firebase.');
@@ -244,7 +242,7 @@ class AuthRepository {
     );
     final newUrl = await ref.getDownloadURL();
 
-    if (_isFirebaseStorageUrl(oldAvatarUrl) && oldAvatarUrl != newUrl) {
+    if (isFirebaseStorageUrl(oldAvatarUrl) && oldAvatarUrl != newUrl) {
       try {
         final oldRef = FirebaseStorage.instance.refFromURL(oldAvatarUrl!);
         await oldRef.delete();
@@ -256,7 +254,7 @@ class AuthRepository {
     return newUrl;
   }
 
-  bool _isFirebaseStorageUrl(String? url) {
+  bool isFirebaseStorageUrl(String? url) {
     if (url == null || url.trim().isEmpty) return false;
     return url.startsWith('gs://') || url.contains('firebasestorage.googleapis.com');
   }

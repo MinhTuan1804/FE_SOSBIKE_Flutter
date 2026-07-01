@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
+import 'package:fe_moblie_flutter/core/config/app_config.dart';
 
 /// Header đỏ full width; vùng Trực tuyến kéo sát mép phải (Figma).
 class MainAppHeader extends StatelessWidget {
@@ -10,6 +11,7 @@ class MainAppHeader extends StatelessWidget {
     required this.isOnline,
     required this.onOnlineChanged,
     required this.userType,
+    this.showVipBadge = false,
     this.avatarUrl,
     this.onAvatarTap,
     this.onLocationTap,
@@ -19,6 +21,7 @@ class MainAppHeader extends StatelessWidget {
   final bool isOnline;
   final ValueChanged<bool> onOnlineChanged;
   final String? userType;
+  final bool showVipBadge;
   final String? avatarUrl;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onLocationTap;
@@ -36,7 +39,7 @@ class MainAppHeader extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.only(top: top + 8, bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: AppConfig.current.ui.navbarHeaderColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -74,33 +77,34 @@ class MainAppHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: -4,
-                      left: -4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFE01B), // Gold/Yellow
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.white, width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
+                    if (showVipBadge)
+                      Positioned(
+                        top: -4,
+                        left: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFE01B), // Gold/Yellow
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.white, width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'VIP',
+                            style: TextStyle(
+                              color: Color(0xFFC01515), // Red text
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
                             ),
-                          ],
-                        ),
-                        child: const Text(
-                          'VIP',
-                          style: TextStyle(
-                            color: Color(0xFFC01515), // Red text
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(width: 12),
@@ -156,7 +160,7 @@ class MainAppHeader extends StatelessWidget {
                         shape: BoxShape.circle,
                         
                       ),
-                      child: IconButton(onPressed: (){}, icon: Icon(Icons.location_on, color: AppColors.primary, size: 30)),
+                      child: IconButton(onPressed: (){}, icon: const Icon(Icons.location_on, color: AppColors.primary, size: 30)),
                     )
                   : FittedBox(
                       fit: BoxFit.scaleDown,

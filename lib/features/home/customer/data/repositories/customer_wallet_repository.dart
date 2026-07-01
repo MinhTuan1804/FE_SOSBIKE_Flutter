@@ -16,7 +16,7 @@ class CustomerWalletRepository {
         queryParameters: {'limit': limit},
       );
       if (response.data is! Map) {
-        throw const FormatException('Wallet response is invalid.');
+        throw const FormatException('Phản hồi từ ví không hợp lệ.');
       }
       return MechanicWalletData.fromJson(Map<String, dynamic>.from(response.data));
     } on DioException catch (e) {

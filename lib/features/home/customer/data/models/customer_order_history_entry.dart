@@ -8,6 +8,7 @@ class CustomerOrderHistoryEntry {
     required this.address,
     required this.totalAmount,
     required this.paymentMethod,
+    required this.status,
     this.avatarUrl,
   });
 
@@ -19,6 +20,7 @@ class CustomerOrderHistoryEntry {
   final String address;
   final int totalAmount;
   final String paymentMethod;
+  final String status;
   final String? avatarUrl;
 
   factory CustomerOrderHistoryEntry.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class CustomerOrderHistoryEntry {
       address: json['address']?.toString() ?? '',
       totalAmount: _toInt(json['totalAmount']),
       paymentMethod: json['paymentMethod']?.toString() ?? 'Tiền mặt',
+      status: json['status']?.toString() ?? 'COMPLETED',
       avatarUrl: json['mechanicAvatarUrl']?.toString(),
     );
   }
@@ -46,5 +49,24 @@ class CustomerOrderHistoryEntry {
           (m) => '${m.group(1) ?? ''}.',
         );
     return '$formattedđ';
+  }
+
+  bool get isActive =>
+      status != 'COMPLETED' &&
+      status != 'CANCELLED' &&
+      status != 'CANCELLED_AFTER_ARRIVED';
+
+  String get statusLabel {
+    return switch (status.toUpperCase()) {
+      'PENDING' => 'Đang tìm thợ',
+      'ACCEPTED' => 'Đang di chuyển',
+      'ARRIVED' => 'Đã đến nơi',
+      'QUOTING' => 'Đang báo giá',
+      'REPAIRING' => 'Đang sửa chữa',
+      'COMPLETED' => 'Đã hoàn tất',
+      'CANCELLED' => 'Đã hủy',
+      'CANCELLED_AFTER_ARRIVED' => 'Hủy sau khi đến',
+      _ => 'Đang xử lý',
+    };
   }
 }

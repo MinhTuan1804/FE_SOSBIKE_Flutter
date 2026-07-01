@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/core/services/auth_service.dart';
+import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
@@ -71,9 +75,22 @@ class _NotificationListViewState extends State<NotificationListView> {
         separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.black12, indent: 80),
         itemBuilder: (context, index) {
           final item = items[index];
-          return _NotificationTile(
-            item: item,
-            onTap: () => _handleTap(context, item),
+          return Dismissible(
+            key: Key('notif-${item.notificationId}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: Colors.redAccent,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 28),
+            ),
+            onDismissed: (_) {
+              context.read<NotificationProvider>().deleteNotification(item.notificationId);
+            },
+            child: _NotificationTile(
+              item: item,
+              onTap: () => _handleTap(context, item),
+            ),
           );
         },
       ),
@@ -83,6 +100,29 @@ class _NotificationListViewState extends State<NotificationListView> {
   Future<void> _handleTap(BuildContext context, NotificationItem item) async {
     await context.read<NotificationProvider>().markRead(item.notificationId);
     if (!context.mounted) return;
+
+    final type = item.notificationType.toUpperCase();
+    final auth = context.read<AuthProvider>();
+    final isCustomer = auth.userType == 'CUSTOMER';
+
+    if (isCustomer) {
+      if (type == 'RESCUE_ORDER_ACCEPTED' || 
+          type == 'RESCUE_ORDER_ARRIVED' || 
+          type == 'RESCUE_ORDER_QUOTED' || 
+          type == 'REPAIR_STARTED' || 
+          type == 'REPAIR_COMPLETED') {
+        final rescue = context.read<RescueProvider>();
+        if (rescue.currentOrderId != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const FindMechanicFlowPage(),
+            ),
+          );
+          return;
+        }
+      }
+    }
+
     await _showDetailModal(context, item);
   }
 
@@ -358,6 +398,12 @@ class _NotificationListViewState extends State<NotificationListView> {
         return 'Gói thành viên sắp hết hạn.';
       case 'MEMBERSHIP_AUTO_RENEW_DISABLED':
         return 'Đã tắt tự động gia hạn gói thành viên.';
+      case 'MECHANIC_PROFILE_SUBMITTED':
+        return 'Hồ sơ thợ của bạn đã được gửi lên admin để xem xét.';
+      case 'MECHANIC_PROFILE_APPROVED':
+        return 'Hồ sơ thợ của bạn đã được admin xác nhận.';
+      case 'MECHANIC_PROFILE_REJECTED':
+        return 'Hồ sơ thợ của bạn chưa được duyệt và cần bổ sung.';
       default:
         return _safeDisplayText(item.content);
     }
@@ -380,7 +426,7 @@ class _NotificationListViewState extends State<NotificationListView> {
 
   String _formatTime(DateTime? time) {
     if (time == null) return '';
-    return DateFormat('HH:mm dd/MM', 'vi').format(time);
+    return DateFormat('HH:mm dd/MM', 'vi').format(time.toLocal());
   }
 
   String _friendlyTypeLabel(String type) {
@@ -519,7 +565,7 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _styleFor(item.notificationType);
-    final time = item.createdAt == null ? '' : DateFormat('HH:mm dd/MM', 'vi').format(item.createdAt!);
+    final time = item.createdAt == null ? '' : DateFormat('HH:mm dd/MM', 'vi').format(item.createdAt!.toLocal());
 
     return InkWell(
       onTap: onTap,
@@ -668,6 +714,12 @@ _NotificationStyle _styleFor(String type) {
     case 'MEMBERSHIP_RENEWED':
     case 'MEMBERSHIP_AUTO_RENEW_DISABLED':
       return const _NotificationStyle(icon: Icons.card_membership_rounded, backgroundColor: Color(0xFF7E57C2));
+    case 'MECHANIC_PROFILE_SUBMITTED':
+      return const _NotificationStyle(icon: Icons.pending_actions_rounded, backgroundColor: Color(0xFFFF9800));
+    case 'MECHANIC_PROFILE_APPROVED':
+      return const _NotificationStyle(icon: Icons.verified_rounded, backgroundColor: Color(0xFF4CAF50));
+    case 'MECHANIC_PROFILE_REJECTED':
+      return const _NotificationStyle(icon: Icons.error_outline_rounded, backgroundColor: Color(0xFFE53935));
     default:
       return const _NotificationStyle(icon: Icons.notifications_rounded, backgroundColor: Color(0xFFC02020));
   }

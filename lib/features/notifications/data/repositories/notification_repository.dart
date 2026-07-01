@@ -64,4 +64,12 @@ class NotificationRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  Future<void> deleteNotification(int notificationId) async {
+    try {
+      await _dioClient.dio.delete('/notifications/$notificationId');
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }

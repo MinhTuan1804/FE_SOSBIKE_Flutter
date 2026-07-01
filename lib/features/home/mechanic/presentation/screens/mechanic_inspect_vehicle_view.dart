@@ -222,14 +222,14 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                                         children: [
                                           Icon(
                                             selected ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-                                            color: const Color(0xFF2563EB),
+                                            color: AppColors.primary,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(part.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                                           ),
-                                          Text(_formatVnd(part.price), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF2563EB))),
+                                          Text(_formatVnd(part.price), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary)),
                                         ],
                                       ),
                                     ),
@@ -243,7 +243,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.4)),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                               ),
                               child: Column(
                                 children: [
@@ -270,7 +270,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                                   ),
                                   const SizedBox(height: 8),
                                   Material(
-                                    color: const Color(0xFF2563EB),
+                                    color: AppColors.primary,
                                     borderRadius: BorderRadius.circular(12),
                                     child: InkWell(
                                       onTap: _submitSparePart,
@@ -320,7 +320,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                               children: [
                                 const Text('Tổng cộng', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
                                 const Spacer(),
-                                Text(_formatVnd(_grandTotal), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF16A34A))),
+                                Text(_formatVnd(_grandTotal), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primary)),
                               ],
                             ),
                           ),
@@ -355,7 +355,7 @@ class _MechanicInspectVehicleViewState extends State<MechanicInspectVehicleView>
                           : (showStartRepair ? _handleStartRepair : _handleSubmitQuote),
                       borderRadius: BorderRadius.circular(16),
                       child: SizedBox(
-                        height: 46,
+                        height: 52,
                         width: double.infinity,
                         child: Center(
                           child: widget.isSubmitting
@@ -410,14 +410,19 @@ class _PartChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFDBEAFE).withValues(alpha: 0.5),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
-          Text(price, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: Color(0xFF2563EB))),
-          IconButton(onPressed: onRemove, icon: const Icon(Icons.close_rounded, size: 18), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 28, minHeight: 28)),
+          Text(price, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary)),
+          IconButton(
+            onPressed: onRemove,
+            icon: const Icon(Icons.close_rounded, size: 20),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          ),
         ],
       ),
     );
@@ -432,13 +437,22 @@ class _RepairLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = item.selected;
-    return Material(
-      color: selected ? const Color(0xFFE8F5E9) : Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFFE8F5E9) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        border: Border.all(
+          color: selected ? const Color(0xFF16A34A).withValues(alpha: 0.5) : Colors.grey.shade200,
+          width: selected ? 1.5 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Row(
             children: [
@@ -459,6 +473,7 @@ class _RepairLineTile extends StatelessWidget {
               Text(item.priceLabel, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: selected ? const Color(0xFF16A34A) : const Color(0xFF6B7280))),
             ],
           ),
+        ),
         ),
       ),
     );

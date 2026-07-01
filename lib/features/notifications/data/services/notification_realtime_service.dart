@@ -34,10 +34,13 @@ class NotificationRealtimeService {
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => await _authService.getToken() ?? '',
+            requestTimeout: 30000,
           ),
         )
         .withAutomaticReconnect()
         .build();
+    _connection!.serverTimeoutInMilliseconds = 120000;
+    _connection!.keepAliveIntervalInMilliseconds = 15000;
 
     _connection!.on('NotificationCreated', (arguments) {
       if (arguments == null || arguments.isEmpty) return;
@@ -56,8 +59,6 @@ class NotificationRealtimeService {
   }
 
   String _buildHubUrl() {
-    var base = ApiEndpoints.baseUrl;
-    base = base.replaceAll(RegExp(r'/api/?$'), '');
-    return '$base/hubs/notifications';
+    return ApiEndpoints.hubUrl('notifications');
   }
 }

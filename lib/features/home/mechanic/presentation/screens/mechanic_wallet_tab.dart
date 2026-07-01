@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -96,13 +97,15 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
       );
     }
     final wallet = data ?? MechanicWalletData.sample;
+    final topPadding = MediaQuery.paddingOf(context).top;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
-          child: Text(
+        Container(
+          color: AppColors.primary,
+          padding: EdgeInsets.fromLTRB(18, topPadding + 8, 18, 16),
+          child: const Text(
             'Ví, Thu Nhập',
             style: TextStyle(
               color: Colors.white,
@@ -112,6 +115,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 18),
           child: _SectionToggle(
@@ -194,83 +198,6 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
     );
   }
 
-  Widget _buildNoWalletView(MechanicWalletProvider provider) {
-    return ColoredBox(
-      color: Colors.white,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: AppColors.primary,
-                      size: 52,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chưa có ví SOSBIKE',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Tạo ví để nhận thanh toán đơn cứu hộ, nạp tiền và rút tiền về tài khoản ngân hàng.',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.45),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: provider.isLoading
-                          ? null
-                          : () async {
-                              final ok = await provider.createWallet();
-                              if (!mounted) return;
-                              if (ok) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Đã tạo ví thành công!')),
-                                );
-                              } else if (provider.errorMessage != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(provider.errorMessage!)),
-                                );
-                              }
-                            },
-                      icon: provider.isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.add_card_rounded),
-                      label: Text(provider.isLoading ? 'Đang tạo ví...' : 'Tạo ví SOSBIKE'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-        ),
-      ),
-    );
-  }
 
   double _bottomNavReserve(BuildContext context) {
     return MediaQuery.paddingOf(context).bottom + 16;
@@ -318,7 +245,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           const SizedBox(height: 8),
           Text(
             subtitleText,
-            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -358,6 +285,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                   if (pinStr == _tempPin) {
                     final ok = await provider.setupWalletPin(pinStr);
                     if (ok) {
+                      if (!mounted) return;
                       setState(() {
                         _enteredPin.clear();
                         _tempPin = '';
@@ -367,6 +295,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                         const SnackBar(content: Text('Thiết lập mã PIN thành công.')),
                       );
                     } else {
+                      if (!mounted) return;
                       setState(() {
                         _enteredPin.clear();
                       });
@@ -406,7 +335,291 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   }
 
   // ── PIN Unlock / Entry Screen ──────────────────────────────────────────────
+  void _showForgotPinBottomSheet(BuildContext context, MechanicWalletProvider provider, String phoneNumber, String verificationId) {
+    final otpController = TextEditingController();
+    final pinController = TextEditingController();
+    final confirmPinController = TextEditingController();
+    int step = 1; // 1: Enter OTP, 2: Enter New PIN
+    bool submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (stateContext, setModalState) {
+            final bottomPadding = MediaQuery.of(stateContext).viewInsets.bottom;
+            
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomPadding),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    step == 1 ? 'Quên mã PIN ví' : 'Thiết lập mã PIN mới',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    step == 1
+                        ? 'Mã OTP đã được gửi về số điện thoại $phoneNumber. Vui lòng nhập mã OTP để xác nhận.'
+                        : 'Vui lòng thiết lập mã PIN mới gồm 6 chữ số để tiếp tục sử dụng ví.',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  if (step == 1) ...[
+                    TextField(
+                      controller: otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        hintText: '000000',
+                        hintStyle: TextStyle(color: Colors.grey.shade300),
+                        counterText: '',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: pinController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      obscureText: true,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        hintText: '******',
+                        hintStyle: TextStyle(color: Colors.grey.shade300),
+                        counterText: '',
+                        labelText: 'Mã PIN mới (6 chữ số)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmPinController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      obscureText: true,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 20, letterSpacing: 8, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        hintText: '******',
+                        counterText: '',
+                        labelText: 'Xác nhận mã PIN mới',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            if (step == 1) {
+                              final otp = otpController.text.trim();
+                              if (otp.length != 6) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Vui lòng nhập đủ 6 số OTP.')),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => submitting = true);
+                              final authProv = context.read<AuthProvider>();
+                              // verifyOtp will authenticate Firebase user if successful
+                              final ok = await authProv.verifyOtp(otp, isRegister: true);
+                              setModalState(() => submitting = false);
+
+                              if (ok) {
+                                setModalState(() {
+                                  step = 2;
+                                });
+                              } else {
+                                if (!stateContext.mounted) return;
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  SnackBar(content: Text(authProv.errorMessage ?? 'Mã OTP không đúng.')),
+                                );
+                              }
+                            } else {
+                              final pin = pinController.text;
+                              final confirm = confirmPinController.text;
+                              if (pin.length != 6 || confirm.length != 6) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Mã PIN phải đủ 6 chữ số.')),
+                                );
+                                return;
+                              }
+                              if (pin != confirm) {
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Xác nhận mã PIN không khớp.')),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => submitting = true);
+                              
+                              // Lấy Firebase ID Token
+                              final user = FirebaseAuth.instance.currentUser;
+                              final idToken = await user?.getIdToken();
+                              
+                              if (idToken == null) {
+                                setModalState(() => submitting = false);
+                                if (!stateContext.mounted) return;
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  const SnackBar(content: Text('Không thể lấy mã xác thực từ Firebase.')),
+                                );
+                                return;
+                              }
+
+                              final ok = await provider.resetPinFirebase(idToken, pin);
+                              setModalState(() => submitting = false);
+
+                              if (ok) {
+                                if (stateContext.mounted) {
+                                  Navigator.pop(stateContext);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Đặt lại mã PIN thành công.')),
+                                  );
+                                }
+                              } else {
+                                if (!stateContext.mounted) return;
+                                ScaffoldMessenger.of(stateContext).showSnackBar(
+                                  SnackBar(content: Text(provider.errorMessage ?? 'Không thể đặt lại mã PIN.')),
+                                );
+                              }
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            step == 1 ? 'Xác nhận OTP' : 'Xác nhận mã PIN mới',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildPinUnlockView(MechanicWalletProvider provider) {
+    final auth = context.watch<AuthProvider>();
+    final phoneNumber = auth.profile?.phoneNumber ?? '';
+
+    if (provider.isWalletLocked) {
+      return _buildPinPadScaffold(
+        children: [
+          const Icon(Icons.lock_person_rounded, color: Colors.orange, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            'Ví của bạn đã bị khóa',
+            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Do nhập sai mã PIN quá 5 lần, ví của bạn đã bị khóa bảo mật.\n\nVui lòng nhấn vào nút bên dưới để đặt lại mã PIN mới qua mã OTP gửi về số điện thoại đăng ký.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 36),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: provider.isLoading || auth.isLoading
+                    ? null
+                    : () async {
+                        if (phoneNumber.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Không tìm thấy số điện thoại đăng ký để gửi OTP.')),
+                          );
+                          return;
+                        }
+
+                        final authProv = context.read<AuthProvider>();
+                        
+                        await authProv.verifyPhoneNumber(
+                          phoneNumber: phoneNumber,
+                          onCodeSent: (verificationId) {
+                            if (mounted) {
+                              _showForgotPinBottomSheet(context, provider, phoneNumber, verificationId);
+                            }
+                          },
+                          onError: (error) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(error)),
+                              );
+                            }
+                          },
+                        );
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue.shade900,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: provider.isLoading || auth.isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.blue, strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Quên mã PIN',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              final shellState = context.findAncestorStateOfType<MainShellScreenState>();
+              if (shellState != null) {
+                shellState.setTab(MainNavTab.orders);
+              }
+            },
+            child: const Text(
+              'Quay lại trang chủ',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      );
+    }
+
     return _buildPinPadScaffold(
       children: [
           const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 56),
@@ -418,7 +631,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           const SizedBox(height: 8),
           Text(
             'Vui lòng nhập mã PIN ví gồm 6 chữ số.',
-            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
           ),
           const SizedBox(height: 24),
           Row(
@@ -453,11 +666,12 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                     _enteredPin.clear();
                   });
                 } else {
+                  if (!mounted) return;
                   setState(() {
                     _enteredPin.clear();
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mã PIN không chính xác. Vui lòng nhập lại.')),
+                    SnackBar(content: Text(provider.errorMessage ?? 'Mã PIN không chính xác. Vui lòng nhập lại.')),
                   );
                 }
               }
@@ -475,6 +689,39 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                 shellState.setTab(MainNavTab.orders);
               }
             },
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () async {
+              if (phoneNumber.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Không tìm thấy số điện thoại đăng ký.')),
+                );
+                return;
+              }
+              
+              final authProv = context.read<AuthProvider>();
+              
+              await authProv.verifyPhoneNumber(
+                phoneNumber: phoneNumber,
+                onCodeSent: (verificationId) {
+                  if (mounted) {
+                    _showForgotPinBottomSheet(context, provider, phoneNumber, verificationId);
+                  }
+                },
+                onError: (error) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(error)),
+                    );
+                  }
+                },
+              );
+            },
+            child: Text(
+              'Quên mã PIN?',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, decoration: TextDecoration.underline, decorationColor: Colors.white.withValues(alpha: 0.8)),
+            ),
           ),
       ],
     );
@@ -579,7 +826,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.account_balance_outlined, color: AppColors.primary, size: 48),
@@ -603,7 +850,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _bankName,
+            initialValue: _bankName,
             isExpanded: true,
             decoration: _dropDeco('Chọn ngân hàng nhận tiền'),
             items: _kBanks
@@ -906,7 +1153,7 @@ class _ToggleChip extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
@@ -1305,8 +1552,8 @@ class _WithdrawRequestTile extends StatelessWidget {
                 ),
                 if (req.status.toUpperCase() == 'PENDING') ...[
                   const SizedBox(height: 4),
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.access_time_rounded, size: 11, color: Color(0xFFD97706)),
                       SizedBox(width: 4),
                       Text(

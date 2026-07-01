@@ -80,7 +80,7 @@ class MembershipRepository {
       );
 
       if (response.data is! Map) {
-        throw const FormatException('Payment intent response is invalid.');
+        throw const FormatException('Phản hồi yêu cầu thanh toán không hợp lệ.');
       }
 
       return CustomerPaymentIntent.fromJson(Map<String, dynamic>.from(response.data));

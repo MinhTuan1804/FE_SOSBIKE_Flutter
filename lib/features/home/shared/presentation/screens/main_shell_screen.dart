@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/
 import 'package:fe_moblie_flutter/features/home/mechanic/data/local/mechanic_order_flow_store.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_customer_history_tab.dart';
-import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_services_tab.dart';
+import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_activity_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_wallet_tab.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_dashboard_tab.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_dashboard_tab.dart';
@@ -26,6 +27,7 @@ import 'package:fe_moblie_flutter/features/home/shared/presentation/widgets/main
 import 'package:fe_moblie_flutter/features/profile/presentation/screens/profile_screen.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/screens/notifications_tab_screen.dart';
+import 'package:fe_moblie_flutter/features/notifications/data/models/notification_models.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_setup_profile_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:fe_moblie_flutter/core/widgets/page_loader.dart';
@@ -40,6 +42,7 @@ import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/me
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/screens/mechanic_payment_complete_view.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/mechanic_dev_flow.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/widgets/mechanic_incoming_request_popup.dart';
+import 'package:fe_moblie_flutter/core/utils/encoding_utils.dart';
 
 enum _MechanicOrderFlow { none, accept, arrival, inspect, repair, complete }
 
@@ -52,6 +55,8 @@ class MainShellScreen extends StatefulWidget {
 }
 
 class MainShellScreenState extends State<MainShellScreen> {
+  late RescueProvider _rescueProvider;
+  bool _isLockoutDialogShown = false;
   MainNavTab _tab = MainNavTab.orders;
 
   void setTab(MainNavTab tab) {
@@ -64,21 +69,86 @@ class MainShellScreenState extends State<MainShellScreen> {
   List<MechanicSessionSparePart> _sessionSpareParts = const [];
   bool _quoteSent = false;
   IncomingRescueRequest? _activeIncomingRequest;
+  int? _lastMechanicIncomingNotificationId;
+  DateTime? _mechanicNotificationFallbackStartedAt;
+  Timer? _mechanicNotificationRefreshTimer;
+  bool _isIncomingRequestPopupVisible = true;
+  String? _lastIncomingOrderId;
 
   void _openIncomingRequest() {
-    context.read<RescueProvider>().simulateIncomingRequest({
-      'orderId': '123e4567-e89b-12d3-a456-426614174000',
-      'customerName': 'Khánh Linh',
-      'requestAddress': 'Chung cư Petroland, đường 62, phường Bình Trưng, Thành phố Thủ Đức.',
-      'distance': 0.4003,
-      'customerPhone': '0123456789',
-      'latitude': 10.765622,
-      'longitude': 106.663172,
+    setState(() {
+      _isIncomingRequestPopupVisible = true;
     });
   }
 
   void _closeIncomingRequest() {
     context.read<RescueProvider>().dismissIncomingRequest();
+    setState(() {
+      _isIncomingRequestPopupVisible = false;
+    });
+  }
+
+  IncomingRescueRequest? _incomingRequestFromNotification(NotificationItem item) {
+    final payload = _decodeNotificationPayload(item.payloadJson);
+    if (payload == null) return null;
+
+    final customerName = _payloadString(payload, ['customerName', 'CustomerName']).trim();
+    final requestAddress = EncodingUtils.fixVietnameseEncoding(_payloadString(payload, ['requestAddress', 'RequestAddress']).trim());
+    final distanceKm = _payloadNum(payload, ['distance', 'Distance'])?.toDouble() ?? 0.0;
+    final phoneNumber = _payloadString(payload, ['customerPhone', 'CustomerPhone']).trim();
+    final avatarUrl = _payloadString(payload, ['customerAvatarUrl', 'CustomerAvatarUrl']).trim();
+    final latitude = _payloadNum(payload, ['latitude', 'Latitude'])?.toDouble();
+    final longitude = _payloadNum(payload, ['longitude', 'Longitude'])?.toDouble();
+
+    if (customerName.isEmpty || requestAddress.isEmpty) return null;
+
+    return IncomingRescueRequest(
+      customerName: customerName,
+      address: requestAddress,
+      fullAddress: requestAddress,
+      distanceMeters: distanceKm >= 1 ? distanceKm * 1000.0 : distanceKm,
+      serviceTypeLabel: 'LƯU ĐỘNG',
+      phoneNumber: phoneNumber.isEmpty ? '0987654321' : phoneNumber,
+      avatarUrl: avatarUrl.isEmpty ? null : avatarUrl,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  Map<String, dynamic>? _decodeNotificationPayload(String? payloadJson) {
+    final raw = payloadJson?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  String _payloadString(Map<String, dynamic> payload, List<String> keys) {
+    for (final key in keys) {
+      final value = payload[key];
+      if (value != null) {
+        final text = value.toString().trim();
+        if (text.isNotEmpty) return text;
+      }
+    }
+    return '';
+  }
+
+  num? _payloadNum(Map<String, dynamic> payload, List<String> keys) {
+    for (final key in keys) {
+      final value = payload[key];
+      if (value is num) return value;
+      if (value is String) {
+        final parsed = num.tryParse(value);
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
   }
 
   Future<void> _acceptIncomingRequest() async {
@@ -88,8 +158,8 @@ class MainShellScreenState extends State<MainShellScreen> {
 
     final incomingReq = IncomingRescueRequest(
       customerName: req['customerName'] ?? 'Khách hàng',
-      address: req['requestAddress'] ?? '',
-      fullAddress: req['requestAddress'] ?? '',
+      address: EncodingUtils.fixVietnameseEncoding(req['requestAddress'] ?? ''),
+      fullAddress: EncodingUtils.fixVietnameseEncoding(req['requestAddress'] ?? ''),
       distanceMeters: (req['distance'] as num? ?? 2.5) * 1000.0,
       serviceTypeLabel: 'LƯU ĐỘNG',
       phoneNumber: req['customerPhone'] ?? '0987654321',
@@ -247,8 +317,8 @@ class MainShellScreenState extends State<MainShellScreen> {
     if (repair.activeOrder != null) {
       incomingReq = IncomingRescueRequest(
         customerName: repair.activeOrder!.customerName ?? 'Khách hàng',
-        address: repair.activeOrder!.requestAddress,
-        fullAddress: repair.activeOrder!.requestAddress,
+        address: EncodingUtils.fixVietnameseEncoding(repair.activeOrder!.requestAddress),
+        fullAddress: EncodingUtils.fixVietnameseEncoding(repair.activeOrder!.requestAddress),
         distanceMeters: 0,
         serviceTypeLabel: 'LƯU ĐỘNG',
         phoneNumber: '0987654321',
@@ -373,13 +443,30 @@ class MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  void _onRescueStatusChanged() {
+  void _onRescueStatusChanged() async {
+    if (!mounted) return;
     final rescue = context.read<RescueProvider>();
+    if (rescue.isAccountLocked && !_isLockoutDialogShown) {
+      final auth = context.read<AuthProvider>();
+      try {
+        final profile = await auth.fetchMyProfile(silent: true);
+        if (profile != null && profile.isLocked == false && profile.isActive == true) {
+          rescue.resetAccountLockStatus();
+          return;
+        }
+      } catch (_) {}
+      
+      if (!mounted) return;
+      _isLockoutDialogShown = true;
+      _showLockoutDialog();
+      return;
+    }
     final auth = context.read<AuthProvider>();
     if (auth.userType != 'CUSTOMER') {
       if (_orderFlow != _MechanicOrderFlow.none) {
         if (rescue.activeOrderStatus == 'CONFIRMED') {
           if (_orderFlow == _MechanicOrderFlow.accept) {
+            if (!mounted) return;
             setState(() {
               _orderFlow = _MechanicOrderFlow.arrival;
             });
@@ -387,6 +474,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           }
         } else if (rescue.activeOrderStatus == 'REPAIRING') {
           if (_orderFlow == _MechanicOrderFlow.inspect) {
+            if (!mounted) return;
             setState(() {
               _orderFlow = _MechanicOrderFlow.repair;
             });
@@ -394,11 +482,13 @@ class MainShellScreenState extends State<MainShellScreen> {
           }
         } else if (rescue.activeOrderStatus == 'PAID') {
           if (_orderFlow != _MechanicOrderFlow.complete) {
+            if (!mounted) return;
             setState(() {
               _orderFlow = _MechanicOrderFlow.complete;
             });
           }
         } else if (rescue.activeOrderStatus == 'CANCELLED') {
+          if (!mounted) return;
           setState(() {
             _orderFlow = _MechanicOrderFlow.none;
             _activeIncomingRequest = null;
@@ -417,23 +507,93 @@ class MainShellScreenState extends State<MainShellScreen> {
     }
   }
 
+  void _onNotificationsChanged() {
+    if (!mounted) return;
+    if (context.read<AuthProvider>().userType?.toUpperCase() == 'CUSTOMER') return;
+    if (_orderFlow != _MechanicOrderFlow.none) return;
+
+    final rescue = context.read<RescueProvider>();
+    if (rescue.incomingRequest != null) return;
+
+    final notificationProvider = context.read<NotificationProvider>();
+    NotificationItem? candidate;
+    for (final item in notificationProvider.items) {
+      final createdAt = item.createdAt;
+      final isFresh = createdAt != null &&
+          DateTime.now().difference(createdAt.toLocal()).inSeconds.abs() <= 60;
+      final isIncomingOrder =
+          item.notificationType.toUpperCase() == 'RESCUE_ORDER_CREATED';
+      if (!item.isRead && isIncomingOrder && isFresh) {
+        candidate = item;
+        break;
+      }
+    }
+
+    if (candidate == null) return;
+    if (_lastMechanicIncomingNotificationId == candidate.notificationId) return;
+
+    final incoming = _incomingRequestFromNotification(candidate);
+    if (incoming == null) return;
+    final payload = _decodeNotificationPayload(candidate.payloadJson);
+    final orderId =
+        payload == null ? '' : _payloadString(payload, ['orderId', 'OrderId']);
+    if (orderId.isEmpty) return;
+
+    _lastMechanicIncomingNotificationId = candidate.notificationId;
+    rescue.simulateIncomingRequest({
+      'orderId': orderId,
+      'customerName': incoming.customerName,
+      'requestAddress': incoming.address,
+      'distance': incoming.distanceMeters / 1000.0,
+      'customerPhone': incoming.phoneNumber,
+      'customerAvatarUrl': incoming.avatarUrl,
+      'latitude': incoming.latitude,
+      'longitude': incoming.longitude,
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _rescueProvider = context.read<RescueProvider>();
+    _rescueProvider.resetAccountLockStatus(); // Force reset on init to handle hot reload state persistence
+    _rescueProvider.addListener(_onRescueStatusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
-      await context.read<AuthProvider>().fetchMyProfile(silent: true);
+      final auth = context.read<AuthProvider>();
+      await auth.fetchMyProfile(silent: true);
+      if (!mounted) return;
+      unawaited(context.read<RescueProvider>().checkActiveOrder(userType: auth.userType ?? ''));
+      if (auth.userType?.toUpperCase() == 'CUSTOMER') {
+        unawaited(context.read<MembershipProvider>().load());
+      } else {
+        _mechanicNotificationFallbackStartedAt ??= DateTime.now();
+        unawaited(context.read<NotificationProvider>().load());
+        _mechanicNotificationRefreshTimer?.cancel();
+        _mechanicNotificationRefreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+          if (!mounted) return;
+          final currentAuthType = context.read<AuthProvider>().userType?.toUpperCase();
+          if (currentAuthType == 'CUSTOMER') return;
+          unawaited(context.read<NotificationProvider>().refresh());
+        });
+      }
     });
     context.read<RescueProvider>().addListener(_onRescueStatusChanged);
+    context.read<NotificationProvider>().addListener(_onNotificationsChanged);
   }
 
   @override
   void dispose() {
     try {
-      context.read<RescueProvider>().removeListener(_onRescueStatusChanged);
+      _rescueProvider.removeListener(_onRescueStatusChanged);
+      _rescueProvider.resetAccountLockStatus();
     } catch (_) {}
+    try {
+      context.read<NotificationProvider>().removeListener(_onNotificationsChanged);
+    } catch (_) {}
+    _mechanicNotificationRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -458,13 +618,17 @@ class MainShellScreenState extends State<MainShellScreen> {
     final inOrderFlow = auth.userType != 'CUSTOMER' && _orderFlow != _MechanicOrderFlow.none;
     final inWalletSetup = _isMechanicWalletOnboarding(auth, walletProv);
     final hideShellChrome = inOrderFlow || inWalletSetup;
-    final showMainHeader =
-        !(_tab == MainNavTab.maintenance && auth.userType == 'CUSTOMER') && !hideShellChrome;
-    final unreadNotificationCount = context.watch<NotificationProvider>().unreadCount;
+    final showMainHeader = !hideShellChrome && _tab == MainNavTab.orders;
+    final notificationProvider = context.watch<NotificationProvider>();
+    final unreadNotificationCount = notificationProvider.unreadCount;
+    final membershipProvider = context.watch<MembershipProvider>();
 
     final rescueProvider = context.watch<RescueProvider>();
 
     final isMechanic = auth.userType?.toUpperCase() == 'MECHANIC';
+    final showVipBadge = auth.userType?.toUpperCase() == 'CUSTOMER' &&
+        membershipProvider.currentSubscription != null &&
+        membershipProvider.currentSubscription!.price > 0;
     if (isMechanic) {
       final isVerified = auth.profile?.mechanic?.isVerified ?? false;
       if (!isVerified) {
@@ -497,6 +661,7 @@ class MainShellScreenState extends State<MainShellScreen> {
                 isOnline: rescueProvider.isOnline,
                 onOnlineChanged: (v) => context.read<RescueProvider>().toggleOnlineStatus(v),
                 userType: auth.userType,
+                showVipBadge: showVipBadge,
                 onAvatarTap: () {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(
@@ -688,7 +853,7 @@ class MainShellScreenState extends State<MainShellScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -714,7 +879,7 @@ class MainShellScreenState extends State<MainShellScreen> {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -827,6 +992,10 @@ class MainShellScreenState extends State<MainShellScreen> {
 
     final rescueProvider = context.watch<RescueProvider>();
     final reqMap = rescueProvider.incomingRequest;
+    if (reqMap != null && reqMap['orderId'] != _lastIncomingOrderId) {
+      _lastIncomingOrderId = reqMap['orderId'] as String?;
+      _isIncomingRequestPopupVisible = true;
+    }
 
     return Stack(
       clipBehavior: Clip.none,
@@ -861,10 +1030,15 @@ class MainShellScreenState extends State<MainShellScreen> {
         ),
         if (auth.userType != 'CUSTOMER' &&
             _orderFlow == _MechanicOrderFlow.none &&
-            reqMap != null) ...[
+            reqMap != null &&
+            _isIncomingRequestPopupVisible) ...[
           Positioned.fill(
             child: GestureDetector(
-              onTap: _closeIncomingRequest,
+              onTap: () {
+                setState(() {
+                  _isIncomingRequestPopupVisible = false;
+                });
+              },
               behavior: HitTestBehavior.opaque,
               child: Container(color: Colors.black.withValues(alpha: 0.35)),
             ),
@@ -876,8 +1050,8 @@ class MainShellScreenState extends State<MainShellScreen> {
             child: MechanicIncomingRequestPopup(
               request: IncomingRescueRequest(
                 customerName: reqMap['customerName'] ?? 'Khách hàng',
-                address: reqMap['requestAddress'] ?? '',
-                fullAddress: reqMap['requestAddress'] ?? '',
+                address: EncodingUtils.fixVietnameseEncoding(reqMap['requestAddress'] ?? ''),
+                fullAddress: EncodingUtils.fixVietnameseEncoding(reqMap['requestAddress'] ?? ''),
                 distanceMeters: (reqMap['distance'] as num? ?? 2.5) * 1000.0,
                 serviceTypeLabel: 'LƯU ĐỘNG',
                 phoneNumber: reqMap['customerPhone'] ?? '0987654321',
@@ -897,7 +1071,7 @@ class MainShellScreenState extends State<MainShellScreen> {
             appConfig.flags.sosEnabled)
           Positioned(
             right: -2,
-            bottom: navH + 8,
+            bottom: navH + 24,
             child: _SosFab(
               isActive: rescueProvider.incomingRequest != null,
               onPressed: _openIncomingRequest,
@@ -926,7 +1100,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           ),
         _MechanicOrderFlow.inspect => MechanicInspectVehicleView(
             key: ValueKey(
-              'inspect-${_quoteSent}-${_selectedRepairItems.map((e) => e.id).join('-')}-${_sessionSpareParts.length}',
+              'inspect-$_quoteSent-${_selectedRepairItems.map((e) => e.id).join('-')}-${_sessionSpareParts.length}',
             ),
             initialItems: repairProvider.services,
             preselectedItems: _selectedRepairItems,
@@ -979,8 +1153,66 @@ class MainShellScreenState extends State<MainShellScreen> {
           : const MechanicWalletTab(),
       MainNavTab.maintenance => userType == 'CUSTOMER'
           ? const NotificationsTabScreen()
-          : const MechanicServicesTab(),
+          : const MechanicActivityTab(previewOnly: false),
     };
+  }
+
+  void _showLockoutDialog() {
+    int countdown = 5;
+    Timer? timer;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (stateContext, setDialogState) {
+            timer ??= Timer.periodic(const Duration(seconds: 1), (t) async {
+              if (countdown > 1) {
+                setDialogState(() {
+                  countdown--;
+                });
+              } else {
+                t.cancel();
+                // Close dialog
+                Navigator.of(dialogContext).pop();
+                // Logout & navigate to login
+                final auth = context.read<AuthProvider>();
+                context.read<RescueProvider>().resetAccountLockStatus();
+                await auth.logout();
+                if (mounted) {
+                  navigateToLogin();
+                }
+              }
+            });
+            
+            return WillPopScope(
+              onWillPop: () async => false, // Non-dismissible
+              child: AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Row(
+                  children: const [
+                    Icon(Icons.error_outline, color: Colors.red, size: 28),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tài khoản bị khóa',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động.\n'
+                  'Hệ thống sẽ tự động đăng xuất sau $countdown giây.',
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -1014,8 +1246,8 @@ class _SosFabState extends State<_SosFab> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = const Color(0xFF22C55E); // Green
-    final inactiveColor = const Color(0xFF9CA3AF); // Gray
+    const activeColor = Color(0xFF22C55E); // Green
+    const inactiveColor = Color(0xFF9CA3AF); // Gray
     final dotColor = widget.isActive ? activeColor : inactiveColor;
 
     return SizedBox(
