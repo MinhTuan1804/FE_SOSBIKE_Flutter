@@ -37,7 +37,7 @@ class ChatRealtimeService {
     await _connection?.stop();
     _connection = null;
 
-    final hubUrl = buildSignalRHubUrl('/hubs/chat', token);
+    final hubUrl = buildSignalRHubUrl('/hubs/chat');
     _connection = HubConnectionBuilder()
         .withUrl(
           hubUrl,

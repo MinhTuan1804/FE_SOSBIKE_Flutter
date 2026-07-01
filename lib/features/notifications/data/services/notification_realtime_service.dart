@@ -38,7 +38,7 @@ class NotificationRealtimeService {
     await _connection?.stop();
     _connection = null;
 
-    final hubUrl = buildSignalRHubUrl('/hubs/notifications', token);
+    final hubUrl = buildSignalRHubUrl('/hubs/notifications');
     _connection = HubConnectionBuilder()
         .withUrl(
           hubUrl,

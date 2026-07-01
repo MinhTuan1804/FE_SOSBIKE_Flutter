@@ -28,7 +28,7 @@ class LocationRealtimeService {
     await _connection?.stop();
     _connection = null;
 
-    final hubUrl = buildSignalRHubUrl('/hubs/location', token);
+    final hubUrl = buildSignalRHubUrl('/hubs/location');
     _connection = HubConnectionBuilder()
         .withUrl(
           hubUrl,

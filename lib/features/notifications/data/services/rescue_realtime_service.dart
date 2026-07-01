@@ -35,7 +35,7 @@ class RescueRealtimeService {
     await _connection?.stop();
     _connection = null;
 
-    final hubUrl = buildSignalRHubUrl('/hubs/rescue', token);
+    final hubUrl = buildSignalRHubUrl('/hubs/rescue');
     _connection = HubConnectionBuilder()
         .withUrl(
           hubUrl,

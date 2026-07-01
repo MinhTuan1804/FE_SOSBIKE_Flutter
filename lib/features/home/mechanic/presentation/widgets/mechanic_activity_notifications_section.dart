@@ -249,6 +249,10 @@ _NotificationStyle _styleForNotification(String type) {
       return const _NotificationStyle(icon: Icons.cancel_outlined, backgroundColor: Color(0xFFE53935));
     case 'MAINTENANCE_REMINDER':
       return const _NotificationStyle(icon: Icons.event_note_rounded, backgroundColor: Color(0xFF2563EB));
+    case 'RESCUE_ORDER_CREATED':
+      return const _NotificationStyle(icon: Icons.emergency_rounded, backgroundColor: Color(0xFFC02020));
+    case 'RESCUE_ORDER_ACCEPTED':
+      return const _NotificationStyle(icon: Icons.check_circle_rounded, backgroundColor: Color(0xFF4CAF50));
     case 'ADMIN_ANNOUNCEMENT':
       return const _NotificationStyle(icon: Icons.campaign_rounded, backgroundColor: Color(0xFF7E57C2));
     case 'SYSTEM_MAINTENANCE':
@@ -264,6 +268,10 @@ _NotificationStyle _styleForNotification(String type) {
 
 String _mechanicNotificationTitle(NotificationItem item) {
   switch (item.notificationType.toUpperCase()) {
+    case 'RESCUE_ORDER_CREATED':
+      return item.title.trim().isEmpty ? 'Có đơn cứu hộ mới' : item.title;
+    case 'RESCUE_ORDER_ACCEPTED':
+      return item.title.trim().isEmpty ? 'Bạn đã nhận đơn cứu hộ' : item.title;
     case 'MECHANIC_PROFILE_SUBMITTED':
       return 'Hồ sơ thợ đã được gửi';
     case 'MECHANIC_PROFILE_APPROVED':

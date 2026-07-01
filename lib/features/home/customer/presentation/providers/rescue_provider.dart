@@ -504,11 +504,19 @@ class RescueProvider extends ChangeNotifier {
       _isOnline = updatedStatus;
 
       if (_isOnline) {
-        // Connect to SignalR hub to receive real-time match requests
-        await _realtimeService.connect();
-        await _locationService.connect();
-        _startLocationUpdates();
-        // Dự phòng realtime: định kỳ kéo các đơn PENDING gần thợ phòng khi bỏ lỡ sự kiện SignalR
+        // Realtime là tùy chọn — polling vẫn chạy nếu hub lỗi (401 WebSocket, v.v.)
+        try {
+          await _realtimeService.connect();
+        } catch (e) {
+          debugPrint('[RescueProvider] SignalR rescue hub failed: $e');
+        }
+        try {
+          await _locationService.connect();
+          _startLocationUpdates();
+        } catch (e) {
+          debugPrint('[RescueProvider] SignalR location hub failed: $e');
+        }
+        // Dự phòng: kéo đơn PENDING gần thợ mỗi 15s khi bỏ lỡ push realtime
         _startAvailableOrdersPolling();
       } else {
         _stopLocationUpdates();
