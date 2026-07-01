@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -51,7 +50,6 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mecha
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_service_offering_provider.dart';
 import 'package:fe_moblie_flutter/features/profile/data/repositories/vehicle_repository.dart';
 import 'package:fe_moblie_flutter/features/profile/presentation/providers/vehicle_provider.dart';
-import 'package:fe_moblie_flutter/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,22 +60,6 @@ void main() async {
     debugPrint('Warning: Could not load .env file: $e');
   }
   debugPrint('API baseUrl: ${ApiEndpoints.baseUrl}');
-
-  if (!kIsWeb) {
-    try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-      } else {
-        debugPrint('Firebase already initialized, skipping.');
-      }
-    } catch (e) {
-      debugPrint('Firebase initialization failed: $e');
-    }
-  } else {
-    debugPrint('Web: đăng nhập bằng mật khẩu / OTP qua BE local.');
-  }
 
   // 1. Khởi tạo Services dùng chung
   final authService = AuthService();

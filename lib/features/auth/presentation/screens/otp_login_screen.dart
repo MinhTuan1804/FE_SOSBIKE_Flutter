@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
-import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
@@ -13,7 +12,6 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_page_d
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/pin_code_fields.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 
-import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/mechanic_register_info_screen.dart';
@@ -116,26 +114,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
           AppAlert.showError(context, errorMessageFrom(e));
         }
       }
-      return;
     }
-
-    setState(() => _secondsLeft = 59);
-    _startTimer();
-
-    final authProvider = context.read<AuthProvider>();
-    await authProvider.verifyPhoneNumber(
-      phoneNumber: widget.phoneNumber,
-      onCodeSent: (_) {
-        if (mounted) {
-          AppAlert.showSuccess(context, 'Đã gửi lại mã OTP thành công');
-        }
-      },
-      onError: (error) {
-        if (mounted) {
-          AppAlert.showError(context, error);
-        }
-      },
-    );
   }
 
   Future<void> _onContinue() async {
@@ -166,9 +145,8 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         } else {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => PasswordLoginScreen(
+              builder: (_) => ProfileSetupScreen(
                 role: widget.role,
-                mode: AuthMode.register,
                 phoneNumber: widget.phoneNumber,
                 otpToken: verified.otpToken,
               ),
@@ -184,34 +162,9 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.verifyOtp(
-      _otp,
-      userType: widget.role.name.toUpperCase(),
-      isRegister: widget.mode == AuthMode.register,
-    );
-
-    if (mounted) setState(() => _verifying = false);
-
-    if (success) {
-      if (mounted) {
-        if (widget.mode == AuthMode.register) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ProfileSetupScreen(
-                role: widget.role,
-                phoneNumber: widget.phoneNumber,
-              ),
-            ),
-          );
-        } else {
-          navigateToHome();
-        }
-      }
-    } else {
-      if (mounted) {
-        AppAlert.showError(context, authProvider.errorMessage ?? 'Xác thực OTP thất bại');
-      }
+    if (mounted) {
+      setState(() => _verifying = false);
+      AppAlert.showError(context, 'OTP chỉ hỗ trợ qua máy chủ SOSbike.');
     }
   }
 

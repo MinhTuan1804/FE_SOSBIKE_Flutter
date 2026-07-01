@@ -1,7 +1,5 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
@@ -15,8 +13,6 @@ class AuthProvider extends ChangeNotifier {
   final AuthRepository _repository;
   final AuthService _authService;
 
-  FirebaseAuth get _firebaseAuth => FirebaseAuth.instance;
-
   AuthProvider(this._repository, this._authService);
 
   bool _isLoading = false;
@@ -27,7 +23,6 @@ class AuthProvider extends ChangeNotifier {
   String? _displayName;
   String? _avatarUrl;
   UserProfileDto? _profile;
-  String? _verificationId;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -69,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
   
   /// Xác thực SĐT — hiện chưa theo dõi từ BE, mặc định true khi đã đăng nhập.
   bool get isPhoneVerified => _isAuthenticated;
+  bool get isGoogleLinked => _profile?.isGoogleLinked ?? false;
   bool get isActive => (_user?.isActive == true);
 
   /// Tránh kẹt màn trắng nếu secure storage / token check không trả về.
@@ -145,158 +141,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> verifyPhoneNumber({
-    required String phoneNumber,
-    required Function(String verificationId) onCodeSent,
-    required Function(String error) onError,
-  }) async {
-    if (kIsWeb || Firebase.apps.isEmpty) {
-      onError('Firebase SMS không khả dụng trên web. Dùng mật khẩu hoặc OTP BE.');
-      return;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      String formattedPhone = phoneNumber.trim();
-      if (formattedPhone.startsWith('0')) {
-        formattedPhone = '+84${formattedPhone.substring(1)}';
-      } else if (!formattedPhone.startsWith('+')) {
-        formattedPhone = '+84$formattedPhone';
-      }
-
-      await _firebaseAuth.verifyPhoneNumber(
-        phoneNumber: formattedPhone,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          // Tự động xác thực trên Android nếu có thể
-          await _signInWithCredential(credential);
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          _errorMessage = e.message ?? 'Xác thực số điện thoại thất bại';
-          _isLoading = false;
-          notifyListeners();
-          onError(_errorMessage!);
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          _verificationId = verificationId;
-          _isLoading = false;
-          notifyListeners();
-          onCodeSent(verificationId);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {
-          _verificationId = verificationId;
-        },
-      );
-    } catch (e) {
-      _errorMessage = errorMessageFrom(e);
-      _isLoading = false;
-      notifyListeners();
-      onError(_errorMessage!);
-    }
-  }
-
-  Future<bool> verifyOtp(String smsCode, {String? fullName, String? userType, required bool isRegister}) async {
-    if (_verificationId == null) {
-      _errorMessage = 'Thiếu mã xác thực (Verification ID)';
-      notifyListeners();
-      return false;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: smsCode,
-      );
-      return await _signInWithCredential(credential, fullName: fullName, userType: userType, isRegister: isRegister);
-    } catch (e) {
-      _errorMessage = errorMessageFrom(e);
-      debugPrint('AuthProvider.verifyOtp error: $e');
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> _signInWithCredential(PhoneAuthCredential credential, {String? fullName, String? userType, bool isRegister = false}) async {
-    try {
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
-      final user = userCredential.user;
-
-      if (user != null) {
-        // Lấy Firebase ID Token
-        final idToken = await user.getIdToken();
-        if (idToken != null) {
-
-          if (isRegister) {
-            // KHÔNG GỌI API ĐĂNG KÝ (REGISTER) NGAY LÚC NÀY NỮA
-            // Chỉ trả về true để cho phép qua màn hình OTP -> Profile Setup.
-            // Profile Setup sẽ gọi API Register sau.
-            return true;
-          } else {
-             // Gọi Backend API Đăng nhập Firebase (Login)
-             final response = await _repository.firebaseLogin(
-               idToken,
-               fullName: null, // Bắt buộc null để Backend hiểu là Login
-               userType: userType,
-            );
-            await _persistSession(response);
-          }
-
-          notifyListeners();
-          return true;
-        }
-      }
-      return false;
-    } catch (e) {
-      _errorMessage = errorMessageFrom(e);
-      debugPrint('AuthProvider._signInWithCredential error: $e');
-      return false;
-    }
-  }
-
-  /// Đăng nhập bằng Google qua Firebase Auth → gọi BE /FirebaseAuth/login.
+  /// Đăng nhập Google qua Google Cloud Console OAuth → BE /GoogleAuth/login.
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final googleSignIn = GoogleSignIn(scopes: const ['email', 'profile']);
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
-        return false;
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
-      final user = userCredential.user;
-      if (user == null) {
-        _errorMessage = 'Không lấy được thông tin tài khoản Google.';
-        return false;
-      }
-
-      final idToken = await user.getIdToken();
+      final idToken = await _obtainGoogleIdToken();
       if (idToken == null) {
-        _errorMessage = 'Không lấy được Firebase ID token.';
         return false;
       }
 
-      final response = await _repository.firebaseLogin(
-        idToken,
-        fullName: user.displayName,
-      );
+      final response = await _repository.googleLogin(idToken);
       await _persistSession(response);
       notifyListeners();
       return true;
@@ -308,6 +165,75 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Liên kết Google với tài khoản đang đăng nhập (SĐT/mật khẩu).
+  Future<bool> linkGoogleAccount() async {
+    if (!_isAuthenticated) {
+      _errorMessage = 'Bạn cần đăng nhập trước khi liên kết Google.';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final idToken = await _obtainGoogleIdToken();
+      if (idToken == null) {
+        return false;
+      }
+
+      await _repository.linkGoogle(idToken);
+      await fetchMyProfile(silent: true);
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _errorMessage = errorMessageFrom(e);
+      debugPrint('AuthProvider.linkGoogleAccount error: $e\n$st');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> _obtainGoogleIdToken() async {
+    try {
+      final googleSignIn = GoogleSignIn(
+        scopes: const ['email', 'profile'],
+        serverClientId: _googleWebClientId,
+      );
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        return null;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        _errorMessage = 'Không lấy được Google ID token. Kiểm tra OAuth Client ID trên Google Cloud Console.';
+        return null;
+      }
+
+      return idToken;
+    } catch (e) {
+      _errorMessage = errorMessageFrom(e);
+      return null;
+    }
+  }
+
+  static String? get _googleWebClientId {
+    const fromDefine = String.fromEnvironment('GOOGLE_OAUTH_WEB_CLIENT_ID');
+    if (fromDefine.isNotEmpty) return fromDefine;
+    try {
+      if (dotenv.isInitialized) {
+        final fromEnv = dotenv.env['GOOGLE_OAUTH_WEB_CLIENT_ID']?.trim();
+        if (fromEnv != null && fromEnv.isNotEmpty) return fromEnv;
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<bool> login(String phoneNumber, String password) async {
@@ -336,7 +262,6 @@ class AuthProvider extends ChangeNotifier {
     required String fullName,
     required String userType,
     String? email,
-    String? firebaseIdToken,
     String? otpToken,
     String? identityCard,
     String? licensePlate,
@@ -361,7 +286,6 @@ class AuthProvider extends ChangeNotifier {
         fullName: fullName,
         userType: userType,
         email: email,
-        firebaseIdToken: firebaseIdToken,
         otpToken: otpToken,
         // identityCard: identityCard,
         // licensePlate: licensePlate,
@@ -558,32 +482,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  bool get _useBackendFileUpload => kIsWeb || Firebase.apps.isEmpty;
-
-  Future<String> uploadFileToFirebase(XFile file, String folder) async {
-    if (_useBackendFileUpload) {
-      throw StateError('Firebase Storage không khả dụng trên web.');
-    }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw StateError('Người dùng chưa đăng nhập Firebase.');
-    }
-
-    final rawExt = file.name.contains('.') ? file.name.split('.').last : 'jpg';
-    final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
-    final fileName =
-        '${folder.replaceAll('/', '_')}_${DateTime.now().microsecondsSinceEpoch}_${file.name.hashCode}.$ext';
-    final ref = FirebaseStorage.instance.ref().child('$folder/${user.uid}/$fileName');
-    final bytes = await file.readAsBytes();
-
-    await ref.putData(
-      bytes,
-      SettableMetadata(contentType: 'image/$ext'),
-    );
-    return await ref.getDownloadURL();
-  }
-
   Future<String?> sendWithdrawOtp(String phoneNumber) async {
     try {
       _isLoading = true;
@@ -645,65 +543,6 @@ class AuthProvider extends ChangeNotifier {
     try {
       final address = '${district.trim()}, ${province.trim()}';
 
-      if (_useBackendFileUpload) {
-        return saveMyProfile(
-          fullName: displayName,
-          currentAddress: address,
-          bankName: bankName,
-          bankAccountNumber: bankAccountNumber,
-          bankAccountHolder: bankAccountHolder,
-          vehicleModel: vehicleModel,
-          vehicleGeneration: vehicleGeneration,
-          licensePlate: licensePlate,
-          driverLicenseNumber: driverLicenseNumber,
-          avatarFile: portrait,
-          cccdFrontFile: cccdFront,
-          cccdBackFile: cccdBack,
-          certificateFile: certificate,
-          vehiclePhotoFile: vehiclePhoto,
-          vehicleRegistrationFile: vehicleRegistration,
-          vehicleInsuranceFile: vehicleInsurance,
-          driverLicenseFile: driverLicense,
-          color: color,
-        );
-      }
-
-      final List<Map<String, dynamic>> uploads = [];
-      if (portrait != null) {
-        uploads.add({'file': portrait, 'folder': 'avatars', 'key': 'portrait'});
-      }
-      if (cccdFront != null) {
-        uploads.add({'file': cccdFront, 'folder': 'documents', 'key': 'cccdFront'});
-      }
-      if (cccdBack != null) {
-        uploads.add({'file': cccdBack, 'folder': 'documents', 'key': 'cccdBack'});
-      }
-      if (certificate != null) {
-        uploads.add({'file': certificate, 'folder': 'documents', 'key': 'certificate'});
-      }
-      if (vehiclePhoto != null) {
-        uploads.add({'file': vehiclePhoto, 'folder': 'vehicles', 'key': 'vehiclePhoto'});
-      }
-      if (vehicleRegistration != null) {
-        uploads.add({'file': vehicleRegistration, 'folder': 'documents', 'key': 'vehicleRegistration'});
-      }
-      if (vehicleInsurance != null) {
-        uploads.add({'file': vehicleInsurance, 'folder': 'documents', 'key': 'vehicleInsurance'});
-      }
-      if (driverLicense != null) {
-        uploads.add({'file': driverLicense, 'folder': 'documents', 'key': 'driverLicense'});
-      }
-
-      final Map<String, String> uploadedUrls = {};
-      if (uploads.isNotEmpty) {
-        final results = await Future.wait(
-          uploads.map((item) => uploadFileToFirebase(item['file'] as XFile, item['folder'] as String)),
-        );
-        for (var i = 0; i < uploads.length; i++) {
-          uploadedUrls[uploads[i]['key'] as String] = results[i];
-        }
-      }
-
       return saveMyProfile(
         fullName: displayName,
         currentAddress: address,
@@ -714,14 +553,14 @@ class AuthProvider extends ChangeNotifier {
         vehicleGeneration: vehicleGeneration,
         licensePlate: licensePlate,
         driverLicenseNumber: driverLicenseNumber,
-        avatarUrl: uploadedUrls['portrait'],
-        cccdFrontUrl: uploadedUrls['cccdFront'],
-        cccdBackUrl: uploadedUrls['cccdBack'],
-        certificateUrl: uploadedUrls['certificate'],
-        vehiclePhotoUrl: uploadedUrls['vehiclePhoto'],
-        vehicleRegistrationUrl: uploadedUrls['vehicleRegistration'],
-        vehicleInsuranceUrl: uploadedUrls['vehicleInsurance'],
-        driverLicenseUrl: uploadedUrls['driverLicense'],
+        avatarFile: portrait,
+        cccdFrontFile: cccdFront,
+        cccdBackFile: cccdBack,
+        certificateFile: certificate,
+        vehiclePhotoFile: vehiclePhoto,
+        vehicleRegistrationFile: vehicleRegistration,
+        vehicleInsuranceFile: vehicleInsurance,
+        driverLicenseFile: driverLicense,
         color: color,
       );
     } catch (e, st) {
@@ -741,16 +580,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       if (draft.portraitFile != null) {
-        if (_useBackendFileUpload) {
-          return saveMyProfile(
-            fullName: displayName,
-            avatarFile: draft.portraitFile,
-          );
-        }
-        final portraitUrl = await uploadFileToFirebase(draft.portraitFile!, 'avatars');
-        await saveMyProfile(
+        return saveMyProfile(
           fullName: displayName,
-          avatarUrl: portraitUrl,
+          avatarFile: draft.portraitFile,
         );
       }
       return true;

@@ -258,6 +258,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
                       _InfoRow(
+                        icon: Icons.g_mobiledata_rounded,
+                        title: auth.isGoogleLinked ? 'Đã liên kết Google' : 'Chưa liên kết Google',
+                        subtitle: 'Đăng nhập nhanh bằng Google',
+                        isVerified: auth.isGoogleLinked,
+                        onVerify: auth.isGoogleLinked || auth.isLoading
+                            ? null
+                            : () => _linkGoogleAccount(context),
+                        actionLabel: 'Liên kết',
+                      ),
+                      if (!auth.isGoogleLinked) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: auth.isLoading ? null : () => _linkGoogleAccount(context),
+                              icon: const Icon(Icons.link_rounded, size: 18),
+                              label: const Text('Liên kết tài khoản Google'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: const BorderSide(color: AppColors.primary),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFEEEEEE)),
+                      _InfoRow(
                         icon: Icons.location_on_outlined,
                         title: (auth.currentAddress != null && auth.currentAddress!.isNotEmpty) ? auth.currentAddress! : 'Chưa cập nhật', 
                         subtitle: 'Địa chỉ hiện tại',
@@ -1032,6 +1061,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => EmailLinkVerificationDialog(email: email),
     );
   }
+
+  Future<void> _linkGoogleAccount(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.linkGoogleAccount();
+    if (!context.mounted) return;
+    if (ok) {
+      AppAlert.showSuccess(context, 'Đã liên kết Google. Bạn có thể đăng nhập bằng Google.');
+    } else if (auth.errorMessage != null) {
+      AppAlert.showError(context, auth.errorMessage!);
+    }
+  }
 }
 
 class EmailLinkVerificationDialog extends StatefulWidget {
@@ -1234,6 +1274,7 @@ class _InfoRow extends StatelessWidget {
     this.isVerified,
     this.padding = const EdgeInsets.all(16),
     this.onVerify,
+    this.actionLabel,
   });
 
   final IconData icon;
@@ -1242,6 +1283,7 @@ class _InfoRow extends StatelessWidget {
   final bool? isVerified;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onVerify;
+  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1310,9 +1352,9 @@ class _InfoRow extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                             ),
-                            child: const Text(
-                              'Xác nhận',
-                              style: TextStyle(
+                            child: Text(
+                              actionLabel ?? 'Xác nhận',
+                              style: const TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,

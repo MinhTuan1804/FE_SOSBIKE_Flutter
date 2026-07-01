@@ -20,7 +20,6 @@ class PasswordLoginScreen extends StatefulWidget {
     required this.mode,
     required this.phoneNumber,
     this.fullName,
-    this.firebaseIdToken,
     this.otpToken,
     this.identityCard,
     this.licensePlate,
@@ -31,7 +30,6 @@ class PasswordLoginScreen extends StatefulWidget {
   final AuthMode mode;
   final String phoneNumber;
   final String? fullName;
-  final String? firebaseIdToken;
   final String? otpToken;
   final String? identityCard;
   final String? licensePlate;
@@ -82,7 +80,6 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
             widget.fullName ??
             (widget.role == UserRole.mechanic ? 'Thợ SOSbike' : 'Khách hàng'),
         userType: widget.role.apiValue,
-        firebaseIdToken: widget.firebaseIdToken,
         otpToken: widget.otpToken,
         identityCard: draft?.identityCard ?? widget.identityCard,
         licensePlate: widget.licensePlate,

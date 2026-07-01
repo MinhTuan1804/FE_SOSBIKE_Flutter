@@ -1,13 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
 
 /// Lấy nội dung lỗi ngắn gọn từ BE / Dio để hiển thị SnackBar.
 String errorMessageFrom(Object error) {
   if (error is ApiException) return error.message;
-  if (error is FirebaseException) {
-    return error.message ?? 'Lỗi Firebase. Vui lòng thử lại.';
-  }
   if (error is DioException) {
     return ApiException.fromDioError(error).message;
   }

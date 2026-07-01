@@ -11,6 +11,7 @@ class UserProfileDto {
     this.currentAddress,
     this.isPhoneVerified = false,
     this.isEmailVerified = false,
+    this.isGoogleLinked = false,
     this.isLocked = false,
     this.isActive = true,
     this.mechanic,
@@ -28,6 +29,7 @@ class UserProfileDto {
   final String? currentAddress;
   final bool isPhoneVerified;
   final bool isEmailVerified;
+  final bool isGoogleLinked;
   final bool isLocked;
   final bool isActive;
   final MechanicProfileDto? mechanic;
@@ -56,6 +58,7 @@ class UserProfileDto {
       currentAddress: json['currentAddress'] as String? ?? json['currentaddress'] as String?,
       isPhoneVerified: json['isPhoneVerified'] ?? json['isphoneverified'] ?? false,
       isEmailVerified: json['isEmailVerified'] ?? json['isemailverified'] ?? false,
+      isGoogleLinked: json['isGoogleLinked'] ?? json['isgooglelinked'] ?? false,
       isLocked: json['isLocked'] ?? json['islocked'] ?? false,
       isActive: json['isActive'] ?? json['isactive'] ?? false,
       mechanic: mechanicJson == null ? null : MechanicProfileDto.fromJson(mechanicJson),

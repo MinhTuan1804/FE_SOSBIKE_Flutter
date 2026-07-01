@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
@@ -26,10 +24,12 @@ class ProfileSetupScreen extends StatefulWidget {
     super.key,
     required this.role,
     required this.phoneNumber,
+    this.otpToken,
   });
 
   final UserRole role;
   final String phoneNumber;
+  final String? otpToken;
 
   @override
   State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -200,19 +200,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     setState(() => _saving = true);
 
     final authProvider = context.read<AuthProvider>();
-
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    final phone = firebaseUser?.phoneNumber != null
-        ? toLocalVietnamPhone(firebaseUser!.phoneNumber!)
-        : toLocalVietnamPhone(widget.phoneNumber);
+    final phone = toLocalVietnamPhone(widget.phoneNumber);
 
     final success = await authProvider.register(
       phoneNumber: phone,
-      password: 'firebase_auth_no_password',
+      password: 'temp_register_password',
       fullName: name,
       userType: widget.role.apiValue,
       email: email.isNotEmpty ? email : null,
-      firebaseIdToken: await firebaseUser?.getIdToken(),
+      otpToken: widget.otpToken,
       identityCard: _isMechanic ? identity : null,
       currentAddress: _addressSelection.formattedFullAddress.isNotEmpty
           ? _addressSelection.formattedFullAddress

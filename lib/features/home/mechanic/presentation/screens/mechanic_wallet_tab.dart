@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
@@ -335,7 +334,7 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
   }
 
   // ── PIN Unlock / Entry Screen ──────────────────────────────────────────────
-  void _showForgotPinBottomSheet(BuildContext context, MechanicWalletProvider provider, String phoneNumber, String verificationId) {
+  void _showForgotPinBottomSheet(BuildContext context, MechanicWalletProvider provider, String phoneNumber) {
     final otpController = TextEditingController();
     final pinController = TextEditingController();
     final confirmPinController = TextEditingController();
@@ -437,23 +436,12 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                                 return;
                               }
 
-                              setModalState(() => submitting = true);
-                              final authProv = context.read<AuthProvider>();
-                              // verifyOtp will authenticate Firebase user if successful
-                              final ok = await authProv.verifyOtp(otp, isRegister: true);
-                              setModalState(() => submitting = false);
-
-                              if (ok) {
-                                setModalState(() {
-                                  step = 2;
-                                });
-                              } else {
-                                if (!stateContext.mounted) return;
-                                ScaffoldMessenger.of(stateContext).showSnackBar(
-                                  SnackBar(content: Text(authProv.errorMessage ?? 'Mã OTP không đúng.')),
-                                );
-                              }
+                              setModalState(() {
+                                step = 2;
+                                submitting = false;
+                              });
                             } else {
+                              final otp = otpController.text.trim();
                               final pin = pinController.text;
                               final confirm = confirmPinController.text;
                               if (pin.length != 6 || confirm.length != 6) {
@@ -470,21 +458,8 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                               }
 
                               setModalState(() => submitting = true);
-                              
-                              // Lấy Firebase ID Token
-                              final user = FirebaseAuth.instance.currentUser;
-                              final idToken = await user?.getIdToken();
-                              
-                              if (idToken == null) {
-                                setModalState(() => submitting = false);
-                                if (!stateContext.mounted) return;
-                                ScaffoldMessenger.of(stateContext).showSnackBar(
-                                  const SnackBar(content: Text('Không thể lấy mã xác thực từ Firebase.')),
-                                );
-                                return;
-                              }
 
-                              final ok = await provider.resetPinFirebase(idToken, pin);
+                              final ok = await provider.resetPin(otp, pin);
                               setModalState(() => submitting = false);
 
                               if (ok) {
@@ -567,22 +542,15 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
                         }
 
                         final authProv = context.read<AuthProvider>();
-                        
-                        await authProv.verifyPhoneNumber(
-                          phoneNumber: phoneNumber,
-                          onCodeSent: (verificationId) {
-                            if (mounted) {
-                              _showForgotPinBottomSheet(context, provider, phoneNumber, verificationId);
-                            }
-                          },
-                          onError: (error) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(error)),
-                              );
-                            }
-                          },
-                        );
+                        final sent = await authProv.sendWithdrawOtp(phoneNumber);
+                        if (!mounted) return;
+                        if (sent == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(authProv.errorMessage ?? 'Không gửi được OTP.')),
+                          );
+                          return;
+                        }
+                        _showForgotPinBottomSheet(context, provider, phoneNumber);
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -701,22 +669,15 @@ class _MechanicWalletTabState extends State<MechanicWalletTab> {
               }
               
               final authProv = context.read<AuthProvider>();
-              
-              await authProv.verifyPhoneNumber(
-                phoneNumber: phoneNumber,
-                onCodeSent: (verificationId) {
-                  if (mounted) {
-                    _showForgotPinBottomSheet(context, provider, phoneNumber, verificationId);
-                  }
-                },
-                onError: (error) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(error)),
-                    );
-                  }
-                },
-              );
+              final sent = await authProv.sendWithdrawOtp(phoneNumber);
+              if (!mounted) return;
+              if (sent == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(authProv.errorMessage ?? 'Không gửi được OTP.')),
+                );
+                return;
+              }
+              _showForgotPinBottomSheet(context, provider, phoneNumber);
             },
             child: Text(
               'Quên mã PIN?',

@@ -50,6 +50,8 @@ class ApiEndpoints {
   static String _normalizeBaseUrl(String raw) => raw.trim().replaceFirst(RegExp(r'/+$'), '');
 
   static const String login = '/Auth/login';
+  static const String googleLogin = '/GoogleAuth/login';
+  static const String googleLink = '/GoogleAuth/link';
   static const String firebaseLogin = '/FirebaseAuth/login';
   static const String register = '/Auth/register';
   static const String sendOtp = '/Auth/send-otp';

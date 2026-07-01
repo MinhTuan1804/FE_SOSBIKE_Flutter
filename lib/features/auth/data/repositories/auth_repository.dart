@@ -1,6 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fe_moblie_flutter/core/network/dio_client.dart';
 import 'package:fe_moblie_flutter/core/network/api_exceptions.dart';
@@ -26,17 +24,27 @@ class AuthRepository {
     }
   }
 
-  Future<AuthResponse> firebaseLogin(String idToken, {String? fullName, String? userType}) async {
+  Future<AuthResponse> googleLogin(String idToken, {String? fullName}) async {
     try {
       final response = await _dioClient.dio.post(
-        ApiEndpoints.firebaseLogin,
+        ApiEndpoints.googleLogin,
         data: {
           'idToken': idToken,
-          if (fullName != null) 'fullName': fullName,
-          if (userType != null) 'userType': userType,
+          if (fullName != null) 'fullname': fullName,
         },
       );
       return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  Future<void> linkGoogle(String idToken) async {
+    try {
+      await _dioClient.dio.post(
+        ApiEndpoints.googleLink,
+        data: {'idToken': idToken},
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -48,7 +56,6 @@ class AuthRepository {
     required String fullName,
     required String userType,
     String? email,
-    String? firebaseIdToken,
     String? otpToken,
     String? currentAddress,
     DateTime? dateOfBirth,
@@ -62,7 +69,6 @@ class AuthRepository {
           'fullName': fullName,
           'userType': userType,
           if (email != null) 'email': email,
-          if (firebaseIdToken != null) 'firebaseIdToken': firebaseIdToken,
           if (otpToken != null) 'otpToken': otpToken,
           if (currentAddress != null) 'currentAddress': currentAddress,
           if (dateOfBirth != null) 'dateOfBirth': dateOfBirth.toIso8601String().split('T').first,
@@ -222,41 +228,6 @@ class AuthRepository {
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
-  }
-
-  Future<String> uploadAvatarToFirebase(XFile avatarFile, String? oldAvatarUrl) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw StateError('Người dùng chưa đăng nhập Firebase.');
-    }
-
-    final rawExt = avatarFile.name.contains('.') ? avatarFile.name.split('.').last : 'jpg';
-    final ext = rawExt.toLowerCase() == 'jpg' ? 'jpeg' : rawExt.toLowerCase();
-    final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
-    final ref = FirebaseStorage.instance.ref().child('avatars/${user.uid}/$fileName');
-    final bytes = await avatarFile.readAsBytes();
-
-    await ref.putData(
-      bytes,
-      SettableMetadata(contentType: 'image/$ext'),
-    );
-    final newUrl = await ref.getDownloadURL();
-
-    if (isFirebaseStorageUrl(oldAvatarUrl) && oldAvatarUrl != newUrl) {
-      try {
-        final oldRef = FirebaseStorage.instance.refFromURL(oldAvatarUrl!);
-        await oldRef.delete();
-      } catch (_) {
-        // ignore delete errors
-      }
-    }
-
-    return newUrl;
-  }
-
-  bool isFirebaseStorageUrl(String? url) {
-    if (url == null || url.trim().isEmpty) return false;
-    return url.startsWith('gs://') || url.contains('firebasestorage.googleapis.com');
   }
 
   Future<void> uploadMechanicDocuments({

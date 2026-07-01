@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fe_moblie_flutter/core/services/backend_otp_service.dart';
 import 'package:fe_moblie_flutter/core/navigation/auth_navigation.dart';
 import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/core/utils/phone_utils.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/auth_mode.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/backend_phone_auth.dart';
 import 'package:fe_moblie_flutter/features/auth/domain/user_role.dart';
-import 'package:fe_moblie_flutter/features/auth/presentation/screens/mechanic_register_info_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/otp_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/screens/password_login_screen.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/auth_back_header.dart';
@@ -18,6 +18,7 @@ import 'package:fe_moblie_flutter/features/auth/presentation/widgets/social_auth
 import 'package:fe_moblie_flutter/features/auth/presentation/providers/auth_provider.dart';
 import 'package:fe_moblie_flutter/features/auth/presentation/widgets/sos_primary_button.dart';
 import 'package:fe_moblie_flutter/core/utils/app_alert.dart';
+import 'package:fe_moblie_flutter/core/network/error_message.dart';
 import 'package:provider/provider.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
@@ -40,11 +41,13 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (!mounted) return;
     if (!success) {
       if (auth.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(auth.errorMessage!),
-            backgroundColor: Colors.red.shade700,
-          ),
+        final msg = auth.errorMessage!;
+        final isNotLinked = msg.contains('chưa được liên kết') || msg.contains('GOOGLE_NOT_LINKED');
+        AppAlert.showError(
+          context,
+          isNotLinked
+              ? '$msg\n\nĐăng nhập bằng SĐT/mật khẩu, sau đó vào Thông tin cá nhân → Liên kết Google.'
+              : msg,
         );
       }
       return;
@@ -104,7 +107,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       return;
     }
 
-    // Web / API local (dev): SĐT + mật khẩu BE, không Firebase SMS
+    // SĐT + mật khẩu / OTP qua BE (Google Cloud Console — không Firebase)
     if (useBackendPhoneAuth) {
       if (_mode == AuthMode.login) {
         if (!mounted) return;
@@ -120,46 +123,31 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         return;
       }
 
-      // Dev/local BE: đăng ký không cần OTP (Otp:RequireForRegister=false)
-      if (!mounted) return;
-      if (widget.role == UserRole.mechanic) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => MechanicRegisterInfoScreen(phoneNumber: localPhone),
-          ),
+      try {
+        final sent = await context.read<BackendOtpService>().sendOtp(
+          localPhone,
+          purpose: 'register',
         );
-      } else {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PasswordLoginScreen(
-              role: widget.role,
-              mode: _mode,
-              phoneNumber: localPhone,
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    // Mobile: Firebase SMS OTP
-    authProvider.verifyPhoneNumber(
-      phoneNumber: _normalizedPhone,
-      onCodeSent: (verificationId) {
+        if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => OtpLoginScreen(
               role: widget.role,
               mode: _mode,
-              phoneNumber: _normalizedPhone,
+              phoneNumber: localPhone,
+              useBackendOtp: true,
+              initialDebugCode: sent.debugCode,
+              resendCooldownSeconds: sent.expiresInSeconds.clamp(30, 120),
             ),
           ),
         );
-      },
-      onError: (error) {
-        AppAlert.showError(context, error);
-      },
-    );
+      } catch (e) {
+        if (mounted) {
+          AppAlert.showError(context, errorMessageFrom(e));
+        }
+      }
+      return;
+    }
   }
 
   void _goBack() => authPop(context);
