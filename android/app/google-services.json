@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "965904830002",
+    "project_id": "sosbike-4d6dc",
+    "storage_bucket": "sosbike-4d6dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:965904830002:android:86b9a86cdaa582e80d762b",
+        "android_client_info": {
+          "package_name": "com.sosbike.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDY7Evj6Ui4JGxbGOduxUqRBOBJaOByDXI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

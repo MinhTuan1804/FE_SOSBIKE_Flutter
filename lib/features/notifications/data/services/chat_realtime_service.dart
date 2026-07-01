@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:signalr_netcore/signalr_client.dart';
-import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
+import 'package:flutter/foundation.dart';
+import 'package:fe_moblie_flutter/core/network/signalr_hub_url.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
 import 'package:fe_moblie_flutter/core/utils/jwt_utils.dart';
 import 'package:fe_moblie_flutter/features/notifications/data/models/chat_models.dart';
@@ -27,7 +28,16 @@ class ChatRealtimeService {
       return;
     }
 
-    final hubUrl = _buildHubUrl();
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      debugPrint('[ChatRealtime] Bỏ qua connect: chưa có JWT');
+      return;
+    }
+
+    await _connection?.stop();
+    _connection = null;
+
+    final hubUrl = buildSignalRHubUrl('/hubs/chat', token);
     _connection = HubConnectionBuilder()
         .withUrl(
           hubUrl,
@@ -63,9 +73,5 @@ class ChatRealtimeService {
   Future<void> disconnect() async {
     await _connection?.stop();
     _connection = null;
-  }
-
-  String _buildHubUrl() {
-    return ApiEndpoints.hubUrl('chat');
   }
 }

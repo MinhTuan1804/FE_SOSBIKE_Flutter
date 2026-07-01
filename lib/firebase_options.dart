@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-/// Cấu hình Firebase từ google-services.json (project sosbike-7b6bb).
+/// Cấu hình Firebase từ google-services.json (project sosbike-4d6dc).
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -18,7 +18,6 @@ class DefaultFirebaseOptions {
     }
   }
 
-  /// Cần thêm app Web trên Firebase Console để bật Firebase Auth trên web.
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDY7Evj6Ui4JGxbGOduxUqRBOBJaOByDXI',
     appId: '1:965904830002:web:placeholder',

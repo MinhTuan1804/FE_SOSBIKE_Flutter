@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:signalr_netcore/signalr_client.dart';
-import 'package:fe_moblie_flutter/core/constants/api_endpoints.dart';
+import 'package:fe_moblie_flutter/core/network/signalr_hub_url.dart';
 import 'package:fe_moblie_flutter/core/services/auth_service.dart';
 
 
@@ -18,7 +19,16 @@ class LocationRealtimeService {
       return;
     }
 
-    final hubUrl = _buildHubUrl();
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      debugPrint('[LocationRealtime] Bỏ qua connect: chưa có JWT');
+      return;
+    }
+
+    await _connection?.stop();
+    _connection = null;
+
+    final hubUrl = buildSignalRHubUrl('/hubs/location', token);
     _connection = HubConnectionBuilder()
         .withUrl(
           hubUrl,
@@ -59,9 +69,5 @@ class LocationRealtimeService {
   Future<void> disconnect() async {
     await _connection?.stop();
     _connection = null;
-  }
-
-  String _buildHubUrl() {
-    return ApiEndpoints.hubUrl('location');
   }
 }

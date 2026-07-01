@@ -39,11 +39,9 @@ class ApiException implements Exception {
   static String _connectionErrorMessage() {
     final base = ApiEndpoints.baseUrl;
     if (isNgrokApiBaseUrl) {
-      return 'Không kết nối API ngrok ($base). '
-          'Kiểm tra tunnel Tuấn đang chạy, hoặc đổi e:\\SOS\\env sang '
-          'http://localhost:5200/api và chạy e:\\SOS\\start-be.ps1 (web + local dễ hơn).';
+      return 'Không kết nối API ngrok ($base). Kiểm tra tunnel ngrok đang chạy.';
     }
-    return 'Không kết nối được máy chủ ($base). Chạy BE: e:\\SOS\\start-be.ps1';
+    return 'Không kết nối được máy chủ ($base). Kiểm tra Wi‑Fi/4G hoặc thử lại sau vài phút.';
   }
 
   static String _parseResponseBody(dynamic data) {
