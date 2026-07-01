@@ -2,7 +2,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiEndpoints {
   /// Local BE mặc định khi dev; override bằng `--dart-define` hoặc `.env`.
-  static const String _localDevBaseUrl = 'https://finlike-lorrie-refreshfully.ngrok-free.dev/api';
+  static const String _localDevBaseUrl = 'http://localhost:5200/api';
 
   static String get baseUrl {
     const fromDefine = String.fromEnvironment('API_BASE_URL');
@@ -75,6 +75,7 @@ class ApiEndpoints {
   static const String notificationUnreadCount = '/notifications/unread-count';
   static String notificationMarkRead(int notificationId) => '/notifications/$notificationId/read';
   static const String notificationMarkAllRead = '/notifications/read-all';
+  static const String reviews = '/reviews';
 
   static const String chatConversations = '/chats/conversations';
 

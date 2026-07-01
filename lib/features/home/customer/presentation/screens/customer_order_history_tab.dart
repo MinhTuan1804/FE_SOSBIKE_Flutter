@@ -7,9 +7,9 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:fe_moblie_flutter/features/home/customer/data/models/customer_order_history_entry.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_review_mechanic_screen.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/find_mechanic/find_mechanic_flow_page.dart';
 
-/// Tab **Lịch sử** — đơn cứu hộ đã hoàn thành của khách (giống tab lịch sử thợ).
 class CustomerOrderHistoryTab extends StatefulWidget {
   const CustomerOrderHistoryTab({super.key});
 
@@ -35,8 +35,7 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
     final rescue = context.watch<RescueProvider>();
     final items = provider.items;
     final activeOrderId = rescue.currentOrderId;
-    final hasActive = activeOrderId != null &&
-        (rescue.activeOrderStatus?.toUpperCase() != 'COMPLETED');
+    final hasActive = activeOrderId != null && (rescue.activeOrderStatus?.toUpperCase() != 'COMPLETED');
 
     if (provider.isLoading && items.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
@@ -83,7 +82,7 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hoạt Động',
+                'Hoạt động',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -93,7 +92,7 @@ class _CustomerOrderHistoryTabState extends State<CustomerOrderHistoryTab> {
               ),
               SizedBox(height: 2),
               Text(
-                'Lịch Sử Đơn Của Tôi',
+                'Lịch sử đơn của tôi',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -221,23 +220,16 @@ class _HistoryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              entry.isActive
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        entry.statusLabel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    )
-                  : _StarRating(rating: entry.rating),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (entry.hasReview && entry.rating != null)
+                    _StarRating(rating: entry.rating!)
+                  else if (entry.canReview)
+                    const _ReviewReadyBadge(),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -274,6 +266,20 @@ class _HistoryCard extends StatelessWidget {
               ),
             ],
           ),
+          if (entry.hasReview && entry.reviewComment != null && entry.reviewComment!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                entry.reviewComment!.trim(),
+                style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Divider(color: Colors.white.withValues(alpha: 0.22), height: 1),
@@ -281,14 +287,69 @@ class _HistoryCard extends StatelessWidget {
           Wrap(
             spacing: 6,
             runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(
-                'Tổng tiền: ${entry.totalAmountLabel}',
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Tổng tiền: ${entry.totalAmountLabel}',
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(Icons.receipt_long_rounded, size: 16, color: Colors.white.withValues(alpha: 0.85)),
+                ],
               ),
               _PaymentBadge(label: entry.paymentMethod),
             ],
           ),
+          if (entry.canReview) ...[
+            const SizedBox(height: 12),
+              SizedBox(
+                height: 42,
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final result = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => CustomerReviewMechanicScreen(
+                          orderId: entry.id,
+                          mechanicName: entry.mechanicName,
+                          mechanicAvatarUrl: entry.avatarUrl,
+                        ),
+                      ),
+                    );
+                    if (result == true && context.mounted) {
+                      await context.read<CustomerHistoryProvider>().refresh();
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.35)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Đánh giá thợ', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ] else if (entry.hasReview) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: Color(0xFFFFD54F), size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Đã đánh giá ${entry.rating ?? 0} sao',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -352,6 +413,26 @@ class _PaymentBadge extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+}
+
+class _ReviewReadyBadge extends StatelessWidget {
+  const _ReviewReadyBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD54F).withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.35)),
+      ),
+      child: const Text(
+        'Có thể đánh giá',
+        style: TextStyle(color: Color(0xFFFFF59D), fontSize: 11, fontWeight: FontWeight.w800),
       ),
     );
   }

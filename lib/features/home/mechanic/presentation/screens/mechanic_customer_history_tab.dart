@@ -7,7 +7,6 @@ import 'package:fe_moblie_flutter/features/home/mechanic/data/models/mechanic_cu
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_history_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/presentation/providers/mechanic_repair_provider.dart';
 
-/// Tab **Lịch sử** — lịch sử khách hàng của thợ (Figma + API).
 class MechanicCustomerHistoryTab extends StatefulWidget {
   const MechanicCustomerHistoryTab({super.key, this.onContinueOrder});
 
@@ -76,7 +75,7 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hoạt Động',
+                'Hoạt động',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -86,7 +85,7 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
               ),
               SizedBox(height: 2),
               Text(
-                'Lịch Sử Khách Hàng',
+                'Lịch sử khách hàng',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -115,27 +114,27 @@ class _MechanicCustomerHistoryTabState extends State<MechanicCustomerHistoryTab>
             color: AppColors.primary,
             onRefresh: provider.refresh,
             child: items.isEmpty && activeOrder == null
-              ? Center(
-                  child: Text(
-                    'Chưa có lịch sử khách hàng.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      fontWeight: FontWeight.w600,
+                ? Center(
+                    child: Text(
+                      'Chưa có lịch sử khách hàng.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
+                  )
+                : ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(14, activeOrder != null ? 12 : 0, 14, 100),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return _HistoryCard(
+                        entry: items[index],
+                        timeFormat: _timeFormat,
+                      );
+                    },
                   ),
-                )
-              : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(14, activeOrder != null ? 12 : 0, 14, 100),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    return _HistoryCard(
-                      entry: items[index],
-                      timeFormat: _timeFormat,
-                    );
-                  },
-                ),
           ),
         ),
       ],
@@ -321,21 +320,20 @@ class _HistoryCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _StarRating(rating: entry.rating),
+                  if (entry.hasReview && entry.rating != null) _StarRating(rating: entry.rating!),
                   const SizedBox(height: 6),
-                  Material(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      onTap: () {},
-                      customBorder: const CircleBorder(),
-                      child: const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 15),
+                  if (entry.hasReview)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Đã đánh giá',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],
@@ -386,6 +384,20 @@ class _HistoryCard extends StatelessWidget {
               ),
             ],
           ),
+          if (entry.reviewComment != null && entry.reviewComment!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                entry.reviewComment!.trim(),
+                style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Divider(color: Colors.white.withValues(alpha: 0.22), height: 1),
@@ -395,24 +407,9 @@ class _HistoryCard extends StatelessWidget {
             runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Tổng tiền: ${entry.totalAmountLabel}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.receipt_long_rounded,
-                    size: 16,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ],
+              Text(
+                'Tổng tiền: ${entry.totalAmountLabel}',
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
               ),
               _PaymentBadge(label: entry.paymentMethod),
             ],
@@ -421,8 +418,6 @@ class _HistoryCard extends StatelessWidget {
       ),
     );
   }
-
-
 }
 
 class _CustomerAvatar extends StatelessWidget {

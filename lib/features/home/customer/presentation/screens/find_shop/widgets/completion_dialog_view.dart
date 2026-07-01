@@ -13,7 +13,6 @@ class CompletionDialogView extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Blurred/darkened map background
           Positioned.fill(
             child: Container(
               color: Colors.grey[900],
@@ -28,12 +27,11 @@ class CompletionDialogView extends StatelessWidget {
               ),
             ),
           ),
-
-          // Modal dialog card in the center
           Center(
             child: Container(
               width: 320,
               margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(28),
@@ -44,22 +42,17 @@ class CompletionDialogView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Handlebar
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      width: 50,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    width: 50,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-
+                  const Icon(Icons.check_circle_rounded, color: Color(0xFFC02020), size: 64),
                   const SizedBox(height: 12),
-
-                  // Title
                   const Text(
                     'Đã đến nơi!',
                     style: TextStyle(
@@ -69,87 +62,34 @@ class CompletionDialogView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Subtitle
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'Cảm ơn bạn đã sử dụng dịch vụ\nChúc bạn có một chuyến đi suôn sẻ!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
-                      ),
+                  const Text(
+                    'Thợ đã hoàn thành công việc và đơn của bạn đã sẵn sàng để tiếp tục các bước tiếp theo.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // 5 Star Rating
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 36),
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 36),
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 36),
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 36),
-                      Icon(Icons.star_rounded, color: Colors.amber, size: 36),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // "Đánh giá" secondary button
+                  const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cảm ơn bạn đã đánh giá!')),
-                      );
-                    },
+                    onPressed: onComplete,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF64B5F6), // soft blue background
+                      backgroundColor: const Color(0xFFC02020),
                       foregroundColor: Colors.white,
-                      elevation: 0,
+                      elevation: 4,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                      minimumSize: const Size(100, 32),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size(double.infinity, 48),
                     ),
                     child: const Text(
-                      'Đánh giá',
+                      'Hoàn thành',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // "Hoàn Thành" primary button
-                  Padding(
-                    padding: const EdgeInsets.only(left: 24, right: 24, bottom: 28),
-                    child: ElevatedButton(
-                      onPressed: onComplete,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFC02020),
-                        foregroundColor: Colors.white,
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
-                      child: const Text(
-                        'Hoàn Thành',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
                     ),
                   ),

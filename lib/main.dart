@@ -33,8 +33,10 @@ import 'package:fe_moblie_flutter/features/home/data/repositories/home_repositor
 import 'package:fe_moblie_flutter/features/home/presentation/providers/home_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_history_repository.dart';
+import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_review_repository.dart';
 import 'package:fe_moblie_flutter/features/home/customer/data/repositories/customer_wallet_repository.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_history_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_review_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/customer_wallet_provider.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_dashboard_repository.dart';
 import 'package:fe_moblie_flutter/features/home/mechanic/data/repositories/mechanic_history_repository.dart';
@@ -104,6 +106,7 @@ void main() async {
   final rescueRepository = RescueRepository(dioClient);
   final homeRepository = HomeRepository(dioClient);
   final customerHistoryRepository = CustomerHistoryRepository(dioClient);
+  final customerReviewRepository = CustomerReviewRepository(dioClient);
   final customerWalletRepository = CustomerWalletRepository(dioClient);
   final rescueRealtimeService = RescueRealtimeService(authService);
   final locationRealtimeService = LocationRealtimeService(authService);
@@ -135,6 +138,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RescueProvider(rescueRepository, rescueRealtimeService, locationRealtimeService)),
         ChangeNotifierProvider(create: (_) => HomeProvider(homeRepository, authService)),
         ChangeNotifierProvider(create: (_) => CustomerHistoryProvider(customerHistoryRepository)),
+        ChangeNotifierProvider(create: (_) => CustomerReviewProvider(customerReviewRepository)),
         ChangeNotifierProvider(create: (_) => CustomerWalletProvider(customerWalletRepository)),
         ChangeNotifierProvider(create: (_) => MechanicDashboardProvider(mechanicDashboardRepository)),
         ChangeNotifierProvider(create: (_) => MechanicHistoryProvider(mechanicHistoryRepository)),

@@ -29,15 +29,10 @@ class MechanicHistoryProvider extends ChangeNotifier {
       final page = await _repository.getCustomerHistory();
       _items = page.items;
       _totalCount = page.totalCount;
-      if (kDebugMode && _items.isEmpty) {
-        _items = MechanicCustomerHistoryEntry.sampleEntries;
-        _totalCount = _items.length;
-      }
     } catch (e) {
       _errorMessage = e.toString();
-      if (kDebugMode && _items.isEmpty) {
-        _items = MechanicCustomerHistoryEntry.sampleEntries;
-        _totalCount = _items.length;
+      if (kDebugMode) {
+        debugPrint('MechanicHistoryProvider.load: $e');
       }
     } finally {
       _isLoading = false;
