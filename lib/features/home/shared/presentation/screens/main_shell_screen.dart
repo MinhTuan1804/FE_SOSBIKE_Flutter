@@ -624,6 +624,7 @@ class MainShellScreenState extends State<MainShellScreen> {
     final membershipProvider = context.watch<MembershipProvider>();
 
     final rescueProvider = context.watch<RescueProvider>();
+    final appConfig = context.watch<AppConfigProvider>().config;
 
     final isMechanic = auth.userType?.toUpperCase() == 'MECHANIC';
     final showVipBadge = auth.userType?.toUpperCase() == 'CUSTOMER' &&
@@ -704,6 +705,73 @@ class MainShellScreenState extends State<MainShellScreen> {
                 },
                 userType: auth.userType,
                 unreadNotificationCount: unreadNotificationCount,
+              ),
+            ),
+          ),
+        if (appConfig.flags.maintenanceMode)
+          Positioned.fill(
+            child: Container(
+              color: Colors.white,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7E6),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFFFD699), width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.engineering_outlined,
+                          size: 80,
+                          color: Color(0xFFD97706),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'HỆ THỐNG ĐANG BẢO TRÌ',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF92400E),
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Hệ thống đang được bảo trì nâng cấp định kỳ để cải thiện chất lượng dịch vụ. Vui lòng quay lại sau.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF4B5563),
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          context.read<AppConfigProvider>().load();
+                        },
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        label: const Text(
+                          'Thử lại',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD02121),
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -1004,24 +1072,7 @@ class MainShellScreenState extends State<MainShellScreen> {
           Positioned.fill(
             child: _CustomerHomeBackground(backgroundUrl: appConfig.ui.homeBackgroundUrl),
           ),
-        if (appConfig.flags.maintenanceMode)
-          Positioned(
-            left: 12,
-            right: 12,
-            top: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7E6),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFFD699)),
-              ),
-              child: const Text(
-                'Hệ thống đang bảo trì. Một số chức năng có thể tạm thời bị giới hạn.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
-              ),
-            ),
-          ),
+        // Removed old top warning banner since full-screen overlay covers everything
         Positioned.fill(
           child: Padding(
             padding: EdgeInsets.only(bottom: contentBottomPad),

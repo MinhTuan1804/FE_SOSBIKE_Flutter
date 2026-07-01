@@ -110,18 +110,22 @@ class AppFeatureFlags {
 class AppThirdPartyConfig {
   const AppThirdPartyConfig({
     required this.goongApiKey,
+    required this.googleMapApiKey,
   });
 
   final String goongApiKey;
+  final String googleMapApiKey;
 
   factory AppThirdPartyConfig.fromJson(Map<String, dynamic> json) {
     return AppThirdPartyConfig(
       goongApiKey: (json['goongApiKey'] as String?)?.trim() ?? '',
+      googleMapApiKey: (json['googleMapApiKey'] as String?)?.trim() ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
         'goongApiKey': goongApiKey,
+        'googleMapApiKey': googleMapApiKey,
       };
 }
 
@@ -251,6 +255,7 @@ const AppConfig defaultAppConfig = AppConfig(
   ),
   thirdParty: AppThirdPartyConfig(
     goongApiKey: 'J7uk8GJZvzozpZ8p631cnxMVXUNVz0O0juQCSAJq',
+    googleMapApiKey: '',
   ),
   landingPage: AppLandingPageConfig(
     hotline: '0982815244',
