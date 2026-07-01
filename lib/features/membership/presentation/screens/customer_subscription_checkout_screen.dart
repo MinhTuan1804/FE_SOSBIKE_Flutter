@@ -194,6 +194,7 @@ class _CustomerSubscriptionCheckoutScreenState
               plan: widget.plan,
               intent: widget.intent,
               isSuccess: false,
+              message: context.read<MembershipProvider>().errorMessage,
               onRetry: () => setState(() => _step = _CheckoutStep.confirm),
               onDone: () async {
                 final navigator = Navigator.of(context);
@@ -1040,6 +1041,7 @@ class _ResultView extends StatefulWidget {
     required this.plan,
     required this.intent,
     required this.isSuccess,
+    this.message,
     this.onRetry,
     required this.onDone,
   });
@@ -1047,6 +1049,7 @@ class _ResultView extends StatefulWidget {
   final CustomerMembershipPlan plan;
   final CustomerPaymentIntent intent;
   final bool isSuccess;
+  final String? message;
   final VoidCallback? onRetry;
   final VoidCallback onDone;
 
@@ -1140,7 +1143,7 @@ class _ResultViewState extends State<_ResultView>
                 child: Text(
                   isSuccess
                       ? 'Bạn đã kích hoạt gói ${widget.plan.displayName} thành công.\nQuyền lợi sẽ hoạt động ngay lập tức.'
-                      : 'Không tìm thấy thông tin chuyển khoản tương ứng.\nVui lòng kiểm tra lại giao dịch của bạn.',
+                      : (widget.message ?? 'Không tìm thấy thông tin chuyển khoản tương ứng.\nVui lòng kiểm tra lại giao dịch của bạn.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.55),
