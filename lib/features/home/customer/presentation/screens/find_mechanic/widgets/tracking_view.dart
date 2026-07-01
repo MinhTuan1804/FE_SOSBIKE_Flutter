@@ -5,6 +5,7 @@ import 'package:fe_moblie_flutter/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:fe_moblie_flutter/core/config/app_config_provider.dart';
 import 'package:fe_moblie_flutter/features/home/customer/presentation/providers/rescue_provider.dart';
+import 'package:fe_moblie_flutter/features/home/customer/presentation/screens/customer_review_mechanic_screen.dart';
 import 'package:fe_moblie_flutter/features/notifications/presentation/screens/chat_detail_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -24,6 +25,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
   String _selectedPaymentMethod = 'CASH'; // 'CASH' or 'BANK_TRANSFER'
   bool _paymentIntentCreated = false;
   bool _isProcessing = false;
+  String? _reviewPromptedForOrderId;
   
   // Dynamic rotation for repairing wrench icon
   double _wrenchRotation = 0.0;
@@ -70,6 +72,7 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final rescue = context.watch<RescueProvider>();
     final status = rescue.activeOrderStatus ?? 'ACCEPTED';
+    _maybePromptReview(rescue, status);
 
 
     return Column(
@@ -120,6 +123,34 @@ class _TrackingViewState extends State<TrackingView> with SingleTickerProviderSt
         ),
       ],
     );
+  }
+
+  void _maybePromptReview(RescueProvider rescue, String status) {
+    if (status != 'PAID') {
+      return;
+    }
+
+    final orderId = rescue.currentOrderId;
+    if (orderId == null || _reviewPromptedForOrderId == orderId) {
+      return;
+    }
+
+    _reviewPromptedForOrderId = orderId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      final match = rescue.matchedMechanic ?? {};
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CustomerReviewMechanicScreen(
+            orderId: orderId,
+            mechanicName: match['mechanicName'] as String? ?? 'Thợ cứu hộ',
+            mechanicAvatarUrl: match['mechanicAvatarUrl'] as String?,
+          ),
+        ),
+      );
+    });
   }
 
   // 1. ACCEPTED (Thợ đang di chuyển)

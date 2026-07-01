@@ -80,6 +80,7 @@ class MechanicIncomeProvider extends ChangeNotifier {
         address: 'Q.7, HCM',
         totalAmount: 250000,
         paymentMethod: 'Tiền mặt',
+        hasReview: true,
       ),
       MechanicCustomerHistoryEntry(
         id: 's2',
@@ -90,6 +91,7 @@ class MechanicIncomeProvider extends ChangeNotifier {
         address: 'Q.Bình Thạnh',
         totalAmount: 320000,
         paymentMethod: 'Tiền mặt',
+        hasReview: true,
       ),
       MechanicCustomerHistoryEntry(
         id: 's3',
@@ -100,6 +102,7 @@ class MechanicIncomeProvider extends ChangeNotifier {
         address: 'TP.Thủ Đức',
         totalAmount: 450000,
         paymentMethod: 'Chuyển khoản',
+        hasReview: true,
       ),
       MechanicCustomerHistoryEntry(
         id: 's4',
@@ -110,6 +113,7 @@ class MechanicIncomeProvider extends ChangeNotifier {
         address: 'Q.1',
         totalAmount: 180000,
         paymentMethod: 'Tiền mặt',
+        hasReview: true,
       ),
       MechanicCustomerHistoryEntry(
         id: 's5',
@@ -120,6 +124,7 @@ class MechanicIncomeProvider extends ChangeNotifier {
         address: 'Q.12',
         totalAmount: 380000,
         paymentMethod: 'Tiền mặt',
+        hasReview: true,
       ),
     ];
   }

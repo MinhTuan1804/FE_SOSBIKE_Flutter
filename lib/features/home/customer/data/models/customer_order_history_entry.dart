@@ -9,18 +9,24 @@ class CustomerOrderHistoryEntry {
     required this.totalAmount,
     required this.paymentMethod,
     required this.status,
+    required this.hasReview,
+    required this.canReview,
+    this.reviewComment,
     this.avatarUrl,
   });
 
   final String id;
   final String mechanicName;
   final DateTime completedAt;
-  final int rating;
+  final int? rating;
   final String vehicleLabel;
   final String address;
   final int totalAmount;
   final String paymentMethod;
   final String status;
+  final bool hasReview;
+  final bool canReview;
+  final String? reviewComment;
   final String? avatarUrl;
 
   factory CustomerOrderHistoryEntry.fromJson(Map<String, dynamic> json) {
@@ -28,12 +34,15 @@ class CustomerOrderHistoryEntry {
       id: json['orderId']?.toString() ?? '',
       mechanicName: json['mechanicName']?.toString() ?? 'Thợ SOSbike',
       completedAt: DateTime.tryParse(json['completedAt']?.toString() ?? '') ?? DateTime.now(),
-      rating: _toInt(json['rating']),
+      rating: _toNullableInt(json['rating']),
       vehicleLabel: json['vehicleLabel']?.toString() ?? '',
       address: json['address']?.toString() ?? '',
       totalAmount: _toInt(json['totalAmount']),
       paymentMethod: json['paymentMethod']?.toString() ?? 'Tiền mặt',
       status: json['status']?.toString() ?? 'COMPLETED',
+      hasReview: _toBool(json['hasReview']) || json['reviewId'] != null,
+      canReview: _toBool(json['canReview']),
+      reviewComment: json['reviewComment']?.toString(),
       avatarUrl: json['mechanicAvatarUrl']?.toString(),
     );
   }
@@ -41,6 +50,18 @@ class CustomerOrderHistoryEntry {
   static int _toInt(Object? value) {
     if (value is num) return value.round();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int? _toNullableInt(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString());
+  }
+
+  static bool _toBool(Object? value) {
+    if (value is bool) return value;
+    final text = value?.toString().toLowerCase();
+    return text == 'true' || text == '1';
   }
 
   String get totalAmountLabel {

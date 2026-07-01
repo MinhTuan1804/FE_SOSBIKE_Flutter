@@ -247,6 +247,8 @@ _NotificationStyle _styleForNotification(String type) {
       return const _NotificationStyle(icon: Icons.verified_rounded, backgroundColor: Color(0xFF4CAF50));
     case 'MECHANIC_SERVICE_REJECTED':
       return const _NotificationStyle(icon: Icons.cancel_outlined, backgroundColor: Color(0xFFE53935));
+    case 'REVIEW_SUBMITTED':
+      return const _NotificationStyle(icon: Icons.star_rounded, backgroundColor: Color(0xFFF59E0B));
     case 'MAINTENANCE_REMINDER':
       return const _NotificationStyle(icon: Icons.event_note_rounded, backgroundColor: Color(0xFF2563EB));
     case 'ADMIN_ANNOUNCEMENT':
@@ -276,6 +278,8 @@ String _mechanicNotificationTitle(NotificationItem item) {
       return 'Dịch vụ thợ đã được duyệt';
     case 'MECHANIC_SERVICE_REJECTED':
       return 'Dịch vụ thợ bị từ chối';
+    case 'REVIEW_SUBMITTED':
+      return 'Bạn nhận được đánh giá mới';
     case 'MAINTENANCE_REMINDER':
       return 'Nhắc bảo dưỡng xe';
     case 'ADMIN_ANNOUNCEMENT':
@@ -307,6 +311,8 @@ String? _mechanicNotificationSubtitle(NotificationItem item) {
       return 'Dịch vụ đã hiển thị trên app';
     case 'MECHANIC_SERVICE_REJECTED':
       return 'Cần chỉnh sửa lại nội dung dịch vụ';
+    case 'REVIEW_SUBMITTED':
+      return 'Khách hàng vừa gửi đánh giá cho đơn hoàn thành';
     case 'WITHDRAW_REQUEST_CREATED':
       return 'Đã gửi yêu cầu rút tiền';
     case 'WITHDRAW_REQUEST_APPROVED':
